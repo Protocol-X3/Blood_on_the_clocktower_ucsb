@@ -9,6 +9,12 @@ A web app that tracks game information for a local UCSB college group playing **
 
 **Planning phase.** We're still deciding the stack, structure and details. Don't scaffold, install dependencies or write app code until the owner explicitly says to move to the next stage.
 
+## Working with the owner
+- For design questions, lead with a concrete draft and flagged decision points, each with a recommended default and a one-line reason. The owner often replies "go with the recommendation."
+- Record every decision in this file right away.
+- The owner delegates visual and art direction to Claude (see Visual design).
+- When the owner says to move to the build stage, remind them of the "To do when the build starts" list, starting with the UI mockup.
+
 ## Requirements
 
 ### User permission levels
