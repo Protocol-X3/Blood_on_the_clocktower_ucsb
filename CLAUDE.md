@@ -7,7 +7,7 @@ A web app that tracks game information for a local UCSB college group playing **
 
 ## Project status
 
-**Planning phase.** We're still deciding the stack, structure and details. Don't scaffold, install dependencies or write app code until the owner explicitly says to move to the next stage.
+**Build stage (started 2026-09-25). M0 is in progress.** Planning is complete. The first step is the UI mockup for the owner's approval, before any scaffolding.
 
 ## Working with the owner
 - For design questions, lead with a concrete draft and flagged decision points, each with a recommended default and a one-line reason. The owner often replies "go with the recommendation."
@@ -213,7 +213,14 @@ Look and feel, wording, and how it plays at a real table. These are covered by:
 ### Visual design
 **The frontend must be beautiful, not just functional.** Claude owns the art direction. It's a first-class requirement, so never ship default-looking shadcn/Tailwind screens.
 
-Direction (draft): **"Candlelit grimoire" (烛光魔典)**
+Direction (**approved 2026-09-25** from the mockup): **"Candlelit grimoire" (烛光魔典)**
+
+Reference mockup: https://claude.ai/artifact/D6thsxbB5z6XKrSyZRr6Em. It shows the player day vote, the player night role card, the card draw and the DM grimoire.
+
+**Device targets:**
+- **Player screens are mobile-first.** Players mostly use phones, so design for about 360–430px wide, touch targets of 44px or more, and one-handed use. Everything important must fit without horizontal scrolling. Laptop use only needs to work acceptably.
+- **DM screens are designed for laptop and iPad** (about 1024px and up, landscape and portrait iPad). They can use dense multi-panel layouts, like the circle grimoire plus a side panel. On a phone, the DM view only needs a usable fallback.
+- **Themes:** the DM grimoire always stays dark (candlelit). Player screens follow the phase: parchment by day, midnight by night.
 
 **Mood:**
 - Dark ink/midnight backgrounds, parchment-textured cards, antique gold accents, blood crimson for evil and death.
@@ -232,7 +239,7 @@ Direction (draft): **"Candlelit grimoire" (烛光魔典)**
 - the vote clock hand sweeping around the seat circle as votes lock;
 - a death transition (portrait fades to grey, and a shroud marker appears).
 
-**Grimoire layout:** a circle of seats on tablet and desktop, falling back to a compact list or grid on phones.
+**Grimoire layout:** a circle of seats on laptop and iPad. On phones, it falls back to a compact list or grid.
 
 **Role art:** don't bundle official role icons, which are the publisher's copyright. Use per-role image URLs when a script provides them, and otherwise a styled token showing the role's first character.
 
@@ -277,7 +284,7 @@ The owner will only use the app with the group once it's fully ready, so the mil
 | M6 | Stats & history | Profile stats, game history pages |
 
 ## To do when the build starts
-- **UI mockup first:** before building screens, make a visual mockup of a key screen (e.g. the player room view) in the "candlelit grimoire" style for the owner to react to. Remind the owner of this when moving to the build stage.
+- ~~**UI mockup first**~~: done and approved on 2026-09-25 (see Visual design).
 
 - **Environment setup:** install Docker Desktop (with WSL2) and the Supabase CLI, and create the Supabase cloud project (production).
 
