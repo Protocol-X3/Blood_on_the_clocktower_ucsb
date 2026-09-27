@@ -67,11 +67,19 @@ tools/                one-off scripts (e.g. generating the role library, checkin
 
 ## Environments
 
-There are three Supabase environments. The owner's PC can't run Docker, because Riot Vanguard (the anti-cheat for Riot games) blocks WSL2 virtualization, and the owner games on this PC.
+The owner's PC can't run Docker, because Riot Vanguard (the anti-cheat for Riot games) blocks WSL2 virtualization, and the owner games on this PC.
 
-- **Dev:** the cloud project `botc-dev`, with fake data, and it's safe to wipe. The local Vite dev server and local test runs point at it. It's rebuilt from the migrations and the seed with `supabase db reset --linked` (or `--db-url`).
+**Until launch, there are two environments:**
+- **The Supabase cloud project, serving as the dev database:**
+  - The local Vite dev server, local test runs and the Vercel deployment all point at it.
+  - Nobody uses the app before it's complete, so it holds only test data. It's safe to wipe and rebuild from the migrations and the seed (`supabase db reset --linked`).
+  - Migrations are applied with `supabase db push` after CI passes.
 - **CI:** GitHub Actions runs a throwaway **Docker-based local Supabase** on every push, and the full test suite runs against it. This is the authoritative test run.
-- **Prod:** the cloud project `botc-prod` plus Vercel. It only receives migrations that passed on dev and in CI, via `supabase db push`.
+
+**At launch** (see roadmap.md, Before launch):
+- The project is cleaned: test data is wiped and the service-role key is rotated.
+- From then on it's production, and it's **never reset again**.
+- Post-launch development uses either a new separate dev project or CI's Docker database, whichever the owner decides.
 
 Other notes:
 - Secrets (database passwords, service-role keys, API keys) are never committed or pasted into chat. They go in `.env.local` (gitignored) or in the CI and Vercel secret settings.
