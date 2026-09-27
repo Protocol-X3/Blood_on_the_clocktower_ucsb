@@ -124,6 +124,15 @@ This runs only after the owner has explicitly opened the milestone (see [roadmap
 4. **Never weaken, skip or delete a test to make it pass.** If a test itself seems wrong, stop and ask the owner. Changing a rule means changing the spec first.
 5. Report the results, and screenshots of new screens, to the owner. Then **stop** until the owner opens the next milestone.
 
+### Known tooling pitfalls
+
+These come from an earlier, discarded M0 attempt (2026-09-27):
+- **Stryker 10 + Vitest 5:** Stryker's Vitest runner doesn't activate mutants under Vitest 5, so every mutant "survives." Use Vitest 4.x until Stryker supports 5.
+- **Stryker + Vitest `test.projects`:** Stryker doesn't support `test.projects`, so give it its own flat Vitest config.
+- **Playwright on the owner's PC:** the Playwright browser download times out on this network. Locally, use the installed Chrome (`channel: 'chrome'`), and let CI install its own Chromium.
+- **Docker on the owner's PC:** it doesn't work, because Riot Vanguard blocks WSL2 (see Environments).
+- **PowerShell:** `sc` is an alias for `Set-Content`. Use `sc.exe` for service commands.
+
 ### 6. What automation can't cover
 
 Look and feel, wording, and how it plays at a real table. These are covered by:

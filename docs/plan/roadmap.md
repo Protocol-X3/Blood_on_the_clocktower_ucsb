@@ -6,14 +6,7 @@
 
 - **Planning:** complete (2026-09-25).
 - **UI mockup:** approved (2026-09-25). See [design.md](design.md).
-- **M0 is NOT started.** It's waiting for the owner's explicit go-ahead.
-- **Branch `m0-foundation` (unmerged):** an early M0 draft, built on 2026-09-27 *without* the owner's approval.
-  - The owner chose to **keep** it, unmerged, for review when M0 starts.
-  - Contents: the scaffold, design-system components, a `/dev/design` gallery, 8 draft rules in `docs/rules/`, and the test harness (Vitest, fast-check, Playwright, Stryker, pgTAP, CI). CI is green.
-  - Tooling notes from it, to move into [architecture.md](architecture.md) when it's merged:
-    - Vitest is pinned to 4.x, because Stryker 10 doesn't activate mutants under Vitest 5.
-    - Stryker uses a flat `vitest.stryker.config.ts`.
-    - Locally, Playwright uses the installed Chrome, because the browser download times out on this network.
+- **M0 is NOT started.** It's waiting for the owner's explicit go-ahead. The repo contains only the plan (this folder and CLAUDE.md). There's no app code yet.
 
 ## Phase gate
 
@@ -25,7 +18,7 @@ The owner will only use the app with the group once it's fully ready, so the mil
 
 | # | Milestone | Scope | Status |
 |---|---|---|---|
-| M0 | Foundation | Scaffold, design system (theme, fonts, tokens), dev/prod Supabase, deploy pipeline, **the full test harness** (`npm run verify`, CI, coverage and mutation config, rule-coverage check) | Not started (a draft is on `m0-foundation`) |
+| M0 | Foundation | Scaffold, design system (theme, fonts, tokens), dev/prod Supabase, deploy pipeline, **the full test harness** (`npm run verify`, CI, coverage and mutation config, rule-coverage check) | Not started |
 | M1 | Accounts & rooms | Google and guest login, profiles, permission levels + `/admin`, create/join room, seats, DM seat | Not started |
 | M2 | Setup & roles | Official role library seeded in Chinese (LLM-generated, reviewed by the owner), manual script editor, setup wizard, manual and card-draw assignment, shown/actual roles | Not started |
 | M3 | Live game | Phases with the day/night theme, deaths with causes, revives, ghost votes, nominations, vote clock circle, board, end game + summary, bot sandbox (dev only) | Not started |
@@ -39,7 +32,6 @@ The owner will only use the app with the group once it's fully ready, so the mil
 - [ ] Create the `botc-dev` Supabase project, in the same region as prod.
 - [ ] Run `npx supabase login` to link the CLI (needs M0's CLI install).
 - [ ] Connect Vercel to the GitHub repo.
-- [ ] Review the draft rules on `m0-foundation` (`docs/rules/`) once M0 starts.
 
 Done:
 - [x] Create the prod Supabase project.
@@ -52,6 +44,8 @@ None right now.
 ## Decision log
 
 Newest first. Each entry records what was decided and why.
+
+- **2026-09-27:** The `m0-foundation` branch was deleted (it replaces the "keep" decision below). M0 will start fresh once the owner gives the go-ahead. Lessons from that attempt are kept under "Known tooling pitfalls" in architecture.md.
 
 - **2026-09-27:** The plan moves from CLAUDE.md into `docs/plan/` (four files). CLAUDE.md keeps only the working rules and pointers.
 - **2026-09-27:** Phase gate: nothing starts without the owner's explicit go-ahead. *Why:* Claude started M0 after the owner had only approved a decision.
