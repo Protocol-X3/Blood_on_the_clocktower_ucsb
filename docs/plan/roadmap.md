@@ -16,8 +16,22 @@
 - First, the owner provides all the inputs: rules, API access, Vercel, the dev database and so on. See "Waiting on the owner."
 - Then the owner gives an explicit start signal.
 - After that, Claude works **autonomously through M0 → M5 without stopping between milestones**. At each milestone boundary it posts a progress report but doesn't wait.
-- Claude stops at the end of M5, or earlier if it hits a blocker only the owner can resolve. The final report reminds the owner of the **launch cleanup** (see Before launch).
+- Claude stops at the end of M5, or earlier on a **stop condition** (below). The final report reminds the owner of the **launch cleanup** (see Before launch).
 - The run hasn't started yet.
+
+**Run rules** (the owner's answers, 2026-09-27):
+1. **Rules:** Claude drafts each milestone's rules from requirements.md plus the owner's rules, then proceeds. The owner reviews all rules after the run. Drafted rules are marked `Status: Draft (autonomy run)`.
+2. **Deploys:** Claude merges to `main` (Vercel auto-deploys) and pushes migrations to the Supabase project whenever CI is green.
+3. **Role library:** Claude writes the official roles' Chinese names and **paraphrased** abilities. The owner reviews them after the run.
+4. **Judgment calls:** Claude decides within the plan's spirit and logs each call in the decision log, tagged `[autonomy]`, for review.
+
+**Stop conditions:** Claude stops and reports when any of these happens, and doesn't work around it.
+- **S1.** A step needs the owner: a dashboard setting, a credential, a browser login, or an account.
+- **S2.** A test seems wrong, or two rules or requirements contradict each other in a way that changes behavior the owner would notice.
+- **S3.** A requirement is ambiguous, and the choice changes scope, the data model, or something the owner would have to relearn.
+- **S4.** An action would touch anything outside the repo, the Supabase project, Vercel or GitHub, or would cost money.
+- **S5.** The same failure survives three genuinely different fix attempts.
+- **S6.** A milestone's exit criteria can't be met as written.
 
 ## Milestones
 
@@ -32,6 +46,96 @@ The owner will only use the app with the group once it's fully ready, so the mil
 | M4 | Grimoire | Reminder tokens, per-seat DM log, circle grimoire layout | Not started |
 | M5 | Stats & history | Profile stats, game history pages | Not started |
 | M6 | Scripts | Photo → Claude → review form, JSON import, custom roles saved into the library. Until then, scripts are entered with M2's manual editor. | Not started |
+
+## Exit criteria (Definition of Done)
+
+A milestone is done **only when every criterion below can be verified**: by a command's exit code, a named test passing, or an artifact that exists. Claude checks each one, and the milestone report lists every criterion with its evidence (the command output, the test name, a screenshot path). Items marked **(owner)** can't be verified automatically. They're listed in the report for the owner's review after the run, but they don't block progress.
+
+### Every milestone (G = gate)
+
+| # | Criterion | How it's verified |
+|---|---|---|
+| G1 | The local gate passes | `npm run verify` exits 0 |
+| G2 | CI is green on the milestone's final commit on `main` | `gh run list --branch main --limit 1` shows the CI workflow with both jobs `success` |
+| G3 | Every rule in the milestone's rule files has a test | `npm run check:rules` exits 0 (included in G1) |
+| G4 | Coverage gates met | `src/lib` has 100% lines and ≥95% branches; the rest ≥70% (included in G1) |
+| G5 | Mutation score ≥85% on `src/lib` | `npm run mutate` exits 0 |
+| G6 | The database matches the migrations | `npx supabase migration list` shows every local migration applied remotely |
+| G7 | The live site serves the milestone's commit | The Vercel production deployment of the commit is `READY`, and the smoke tests pass against it: `BASE_URL=<vercel url> npx playwright test --grep @smoke` |
+| G8 | New screens are captured | Screenshots of each new screen exist, phone-sized for player screens and tablet-sized for DM screens, and are attached to the report |
+| G9 | The plan is up to date | This file's status table is updated, and every `[autonomy]` judgment call is logged |
+
+### M0 · Foundation
+
+| # | Criterion | How it's verified |
+|---|---|---|
+| M0.1 | The app builds and deploys | G7: the home page on the Vercel URL renders 血染钟楼 |
+| M0.2 | All three themes exist, with the design-system components | E2E: `/dev/design` shows every component under `data-theme` = day, night and grimoire, with screenshots |
+| M0.3 | Every test layer runs at least one real test | A unit test, a fast-check property test, E2E on the `phone` and `tablet` profiles, pgTAP in the CI `database` job, an integration test against the Supabase project, and Stryker producing a score |
+| M0.4 | The app can reach the Supabase project | Integration test: anonymous sign-in and sign-out succeed against the project (this also checks the owner enabled anonymous sign-ins) |
+| M0.5 | The rule checker catches gaps | The checker's own test: an uncovered rule and an unknown ID each fail it |
+| M0.6 | Baseline rules exist and are covered | `docs/rules/` has at least SEC-01 (RLS on every public table) and UI-01..03 (no horizontal scroll, 44px targets, Chinese UI) |
+| M0.7 | The CLI is linked | `npx supabase migration list` runs without error. This needs the owner's `npx supabase login`, the planned **S1** stop. |
+
+### M1 · Accounts & rooms
+
+| # | Criterion | How it's verified |
+|---|---|---|
+| M1.1 | Rules are written | AUTH, PERM and ROOM rule files exist and are covered (G3) |
+| M1.2 | Every M1 action is permission-checked | pgTAP permission matrix: every M1 RPC × {admin, DM-eligible, player, guest, anonymous} × {room open, game running} has an expected allow or deny, and all pass |
+| M1.3 | Guests can play | E2E (phone): guest login with a nickname → join a room by code → take a seat. A second browser sees the seat taken within 3 s (realtime). |
+| M1.4 | DM-eligible users run rooms | E2E (tablet): a DM-eligible test user creates a room, takes the DM seat and leaves it. A player can't take the DM seat. |
+| M1.5 | The admin manages permissions | E2E: admin grants and revokes DM-eligible on `/admin`. pgTAP: a non-admin can't. |
+| M1.6 | The admin can force-reassign the DM | pgTAP: the admin reassigns the DM seat mid-game, and nobody else can |
+| M1.7 | The owner's account becomes admin | pgTAP: the first sign-in of the configured admin email gets admin, and any other email doesn't |
+| M1.8 | Google login is wired | E2E: "使用 Google 登录" redirects to `accounts.google.com`. A full Google sign-in is **(owner)**. |
+
+### M2 · Setup & roles
+
+| # | Criterion | How it's verified |
+|---|---|---|
+| M2.1 | Rules are written | SETUP, SCRIPT and DRAW rule files exist and are covered |
+| M2.2 | The role library is complete for the base editions | A test checks that every character of Trouble Brewing, Bad Moon Rising and Sects & Violets (no Travellers or Fabled) exists with an ID, Chinese name, team and a Chinese ability. The wording is **(owner)**. |
+| M2.3 | Scripts can be built by hand | E2E: create a script from library roles plus one custom role, save it, reopen it |
+| M2.4 | Setup works in both modes | E2E (tablet DM + phone players): manual assignment and card draw, each at 5 and 15 players, through to 开始游戏 |
+| M2.5 | Card draw is race-safe | Integration: 50 rounds of two players drawing the same card at once, with exactly one winner each time |
+| M2.6 | Role secrecy holds | pgTAP: a player reads only their own **shown** role, never any actual role, and never another seat's role, in every game state before `ended` |
+| M2.7 | Team-count hints match the official table | Unit and property tests (SETUP rules) |
+
+### M3 · Live game
+
+| # | Criterion | How it's verified |
+|---|---|---|
+| M3.1 | Rules are written | PHASE, DEATH, NOM, VOTE, BOARD and END rule files exist and are covered |
+| M3.2 | Vote logic is proven | Property tests in `src/lib`: circle order (starts after the nominee, ends on the nominee), threshold, ties, ghost votes spent once |
+| M3.3 | The whole game model holds | Model-based simulation in CI: ≥200 random full games through the real RPCs with zero invariant violations |
+| M3.4 | A full game works end to end | E2E: 1 DM (tablet) + 5 players (phone), from lobby → setup → nights and days with a nomination, the vote circle, a death, a revive, a ghost vote and a board post → end → summary |
+| M3.5 | Day and night change the player theme | E2E: a player page's `data-theme` switches when the DM advances the phase |
+| M3.6 | The bot sandbox works | E2E: the DM adds 9 bots, and a vote circle completes with bot votes. The sandbox doesn't exist in production builds. |
+| M3.7 | Reconnect restores state | E2E: a player reloads mid-vote and sees the same state |
+
+### M4 · Grimoire
+
+| # | Criterion | How it's verified |
+|---|---|---|
+| M4.1 | Rules are written | TOKEN and LOG rule files exist and are covered |
+| M4.2 | Grimoire data is DM-only | pgTAP: only the room's DM can read or write tokens and log entries until the game ends, and then participants can read them |
+| M4.3 | Grimoire layout fits the devices | E2E and screenshots: the circle layout at 1024×768 and 1366×1024. On a phone, the list layout with no horizontal scroll. |
+| M4.4 | The summary shows everything | E2E: after the game ends, the summary shows actual and shown roles, alignments, deaths and the DM log |
+
+### M5 · Stats & history
+
+| # | Criterion | How it's verified |
+|---|---|---|
+| M5.1 | Rules are written | STATS and HIST rule files exist and are covered |
+| M5.2 | Stats are computed correctly | Unit and property tests: win rate overall and by team, games played, most-played roles, games as DM. Guests are excluded, and the **final** alignment is used. |
+| M5.3 | History is visible to the right people | pgTAP: a past game is readable by its participants |
+| M5.4 | The pages show the right numbers | E2E: with a seeded fixture of known games, the profile and game-history pages show the exact expected numbers |
+| M5.5 | **End of run** | The final report covers all milestones' criteria with evidence, the **(owner)** review items, the `[autonomy]` decisions, the rules to review, the role library to review, and the **launch-cleanup reminder**. Then Claude stops. |
+
+### M6 · Scripts
+
+Exit criteria will be defined when the owner opens M6. It isn't part of the autonomy run.
 
 ## Waiting on the owner
 
@@ -54,12 +158,12 @@ This is the checklist for the M0–M5 autonomy run. **Secrets go in `.env.local`
 **Content and decisions**
 - [ ] The owner's rules, to seed `docs/rules/`.
 - [ ] Which Google account becomes **Admin**.
-- [ ] Answers to the autonomy questions below.
 - [ ] The start signal.
 
 Done:
 - [x] Create the Supabase project.
 - [x] Decide the environment setup (see the decision log, 2026-09-27).
+- [x] Answer the autonomy questions (see Run rules).
 
 ## Before launch
 
@@ -71,17 +175,14 @@ Do this before the group's first real game night. Claude reminds the owner at th
 
 ## Open questions
 
-These are for the autonomy run. Each one would otherwise force a stop mid-run.
-
-1. **Rule approval:** the testing process has the owner approving each milestone's rules before tests are written. During the run, should Claude draft rules from requirements.md plus the owner's rules and proceed, with the owner reviewing them all afterwards? (Recommended.) Or should the owner pre-approve everything up front?
-2. **Prod deploys:** may Claude merge to `main` (Vercel auto-deploys) and push migrations to the Supabase project whenever CI is green? (Recommended: yes, since nobody uses the app before launch.) Or should it work only on branches until the owner says otherwise?
-3. **Role library (M2):** should Claude write the Chinese names and **paraphrased** abilities for the official roles itself, for owner review after the run? (Recommended. Paraphrasing avoids copying the publisher's text.) Or will the owner provide a role data file?
-4. **Judgment calls mid-run** (UX details, small scope questions): should Claude decide, follow the plan's spirit and log each call in the decision log for later review? (Recommended.) Or stop and ask?
+None right now.
 
 ## Decision log
 
 Newest first. Each entry records what was decided and why.
 
+- **2026-09-27:** Every milestone has verifiable exit criteria (the G1–G9 gates, plus per-milestone criteria), and the autonomy run has stop conditions S1–S6. *Why:* the owner wants clear, checkable stopping points for an unattended run.
+- **2026-09-27:** Autonomy-run rules, all the recommended options: Claude drafts rules and proceeds (the owner reviews them after the run); merges to `main` and pushes migrations when CI is green; writes the paraphrased Chinese role library (reviewed after the run); and logs judgment calls tagged `[autonomy]`.
 - **2026-09-27:** A single Supabase project serves as the dev database until launch, with no separate `botc-dev` (this replaces the `botc-dev` entry below). *Why:* nobody uses the app before it's complete, so there's no real data to protect. There's a launch-cleanup step before the first real game. CI still uses its own Docker database.
 - **2026-09-27:** Once the owner has provided all inputs and given the start signal, Claude runs autonomously through M0–M5.
 - **2026-09-27:** Swapped the last two milestones. M5 is now Stats & history, and M6 is Scripts (photo import, JSON import). Owner's choice. The M2 manual editor covers scripts until M6.
