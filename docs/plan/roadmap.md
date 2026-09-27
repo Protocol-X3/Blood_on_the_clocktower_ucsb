@@ -23,8 +23,8 @@ The owner will only use the app with the group once it's fully ready, so the mil
 | M2 | Setup & roles | Official role library seeded in Chinese (LLM-generated, reviewed by the owner), manual script editor, setup wizard, manual and card-draw assignment, shown/actual roles | Not started |
 | M3 | Live game | Phases with the day/night theme, deaths with causes, revives, ghost votes, nominations, vote clock circle, board, end game + summary, bot sandbox (dev only) | Not started |
 | M4 | Grimoire | Reminder tokens, per-seat DM log, circle grimoire layout | Not started |
-| M5 | Scripts | Photo → Claude → review form, JSON import, custom roles saved into the library | Not started |
-| M6 | Stats & history | Profile stats, game history pages | Not started |
+| M5 | Stats & history | Profile stats, game history pages | Not started |
+| M6 | Scripts | Photo → Claude → review form, JSON import, custom roles saved into the library. Until then, scripts are entered with M2's manual editor. | Not started |
 
 ## Waiting on the owner
 
@@ -44,6 +44,8 @@ None right now.
 ## Decision log
 
 Newest first. Each entry records what was decided and why.
+
+- **2026-09-27:** Swapped the last two milestones. M5 is now Stats & history, and M6 is Scripts (photo import, JSON import). Owner's choice. The M2 manual editor covers scripts until M6.
 
 - **2026-09-27:** The `m0-foundation` branch was deleted (it replaces the "keep" decision below). M0 will start fresh once the owner gives the go-ahead. Lessons from that attempt are kept under "Known tooling pitfalls" in architecture.md.
 
