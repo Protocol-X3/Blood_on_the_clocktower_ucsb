@@ -76,6 +76,7 @@ A milestone is done **only when every criterion below can be verified**: by a co
 | M0.5 | The rule checker catches gaps | The checker's own test: an uncovered rule and an unknown ID each fail it |
 | M0.6 | Baseline rules exist and are covered | `docs/rules/` has at least SEC-01 (RLS on every public table) and UI-01..03 (no horizontal scroll, 44px targets, Chinese UI) |
 | M0.7 | The CLI is linked | `npx supabase migration list` runs without error. This needs the owner's `npx supabase login`, the planned **S1** stop. |
+| M0.8 | The readiness check exists | `npm run preflight` checks every automatable entry requirement in "Phase transitions" below and prints pass/fail per item without printing secret values. Its logic has its own unit tests. |
 
 ### M1 · Accounts & rooms
 
@@ -137,6 +138,37 @@ A milestone is done **only when every criterion below can be verified**: by a co
 
 Exit criteria will be defined when the owner opens M6. It isn't part of the autonomy run.
 
+## Phase transitions
+
+**Advance rule:** Claude moves from phase N to phase N+1 **only when both of these hold**:
+1. **Phase N is done:** every G1–G9 gate and every one of its own exit criteria is verified, with evidence in the report.
+2. **Phase N+1 is ready:** every entry requirement in the table below is verified.
+
+If (1) fails, Claude keeps working on phase N, or stops under S5/S6. If (2) fails because something needs the owner, Claude stops under **S1** and says exactly which requirement is missing. It never starts the next phase partially.
+
+From M0 on, `npm run preflight` checks the automatable entry requirements. Before M0 exists, Claude checks them with the listed commands.
+
+| Transition | Entry requirements for the next phase | How each is verified |
+|---|---|---|
+| **Start → M0** | E0.1 The owner has given the explicit start signal | The owner's message in chat |
+| | E0.2 The owner's rules have been received | The rules are in `docs/rules/`, or were given in chat and saved there |
+| | E0.3 `.env.local` exists with `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL` and `ADMIN_EMAIL`, all non-empty | A script checks that each key is present and non-empty, **without printing any value** |
+| | E0.4 The Supabase project is reachable | `GET <url>/auth/v1/settings` with the publishable key returns HTTP 200 |
+| | E0.5 The Vercel project is connected to the repo | `gh api repos/Protocol-X3/Blood_on_the_clocktower_ucsb/deployments` lists a Vercel deployment, after the first push. If none appears within 10 minutes of the first push to `main` → **S1**. |
+| **M0 → M1** | E1.1 M0 is done | M0 report: G1–G9 and M0.1–M0.8 verified |
+| | E1.2 Anonymous sign-ins are enabled | `auth/v1/settings` shows `external.anonymous_users: true`, and the M0.4 integration test passes |
+| | E1.3 The Google provider is enabled | `auth/v1/settings` shows `external.google: true` |
+| | E1.4 Redirect URLs include local dev and the Vercel URL | The E2E test for M1.8 gets a Google redirect instead of a Supabase redirect error. A full sign-in is **(owner)**. |
+| | E1.5 The admin email is configured | `ADMIN_EMAIL` is present (E0.3). The value never appears in the repo. |
+| **M1 → M2** | E2.1 M1 is done | M1 report: G1–G9 and M1.1–M1.8 verified |
+| | E2.2 Test accounts can be created | The integration test setup creates and deletes a throwaway user with the service-role key |
+| **M2 → M3** | E3.1 M2 is done | M2 report: G1–G9 and M2.1–M2.7 verified |
+| | E3.2 A playable setup exists for tests | A seeded fixture script (Trouble Brewing) loads, and setup can reach 开始游戏 in the test environment |
+| **M3 → M4** | E4.1 M3 is done | M3 report: G1–G9 and M3.1–M3.7 verified |
+| **M4 → M5** | E5.1 M4 is done | M4 report: G1–G9 and M4.1–M4.4 verified |
+| **M5 → end of run** | M5 is done | M5 report: G1–G9 and M5.1–M5.4 verified, then M5.5 (final report) → **stop** |
+| **→ M6** (outside the run) | The owner explicitly opens M6, an Anthropic API key is available as a Supabase Edge Function secret, and M6's exit criteria have been written | The owner's message. `npx supabase secrets list` shows `ANTHROPIC_API_KEY` (name only). |
+
 ## Waiting on the owner
 
 This is the checklist for the M0–M5 autonomy run. **Secrets go in `.env.local` or the dashboards, never in chat or commits.**
@@ -145,7 +177,7 @@ This is the checklist for the M0–M5 autonomy run. **Secrets go in `.env.local`
 - [ ] Go to Authentication → Sign In / Providers and enable **Anonymous sign-ins** (for guest login).
 - [ ] Enable the **Google** provider, using an OAuth client from Google Cloud Console (see Google below).
 - [ ] Go to Authentication → URL Configuration and add the redirect URLs: `http://localhost:5173/**` (local dev) and the Vercel URL.
-- [ ] Put the project's values in `.env.local` at the repo root: URL, publishable key, service-role key (for test setup only), and the database connection string.
+- [ ] Create `.env.local` at the repo root with `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (for test setup only), `SUPABASE_DB_URL` (the database connection string) and `ADMIN_EMAIL` (the owner's Google account). Claude creates `.gitignore` covering it in M0. **Don't commit or stage the file before then.**
 - [ ] Run `npx supabase login` in a terminal once M0 has installed the CLI. It signs in through your browser, so no token is pasted anywhere. This is the one mid-run step; Claude will ask when it gets there.
 
 **Google**
@@ -157,13 +189,13 @@ This is the checklist for the M0–M5 autonomy run. **Secrets go in `.env.local`
 
 **Content and decisions**
 - [ ] The owner's rules, to seed `docs/rules/`.
-- [ ] Which Google account becomes **Admin**.
 - [ ] The start signal.
 
 Done:
 - [x] Create the Supabase project.
 - [x] Decide the environment setup (see the decision log, 2026-09-27).
 - [x] Answer the autonomy questions (see Run rules).
+- [x] Name the admin Google account. It goes in `.env.local` as `ADMIN_EMAIL`, never in the repo, because the repo is **public**.
 
 ## Before launch
 
@@ -181,6 +213,8 @@ None right now.
 
 Newest first. Each entry records what was decided and why.
 
+- **2026-09-27:** Phase transitions: advance only when the current phase is done **and** the next phase's entry requirements are verified. `npm run preflight` (an M0 deliverable) checks them.
+- **2026-09-27:** The admin is the owner's Google account. Its email stays out of the repo, which is public, and is configured as `ADMIN_EMAIL` in `.env.local`, then applied to the database at setup.
 - **2026-09-27:** Every milestone has verifiable exit criteria (the G1–G9 gates, plus per-milestone criteria), and the autonomy run has stop conditions S1–S6. *Why:* the owner wants clear, checkable stopping points for an unattended run.
 - **2026-09-27:** Autonomy-run rules, all the recommended options: Claude drafts rules and proceeds (the owner reviews them after the run); merges to `main` and pushes migrations when CI is green; writes the paraphrased Chinese role library (reviewed after the run); and logs judgment calls tagged `[autonomy]`.
 - **2026-09-27:** A single Supabase project serves as the dev database until launch, with no separate `botc-dev` (this replaces the `botc-dev` entry below). *Why:* nobody uses the app before it's complete, so there's no real data to protect. There's a launch-cleanup step before the first real game. CI still uses its own Docker database.
