@@ -7,13 +7,12 @@ A web app that tracks game information for a local UCSB college group playing **
 
 ## Project status
 
-**Build stage (started 2026-09-25). M0 is in progress.** Planning is complete. The first step is the UI mockup for the owner's approval, before any scaffolding.
+**Build stage (started 2026-09-25). M0 (Foundation) is in progress.** The UI mockup has been approved.
 
 ## Working with the owner
 - For design questions, lead with a concrete draft and flagged decision points, each with a recommended default and a one-line reason. The owner often replies "go with the recommendation."
 - Record every decision in this file right away.
 - The owner delegates visual and art direction to Claude (see Visual design).
-- When the owner says to move to the build stage, remind them of the "To do when the build starts" list, starting with the UI mockup.
 
 ## Requirements
 
@@ -162,7 +161,11 @@ tools/              one-off scripts (e.g. generating the role library, checking 
 ```
 
 ### Dev workflow
-- **Local dev runs a full Supabase stack in Docker** (via the Supabase CLI) with fake data. `supabase db reset` rebuilds it from the migrations and the seed. Production is the Supabase cloud project plus Vercel, and it only receives tested migrations via `supabase db push`.
+- **There are three Supabase environments.** The owner's PC can't run Docker, because Riot Vanguard (the anti-cheat for Riot games) blocks WSL2 virtualization, and the owner games on this PC.
+  - **Dev:** the cloud project `botc-dev`, with fake data, and it's safe to wipe. The local Vite dev server and local test runs point at it. It's rebuilt from the migrations and the seed with `supabase db reset --linked` (or `--db-url`).
+  - **CI:** GitHub Actions runs a throwaway **Docker-based local Supabase** (`supabase start`) on every push, and the full `npm run verify` suite runs against it. This is the authoritative test run.
+  - **Prod:** the cloud project `botc-prod` plus Vercel. It only receives migrations that passed on dev and in CI, via `supabase db push`.
+- Secrets (database passwords, service-role keys, API keys) are never committed or pasted into chat. They go in `.env.local` (gitignored) or in the CI and Vercel secret settings.
 - GitHub: `Protocol-X3/Blood_on_the_clocktower_ucsb`. Vercel auto-deploys `main`, and database migrations are pushed with the Supabase CLI.
 - Generate DB types with `supabase gen types` after every schema change.
 - Testing: see the Testing strategy section.
@@ -286,7 +289,12 @@ The owner will only use the app with the group once it's fully ready, so the mil
 ## To do when the build starts
 - ~~**UI mockup first**~~: done and approved on 2026-09-25 (see Visual design).
 
-- **Environment setup:** install Docker Desktop (with WSL2) and the Supabase CLI, and create the Supabase cloud project (production).
+- **Environment setup:** there's no local Docker (see Dev workflow).
+  - [x] The Supabase CLI is a dev dependency, run via `npx supabase`.
+  - [x] The prod project has been created.
+  - [ ] The owner creates the `botc-dev` project in the same region.
+  - [ ] Link the CLI to both projects (the owner runs `npx supabase login`).
+  - [ ] Connect Vercel to the GitHub repo.
 
 ## Open questions
 None right now.
