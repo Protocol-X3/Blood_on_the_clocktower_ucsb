@@ -21,3 +21,4 @@ Status: **Approved** by the owner, 2026-09-27.
 - **HIST-03** A past game's page shows everything from its summary, plus the nominations with their vote counts and the board posts. · *E2E*
 - **HIST-04** Every signed-in user can see any profile's nickname and stats. Game details stay limited as in HIST-02. · *pgTAP, E2E*
 - **HIST-05** The stats and history pages show the exact expected numbers for a seeded set of known games. · *E2E (fixture)*
+- **HIST-06** The admin can delete a user's account on request. Their sign-in identity, email and nickname are removed, and their past game records stay, showing 已删除用户 in place of the nickname. *Approved 2026-09-27; this matches the promise in docs/PRIVACY.md.* · *pgTAP, Integration*

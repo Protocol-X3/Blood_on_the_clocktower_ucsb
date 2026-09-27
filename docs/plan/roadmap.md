@@ -6,7 +6,8 @@
 
 - **Planning:** complete (2026-09-25).
 - **UI mockup:** approved (2026-09-25). See [design.md](design.md).
-- **M0 is NOT started.** It's waiting for the owner's explicit go-ahead. The repo contains only the plan (this folder and CLAUDE.md). There's no app code yet.
+- **Autonomy run STARTED 2026-09-27** (the owner's start signal). Claude is building M0 → M5 without stopping between milestones, per the Run rules.
+- **Current milestone: M0 · Foundation, in progress.**
 
 ## Phase gate
 
@@ -17,7 +18,7 @@
 - Then the owner gives an explicit start signal.
 - After that, Claude works **autonomously through M0 → M5 without stopping between milestones**. At each milestone boundary it posts a progress report but doesn't wait.
 - Claude stops at the end of M5, or earlier on a **stop condition** (below). The final report reminds the owner of the **launch cleanup** (see Before launch).
-- The run hasn't started yet.
+- The run started 2026-09-27.
 
 **Run rules** (the owner's answers, 2026-09-27):
 1. **Rules:** Claude drafts each milestone's rules from requirements.md plus the owner's rules, then proceeds. The owner reviews all rules after the run. Drafted rules are marked `Status: Draft (autonomy run)`.
@@ -39,7 +40,7 @@ The owner will only use the app with the group once it's fully ready, so the mil
 
 | # | Milestone | Scope | Status |
 |---|---|---|---|
-| M0 | Foundation | Scaffold, design system (theme, fonts, tokens), Supabase project + CLI link, deploy pipeline, **the full test harness** (`npm run verify`, CI, coverage and mutation config, rule-coverage check) | Not started |
+| M0 | Foundation | Scaffold, design system (theme, fonts, tokens), Supabase project + CLI link, deploy pipeline, **the full test harness** (`npm run verify`, CI, coverage and mutation config, rule-coverage check) | **In progress** |
 | M1 | Accounts & rooms | Google and guest login, profiles, permission levels + `/admin`, create/join room, seats, DM seat | Not started |
 | M2 | Setup & roles | Official role library seeded in Chinese (LLM-generated, reviewed by the owner), manual script editor, setup wizard, manual and card-draw assignment, shown/actual roles | Not started |
 | M3 | Live game | Phases with the day/night theme, deaths with causes, revives, ghost votes, nominations, vote clock circle, board, end game + summary, bot sandbox (dev only) | Not started |
@@ -77,7 +78,7 @@ A milestone is done **only when every criterion below can be verified**: by a co
 | M0.4 | The app can reach the Supabase project | Integration test: anonymous sign-in and sign-out succeed against the project (this also checks the owner enabled anonymous sign-ins) |
 | M0.5 | The rule checker catches gaps | The checker's own test: an uncovered rule and an unknown ID each fail it |
 | M0.6 | M0 rules hold | All rules in `docs/rules/m0-foundation.md` are covered and pass (G3) |
-| M0.7 | The CLI is linked | `npx supabase migration list` runs without error. This needs the owner's `npx supabase login`, the planned **S1** stop. |
+| M0.7 | The CLI can reach the project | `npx supabase migration list --db-url "$SUPABASE_DB_URL"` runs without error. No `supabase login` is needed. |
 | M0.8 | The readiness check exists | `npm run preflight` checks every automatable entry requirement in "Phase transitions" below and prints pass/fail per item without printing secret values. Its logic has its own unit tests. |
 | M0.9 | The safeguards are in place | The test ledger (QA-08), `check:milestone` (QA-09), branch protection on `main` (QA-10) and the no-skip lint rule (QA-04) all exist and pass |
 
@@ -181,7 +182,6 @@ This is the checklist for the M0–M5 autonomy run. **Secrets go in `.env.local`
 - [ ] Enable the **Google** provider, using an OAuth client from Google Cloud Console (see Google below).
 - [ ] Go to Authentication → URL Configuration and add the redirect URLs: `http://localhost:5173/**` (local dev) and the Vercel URL.
 - [ ] Create `.env.local` at the repo root with `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (for test setup only), `SUPABASE_DB_URL` (the database connection string) and `ADMIN_EMAIL` (the owner's Google account). Claude creates `.gitignore` covering it in M0. **Don't commit or stage the file before then.**
-- [ ] Run `npx supabase login` in a terminal once M0 has installed the CLI. It signs in through your browser, so no token is pasted anywhere. This is the one mid-run step; Claude will ask when it gets there.
 
 **Google**
 - [ ] In Google Cloud Console, create an OAuth client (type "Web application") with the Supabase project's callback URL as an authorized redirect URI.
@@ -217,6 +217,9 @@ None right now.
 
 Newest first. Each entry records what was decided and why.
 
+- **2026-09-27:** **Autonomy run started** (the owner's start signal). The setup checklist is complete: env, Vercel (`botc-ucsb.vercel.app`), redirect URLs, the Google OAuth client (published), and Google + anonymous sign-in, all verified end to end.
+- **2026-09-27:** Rule HIST-06 was added and approved (account deletion and anonymization), matching the promise in `docs/PRIVACY.md`.
+- **2026-09-27:** `[autonomy]` The Supabase CLI connects with `--db-url "$SUPABASE_DB_URL"` instead of `supabase login` and linking. *Why:* it needs no interactive login, which removes the planned mid-run stop. M0.7 was reworded to match.
 - **2026-09-27:** The owner approved the rule catalog, with all eight flagged judgment calls accepted as drafted. They also approved safeguards A–E, which became rules QA-08..QA-11 plus QA-04 and gates G10–G11. Safeguard F (an independent reviewer agent) wasn't chosen.
 - **2026-09-27:** Rule catalog Draft v1 written by Claude at the owner's request: one rule file per phase (139 rules, 8 flagged for review). A phase is done only when every rule in its file, and in earlier phases' files, has a passing test.
 - **2026-09-27:** Phase transitions: advance only when the current phase is done **and** the next phase's entry requirements are verified. `npm run preflight` (an M0 deliverable) checks them.
