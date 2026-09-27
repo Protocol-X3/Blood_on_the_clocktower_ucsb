@@ -12,6 +12,13 @@
 
 **No milestone starts, and no build work begins, until the owner explicitly says to advance.** Approving a decision isn't approval to proceed. When a milestone finishes, report back and stop.
 
+**Planned autonomy run (decided 2026-09-27):**
+- First, the owner provides all the inputs: rules, API access, Vercel, the dev database and so on. See "Waiting on the owner."
+- Then the owner gives an explicit start signal.
+- After that, Claude works **autonomously through M0 → M5 without stopping between milestones**. At each milestone boundary it posts a progress report but doesn't wait.
+- Claude stops at the end of M5, or earlier if it hits a blocker only the owner can resolve.
+- The run hasn't started yet.
+
 ## Milestones
 
 The owner will only use the app with the group once it's fully ready, so the milestones are ordered by technical dependency, not by early table value.
@@ -28,10 +35,28 @@ The owner will only use the app with the group once it's fully ready, so the mil
 
 ## Waiting on the owner
 
-- [ ] Give the go-ahead to start M0.
-- [ ] Create the `botc-dev` Supabase project, in the same region as prod.
-- [ ] Run `npx supabase login` to link the CLI (needs M0's CLI install).
-- [ ] Connect Vercel to the GitHub repo.
+This is the checklist for the M0–M5 autonomy run. **Secrets go in `.env.local` or the dashboards, never in chat or commits.**
+
+**Supabase**
+- [ ] Create the `botc-dev` project, in the same region as prod.
+- [ ] In **both** projects, go to Authentication → Sign In / Providers and enable **Anonymous sign-ins** (for guest login).
+- [ ] In **both** projects, enable the **Google** provider, using an OAuth client from Google Cloud Console (see Google below).
+- [ ] In **both** projects, go to Authentication → URL Configuration and add the redirect URLs: `http://localhost:5173/**` (dev) and the Vercel URL (prod).
+- [ ] Put the dev project's values in `.env.local` at the repo root: URL, publishable key, service-role key (for test setup only), and the database connection string.
+- [ ] Run `npx supabase login` in a terminal once M0 has installed the CLI. It signs in through your browser, so no token is pasted anywhere. This is the one mid-run step; Claude will ask when it gets there.
+
+**Google**
+- [ ] In Google Cloud Console, create an OAuth client (type "Web application") with the Supabase callback URL of each project as an authorized redirect URI.
+
+**Vercel**
+- [ ] Import the GitHub repo in Vercel (framework: Vite).
+- [ ] Set the env vars `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to the **prod** project's values.
+
+**Content and decisions**
+- [ ] The owner's rules, to seed `docs/rules/`.
+- [ ] Which Google account becomes **Admin**.
+- [ ] Answers to the autonomy questions below.
+- [ ] The start signal.
 
 Done:
 - [x] Create the prod Supabase project.
@@ -39,11 +64,18 @@ Done:
 
 ## Open questions
 
-None right now.
+These are for the autonomy run. Each one would otherwise force a stop mid-run.
+
+1. **Rule approval:** the testing process has the owner approving each milestone's rules before tests are written. During the run, should Claude draft rules from requirements.md plus the owner's rules and proceed, with the owner reviewing them all afterwards? (Recommended.) Or should the owner pre-approve everything up front?
+2. **Prod deploys:** may Claude merge to `main` (Vercel auto-deploys) and push migrations to `botc-prod` whenever CI is green? (Recommended: yes, since nobody uses prod yet.) Or should it stay on dev and branches until the owner says otherwise?
+3. **Role library (M2):** should Claude write the Chinese names and **paraphrased** abilities for the official roles itself, for owner review after the run? (Recommended. Paraphrasing avoids copying the publisher's text.) Or will the owner provide a role data file?
+4. **Judgment calls mid-run** (UX details, small scope questions): should Claude decide, follow the plan's spirit and log each call in the decision log for later review? (Recommended.) Or stop and ask?
 
 ## Decision log
 
 Newest first. Each entry records what was decided and why.
+
+- **2026-09-27:** Once the owner has provided all inputs and given the start signal, Claude runs autonomously through M0–M5.
 
 - **2026-09-27:** Swapped the last two milestones. M5 is now Stats & history, and M6 is Scripts (photo import, JSON import). Owner's choice. The M2 manual editor covers scripts until M6.
 
