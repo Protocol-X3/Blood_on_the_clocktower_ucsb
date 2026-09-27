@@ -1,6 +1,6 @@
 # M2 · Setup & roles rules
 
-Status: **Draft v1**, for owner review.
+Status: **Approved** by the owner, 2026-09-27.
 
 ## LIB · Role library
 
@@ -13,7 +13,7 @@ Status: **Draft v1**, for owner review.
 - **SCRIPT-01** Every signed-in user can browse scripts. Only DM-eligible users can create or edit them. · *pgTAP, E2E*
 - **SCRIPT-02** A script has a name (required, at most 30 characters), an optional author and at least one role. No role appears twice in the same script. · *Unit, pgTAP*
 - **SCRIPT-03** A script can mix library roles and custom roles. A custom role needs a Chinese name, a team and an ability, and its ID must be unique. · *pgTAP, E2E*
-- **SCRIPT-04** A custom role created in the editor is saved into the library, marked 自定义, so other scripts can reuse it. **⚑ review:** the plan listed this under M6, but it's pulled forward because the manual editor needs it. · *pgTAP, E2E*
+- **SCRIPT-04** A custom role created in the editor is saved into the library, marked 自定义, so other scripts can reuse it. *Decided (2026-09-27): this is in M2, not M6, because the manual editor needs it.* · *pgTAP, E2E*
 - **SCRIPT-05** A script's roles are shown grouped by team, in this order: Townsfolk, Outsiders, Minions, Demons. · *E2E*
 - **SCRIPT-06** Editing a script later doesn't change games already played with it, because each game keeps its own copy of the roles used. · *pgTAP*
 
@@ -46,7 +46,7 @@ Status: **Draft v1**, for owner review.
 - **DRAW-03** If two players tap the same card at the same moment, exactly one gets it. The other sees "已被抽走，请重选" and picks again. · *Integration (repeated races)*
 - **DRAW-04** After drawing, a player sees their own shown role immediately. Other players only see that the card is taken, and by which seat. · *pgTAP, E2E*
 - **DRAW-05** The DM sees each seat's actual and shown role live as the cards are drawn. · *E2E*
-- **DRAW-06** Before the game starts, the DM can reset the draw and reshuffle, for example after a mistake. **⚑ review.** · *pgTAP, E2E*
+- **DRAW-06** Before the game starts, the DM can reset the draw and reshuffle, for example after a mistake. · *pgTAP, E2E*
 
 ## SECRET · Role secrecy
 

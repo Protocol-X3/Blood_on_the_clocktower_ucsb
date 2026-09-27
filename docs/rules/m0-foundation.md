@@ -1,6 +1,6 @@
 # M0 · Foundation rules
 
-Status: **Draft v1**, for owner review.
+Status: **Approved** by the owner, 2026-09-27.
 
 These rules make sure the base is sound before any feature exists. They stay in force for the whole project.
 
@@ -29,6 +29,10 @@ These rules make sure the base is sound before any feature exists. They stay in 
 - **QA-05** Every active rule has at least one test, and no test names an unknown rule ID. · *Script (the rule checker, with its own tests)*
 - **QA-06** Mutation testing on `src/lib` scores at least 85%, or `npm run mutate` fails. · *Script*
 - **QA-07** `npm run preflight` reports pass or fail for each phase entry requirement and never prints a secret value. · *Unit*
+- **QA-08** A committed test ledger records how many tests name each rule ID and exit-criterion ID. CI fails if any count goes down; counts may only grow, and the ledger is updated in the same commit. *(Safeguard D.)* · *Script, CI*
+- **QA-09** Each exit criterion (e.g. `M1.3`) is named in the test that proves it. `npm run check:milestone M<n>` runs the gates plus every tagged test, and exits 0 only if every criterion of M<n> has a passing test. *(Safeguard A.)* · *Script (with its own tests)*
+- **QA-10** `main` is protected on GitHub: merging requires both CI jobs to pass. *(Safeguard B.)* · *Script (checks the branch protection via `gh api`)*
+- **QA-11** Every finished milestone has a saved report, `docs/reports/M<n>.md`, with the evidence for each criterion, and a git tag `m<n>-done` on the certified commit. *(Safeguard E.)* · *Script*
 
 ## DEP · Deployment
 

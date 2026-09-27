@@ -2,7 +2,7 @@
 
 This is the specification the tests trace to (see architecture.md, Testing strategy). Every behavior of the app is a numbered rule. **Each phase has its own rule file, and a phase is done correctly only when every rule in its file has at least one passing test** (see roadmap.md, Exit criteria).
 
-**Status: Draft v1 (2026-09-27), written by Claude for the owner's review.** Items marked **⚑ review** are judgment calls the owner should confirm or change.
+**Status: Approved by the owner, 2026-09-27.** The judgment calls flagged in the draft were accepted as written, and are marked *Decided*. New rules need the owner's approval before they count.
 
 ## Files by phase
 

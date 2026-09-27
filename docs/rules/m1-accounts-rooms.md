@@ -1,12 +1,12 @@
 # M1 · Accounts & rooms rules
 
-Status: **Draft v1**, for owner review.
+Status: **Approved** by the owner, 2026-09-27.
 
 ## AUTH · Sign-in
 
 - **AUTH-01** A user can sign in with Google. After signing in, they return to the page they were trying to open. · *E2E (up to the Google redirect); full sign-in: owner*
 - **AUTH-02** A guest signs in with only a nickname (游客登录). No email or password is asked for. · *E2E, Integration*
-- **AUTH-03** Nicknames are 1–12 characters after trimming spaces (a Chinese character counts as one) and unique among all users, ignoring letter case. A duplicate shows "昵称已被使用". **⚑ review:** the 12-character limit. · *Unit, pgTAP, E2E*
+- **AUTH-03** Nicknames are 1–12 characters after trimming spaces (a Chinese character counts as one) and unique among all users, ignoring letter case. A duplicate shows "昵称已被使用". *Decided (2026-09-27): the limit is 12 characters.* · *Unit, pgTAP, E2E*
 - **AUTH-04** A new Google user must choose a nickname before entering any room. · *E2E*
 - **AUTH-05** A guest can upgrade to a Google account and keeps their nickname, profile and game history. · *Integration*
 - **AUTH-06** Signing out ends the session on that device. A guest who signs out is warned first (in Chinese) that the guest account can't be recovered. · *E2E*

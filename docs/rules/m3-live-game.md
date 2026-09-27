@@ -1,6 +1,6 @@
 # M3 · Live game rules
 
-Status: **Draft v1**, for owner review.
+Status: **Approved** by the owner, 2026-09-27.
 
 "Everyone sees X" means every member of the room sees it within 3 seconds, without reloading.
 
@@ -9,13 +9,13 @@ Status: **Draft v1**, for owner review.
 - **PHASE-01** A game starts at 第1夜. Each advance goes from night N to day N, then from day N to night N+1. · *Unit, pgTAP*
 - **PHASE-02** Only the DM can advance the phase, and everyone sees the new phase. · *pgTAP, E2E*
 - **PHASE-03** Player screens use the night theme during nights and the day theme during days. · *E2E*
-- **PHASE-04** Phases only move forward; there's no undo. **⚑ review:** the alternative is a DM "撤回" (undo) for mistakes. · *pgTAP*
+- **PHASE-04** Phases only move forward; there's no undo. *Decided (2026-09-27): there's no undo button. Mistakes are fixed with the DM's other actions, such as reviving a player.* · *pgTAP*
 - **PHASE-05** Nominations and votes only happen during days. · *pgTAP*
 
 ## DEATH · Deaths, revives and ghost votes
 
 - **DEATH-01** The DM can mark any living player dead, with a cause: 处决 (executed), 夜间死亡 (died at night) or 其他 (other, with optional text). Everyone sees who died and why. · *pgTAP, E2E*
-- **DEATH-02** The DM can revive a dead player, and everyone sees them alive again. **⚑ review:** a revived player keeps their ghost-vote status in case they die again. The DM can adjust it (DEATH-04). · *pgTAP, E2E*
+- **DEATH-02** The DM can revive a dead player, and everyone sees them alive again. *Decided (2026-09-27): a revived player keeps their ghost-vote status in case they die again, and the DM can adjust it (DEATH-04).* · *pgTAP, E2E*
 - **DEATH-03** Dead players are shown greyed out with a shroud (亡) on every screen. · *E2E*
 - **DEATH-04** A player who dies starts with one unused ghost vote. The DM can manually mark it used or unused. · *pgTAP*
 

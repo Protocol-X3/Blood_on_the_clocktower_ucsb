@@ -64,6 +64,8 @@ A milestone is done **only when every criterion below can be verified**: by a co
 | G7 | The live site serves the milestone's commit | The Vercel production deployment of the commit is `READY`, and the smoke tests pass against it: `BASE_URL=<vercel url> npx playwright test --grep @smoke` |
 | G8 | New screens are captured | Screenshots of each new screen exist, phone-sized for player screens and tablet-sized for DM screens, and are attached to the report |
 | G9 | The plan is up to date | This file's status table is updated, and every `[autonomy]` judgment call is logged |
+| G10 | Every exit criterion is proven by a tagged test | `npm run check:milestone M<n>` exits 0 (QA-09, safeguard A) |
+| G11 | The milestone is certified | `docs/reports/M<n>.md` exists with evidence per criterion, and the tag `m<n>-done` points to the certified commit (QA-11, safeguard E) |
 
 ### M0 · Foundation
 
@@ -77,6 +79,7 @@ A milestone is done **only when every criterion below can be verified**: by a co
 | M0.6 | M0 rules hold | All rules in `docs/rules/m0-foundation.md` are covered and pass (G3) |
 | M0.7 | The CLI is linked | `npx supabase migration list` runs without error. This needs the owner's `npx supabase login`, the planned **S1** stop. |
 | M0.8 | The readiness check exists | `npm run preflight` checks every automatable entry requirement in "Phase transitions" below and prints pass/fail per item without printing secret values. Its logic has its own unit tests. |
+| M0.9 | The safeguards are in place | The test ledger (QA-08), `check:milestone` (QA-09), branch protection on `main` (QA-10) and the no-skip lint rule (QA-04) all exist and pass |
 
 ### M1 · Accounts & rooms
 
@@ -141,7 +144,7 @@ Exit criteria will be defined when the owner opens M6. It isn't part of the auto
 ## Phase transitions
 
 **Advance rule:** Claude moves from phase N to phase N+1 **only when both of these hold**:
-1. **Phase N is done:** every G1–G9 gate and every one of its own exit criteria is verified, with evidence in the report.
+1. **Phase N is done:** every G1–G11 gate and every one of its own exit criteria is verified, with evidence in the report.
 2. **Phase N+1 is ready:** every entry requirement in the table below is verified.
 
 If (1) fails, Claude keeps working on phase N, or stops under S5/S6. If (2) fails because something needs the owner, Claude stops under **S1** and says exactly which requirement is missing. It never starts the next phase partially.
@@ -151,22 +154,22 @@ From M0 on, `npm run preflight` checks the automatable entry requirements. Befor
 | Transition | Entry requirements for the next phase | How each is verified |
 |---|---|---|
 | **Start → M0** | E0.1 The owner has given the explicit start signal | The owner's message in chat |
-| | E0.2 The owner has reviewed the rule catalog (Draft v1) and added any rules of their own | The owner says so in chat, and each rule file's status line is updated to `Approved` |
+| | E0.2 The owner has approved the rule catalog | ✅ Approved 2026-09-27 (each rule file's status line says `Approved`) |
 | | E0.3 `.env.local` exists with `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL` and `ADMIN_EMAIL`, all non-empty | A script checks that each key is present and non-empty, **without printing any value** |
 | | E0.4 The Supabase project is reachable | `GET <url>/auth/v1/settings` with the publishable key returns HTTP 200 |
 | | E0.5 The Vercel project is connected to the repo | `gh api repos/Protocol-X3/Blood_on_the_clocktower_ucsb/deployments` lists a Vercel deployment, after the first push. If none appears within 10 minutes of the first push to `main` → **S1**. |
-| **M0 → M1** | E1.1 M0 is done | M0 report: G1–G9 and M0.1–M0.8 verified |
+| **M0 → M1** | E1.1 M0 is done | M0 report: G1–G11 and M0.1–M0.9 verified |
 | | E1.2 Anonymous sign-ins are enabled | `auth/v1/settings` shows `external.anonymous_users: true`, and the M0.4 integration test passes |
 | | E1.3 The Google provider is enabled | `auth/v1/settings` shows `external.google: true` |
 | | E1.4 Redirect URLs include local dev and the Vercel URL | The E2E test for M1.8 gets a Google redirect instead of a Supabase redirect error. A full sign-in is **(owner)**. |
 | | E1.5 The admin email is configured | `ADMIN_EMAIL` is present (E0.3). The value never appears in the repo. |
-| **M1 → M2** | E2.1 M1 is done | M1 report: G1–G9 and M1.1–M1.8 verified |
+| **M1 → M2** | E2.1 M1 is done | M1 report: G1–G11 and M1.1–M1.8 verified |
 | | E2.2 Test accounts can be created | The integration test setup creates and deletes a throwaway user with the service-role key |
-| **M2 → M3** | E3.1 M2 is done | M2 report: G1–G9 and M2.1–M2.7 verified |
+| **M2 → M3** | E3.1 M2 is done | M2 report: G1–G11 and M2.1–M2.7 verified |
 | | E3.2 A playable setup exists for tests | A seeded fixture script (Trouble Brewing) loads, and setup can reach 开始游戏 in the test environment |
-| **M3 → M4** | E4.1 M3 is done | M3 report: G1–G9 and M3.1–M3.7 verified |
-| **M4 → M5** | E5.1 M4 is done | M4 report: G1–G9 and M4.1–M4.4 verified |
-| **M5 → end of run** | M5 is done | M5 report: G1–G9 and M5.1–M5.4 verified, then M5.5 (final report) → **stop** |
+| **M3 → M4** | E4.1 M3 is done | M3 report: G1–G11 and M3.1–M3.7 verified |
+| **M4 → M5** | E5.1 M4 is done | M4 report: G1–G11 and M4.1–M4.4 verified |
+| **M5 → end of run** | M5 is done | M5 report: G1–G11 and M5.1–M5.4 verified, then M5.5 (final report) → **stop** |
 | **→ M6** (outside the run) | The owner explicitly opens M6, an Anthropic API key is available as a Supabase Edge Function secret, and M6's exit criteria have been written | The owner's message. `npx supabase secrets list` shows `ANTHROPIC_API_KEY` (name only). |
 
 ## Waiting on the owner
@@ -188,14 +191,14 @@ This is the checklist for the M0–M5 autonomy run. **Secrets go in `.env.local`
 - [ ] Set the env vars `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to the project's values.
 
 **Content and decisions**
-- [ ] Review the rule catalog Draft v1 (`docs/rules/`, 139 rules across six phase files, 8 flagged **⚑ review**) and add any rules of your own.
-- [ ] Decide on the "done" safeguards A–F (see Open questions).
 - [ ] The start signal.
 
 Done:
 - [x] Create the Supabase project.
 - [x] Decide the environment setup (see the decision log, 2026-09-27).
 - [x] Answer the autonomy questions (see Run rules).
+- [x] Approve the rule catalog (2026-09-27).
+- [x] Approve the "done" safeguards A–E (2026-09-27).
 - [x] Name the admin Google account. It goes in `.env.local` as `ADMIN_EMAIL`, never in the repo, because the repo is **public**.
 
 ## Before launch
@@ -208,20 +211,13 @@ Do this before the group's first real game night. Claude reminds the owner at th
 
 ## Open questions
 
-1. **Safeguards for proving each phase is done** (proposed 2026-09-27, awaiting the owner):
-   - **A.** Tag each exit criterion in the test that proves it; `npm run check:milestone M<n>` exits 0 only if every criterion has a passing test.
-   - **B.** Branch protection on `main`: GitHub refuses merges unless CI is green.
-   - **C.** A lint rule that fails on skipped or focused tests. This is now also rule QA-04.
-   - **D.** A test ledger: CI fails if the number of tests for any rule or criterion goes down.
-   - **E.** A tagged, saved report per milestone (`docs/reports/M<n>.md`, git tag `m<n>-done`).
-   - **F.** *(optional)* An independent reviewer agent audits each milestone before Claude advances.
-
-   Recommended: A–E, and F at the owner's choice.
+None right now.
 
 ## Decision log
 
 Newest first. Each entry records what was decided and why.
 
+- **2026-09-27:** The owner approved the rule catalog, with all eight flagged judgment calls accepted as drafted. They also approved safeguards A–E, which became rules QA-08..QA-11 plus QA-04 and gates G10–G11. Safeguard F (an independent reviewer agent) wasn't chosen.
 - **2026-09-27:** Rule catalog Draft v1 written by Claude at the owner's request: one rule file per phase (139 rules, 8 flagged for review). A phase is done only when every rule in its file, and in earlier phases' files, has a passing test.
 - **2026-09-27:** Phase transitions: advance only when the current phase is done **and** the next phase's entry requirements are verified. `npm run preflight` (an M0 deliverable) checks them.
 - **2026-09-27:** The admin is the owner's Google account. Its email stays out of the repo, which is public, and is configured as `ADMIN_EMAIL` in `.env.local`, then applied to the database at setup.

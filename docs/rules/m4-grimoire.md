@@ -1,6 +1,6 @@
 # M4 · Grimoire rules
 
-Status: **Draft v1**, for owner review.
+Status: **Approved** by the owner, 2026-09-27.
 
 ## TOKEN · Reminder tokens
 
