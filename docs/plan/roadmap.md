@@ -57,7 +57,7 @@ A milestone is done **only when every criterion below can be verified**: by a co
 |---|---|---|
 | G1 | The local gate passes | `npm run verify` exits 0 |
 | G2 | CI is green on the milestone's final commit on `main` | `gh run list --branch main --limit 1` shows the CI workflow with both jobs `success` |
-| G3 | Every rule in the milestone's rule files has a test | `npm run check:rules` exits 0 (included in G1) |
+| G3 | **Every rule in the phase's rule file (`docs/rules/m<n>-*.md`) and all earlier phases' files has a passing test** | `npm run check:rules` exits 0, and the tests naming those rule IDs pass (both included in G1/G2) |
 | G4 | Coverage gates met | `src/lib` has 100% lines and ≥95% branches; the rest ≥70% (included in G1) |
 | G5 | Mutation score ≥85% on `src/lib` | `npm run mutate` exits 0 |
 | G6 | The database matches the migrations | `npx supabase migration list` shows every local migration applied remotely |
@@ -74,7 +74,7 @@ A milestone is done **only when every criterion below can be verified**: by a co
 | M0.3 | Every test layer runs at least one real test | A unit test, a fast-check property test, E2E on the `phone` and `tablet` profiles, pgTAP in the CI `database` job, an integration test against the Supabase project, and Stryker producing a score |
 | M0.4 | The app can reach the Supabase project | Integration test: anonymous sign-in and sign-out succeed against the project (this also checks the owner enabled anonymous sign-ins) |
 | M0.5 | The rule checker catches gaps | The checker's own test: an uncovered rule and an unknown ID each fail it |
-| M0.6 | Baseline rules exist and are covered | `docs/rules/` has at least SEC-01 (RLS on every public table) and UI-01..03 (no horizontal scroll, 44px targets, Chinese UI) |
+| M0.6 | M0 rules hold | All rules in `docs/rules/m0-foundation.md` are covered and pass (G3) |
 | M0.7 | The CLI is linked | `npx supabase migration list` runs without error. This needs the owner's `npx supabase login`, the planned **S1** stop. |
 | M0.8 | The readiness check exists | `npm run preflight` checks every automatable entry requirement in "Phase transitions" below and prints pass/fail per item without printing secret values. Its logic has its own unit tests. |
 
@@ -82,7 +82,7 @@ A milestone is done **only when every criterion below can be verified**: by a co
 
 | # | Criterion | How it's verified |
 |---|---|---|
-| M1.1 | Rules are written | AUTH, PERM and ROOM rule files exist and are covered (G3) |
+| M1.1 | M1 rules hold | All rules in `docs/rules/m1-accounts-rooms.md` are covered and pass (G3) |
 | M1.2 | Every M1 action is permission-checked | pgTAP permission matrix: every M1 RPC × {admin, DM-eligible, player, guest, anonymous} × {room open, game running} has an expected allow or deny, and all pass |
 | M1.3 | Guests can play | E2E (phone): guest login with a nickname → join a room by code → take a seat. A second browser sees the seat taken within 3 s (realtime). |
 | M1.4 | DM-eligible users run rooms | E2E (tablet): a DM-eligible test user creates a room, takes the DM seat and leaves it. A player can't take the DM seat. |
@@ -95,7 +95,7 @@ A milestone is done **only when every criterion below can be verified**: by a co
 
 | # | Criterion | How it's verified |
 |---|---|---|
-| M2.1 | Rules are written | SETUP, SCRIPT and DRAW rule files exist and are covered |
+| M2.1 | M2 rules hold | All rules in `docs/rules/m2-setup-roles.md` are covered and pass (G3) |
 | M2.2 | The role library is complete for the base editions | A test checks that every character of Trouble Brewing, Bad Moon Rising and Sects & Violets (no Travellers or Fabled) exists with an ID, Chinese name, team and a Chinese ability. The wording is **(owner)**. |
 | M2.3 | Scripts can be built by hand | E2E: create a script from library roles plus one custom role, save it, reopen it |
 | M2.4 | Setup works in both modes | E2E (tablet DM + phone players): manual assignment and card draw, each at 5 and 15 players, through to 开始游戏 |
@@ -107,7 +107,7 @@ A milestone is done **only when every criterion below can be verified**: by a co
 
 | # | Criterion | How it's verified |
 |---|---|---|
-| M3.1 | Rules are written | PHASE, DEATH, NOM, VOTE, BOARD and END rule files exist and are covered |
+| M3.1 | M3 rules hold | All rules in `docs/rules/m3-live-game.md` are covered and pass (G3) |
 | M3.2 | Vote logic is proven | Property tests in `src/lib`: circle order (starts after the nominee, ends on the nominee), threshold, ties, ghost votes spent once |
 | M3.3 | The whole game model holds | Model-based simulation in CI: ≥200 random full games through the real RPCs with zero invariant violations |
 | M3.4 | A full game works end to end | E2E: 1 DM (tablet) + 5 players (phone), from lobby → setup → nights and days with a nomination, the vote circle, a death, a revive, a ghost vote and a board post → end → summary |
@@ -119,7 +119,7 @@ A milestone is done **only when every criterion below can be verified**: by a co
 
 | # | Criterion | How it's verified |
 |---|---|---|
-| M4.1 | Rules are written | TOKEN and LOG rule files exist and are covered |
+| M4.1 | M4 rules hold | All rules in `docs/rules/m4-grimoire.md` are covered and pass (G3) |
 | M4.2 | Grimoire data is DM-only | pgTAP: only the room's DM can read or write tokens and log entries until the game ends, and then participants can read them |
 | M4.3 | Grimoire layout fits the devices | E2E and screenshots: the circle layout at 1024×768 and 1366×1024. On a phone, the list layout with no horizontal scroll. |
 | M4.4 | The summary shows everything | E2E: after the game ends, the summary shows actual and shown roles, alignments, deaths and the DM log |
@@ -128,7 +128,7 @@ A milestone is done **only when every criterion below can be verified**: by a co
 
 | # | Criterion | How it's verified |
 |---|---|---|
-| M5.1 | Rules are written | STATS and HIST rule files exist and are covered |
+| M5.1 | M5 rules hold | All rules in `docs/rules/m5-stats-history.md` are covered and pass (G3) |
 | M5.2 | Stats are computed correctly | Unit and property tests: win rate overall and by team, games played, most-played roles, games as DM. Guests are excluded, and the **final** alignment is used. |
 | M5.3 | History is visible to the right people | pgTAP: a past game is readable by its participants |
 | M5.4 | The pages show the right numbers | E2E: with a seeded fixture of known games, the profile and game-history pages show the exact expected numbers |
@@ -151,7 +151,7 @@ From M0 on, `npm run preflight` checks the automatable entry requirements. Befor
 | Transition | Entry requirements for the next phase | How each is verified |
 |---|---|---|
 | **Start → M0** | E0.1 The owner has given the explicit start signal | The owner's message in chat |
-| | E0.2 The owner's rules have been received | The rules are in `docs/rules/`, or were given in chat and saved there |
+| | E0.2 The owner has reviewed the rule catalog (Draft v1) and added any rules of their own | The owner says so in chat, and each rule file's status line is updated to `Approved` |
 | | E0.3 `.env.local` exists with `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL` and `ADMIN_EMAIL`, all non-empty | A script checks that each key is present and non-empty, **without printing any value** |
 | | E0.4 The Supabase project is reachable | `GET <url>/auth/v1/settings` with the publishable key returns HTTP 200 |
 | | E0.5 The Vercel project is connected to the repo | `gh api repos/Protocol-X3/Blood_on_the_clocktower_ucsb/deployments` lists a Vercel deployment, after the first push. If none appears within 10 minutes of the first push to `main` → **S1**. |
@@ -188,7 +188,8 @@ This is the checklist for the M0–M5 autonomy run. **Secrets go in `.env.local`
 - [ ] Set the env vars `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to the project's values.
 
 **Content and decisions**
-- [ ] The owner's rules, to seed `docs/rules/`.
+- [ ] Review the rule catalog Draft v1 (`docs/rules/`, 139 rules across six phase files, 8 flagged **⚑ review**) and add any rules of your own.
+- [ ] Decide on the "done" safeguards A–F (see Open questions).
 - [ ] The start signal.
 
 Done:
@@ -207,12 +208,21 @@ Do this before the group's first real game night. Claude reminds the owner at th
 
 ## Open questions
 
-None right now.
+1. **Safeguards for proving each phase is done** (proposed 2026-09-27, awaiting the owner):
+   - **A.** Tag each exit criterion in the test that proves it; `npm run check:milestone M<n>` exits 0 only if every criterion has a passing test.
+   - **B.** Branch protection on `main`: GitHub refuses merges unless CI is green.
+   - **C.** A lint rule that fails on skipped or focused tests. This is now also rule QA-04.
+   - **D.** A test ledger: CI fails if the number of tests for any rule or criterion goes down.
+   - **E.** A tagged, saved report per milestone (`docs/reports/M<n>.md`, git tag `m<n>-done`).
+   - **F.** *(optional)* An independent reviewer agent audits each milestone before Claude advances.
+
+   Recommended: A–E, and F at the owner's choice.
 
 ## Decision log
 
 Newest first. Each entry records what was decided and why.
 
+- **2026-09-27:** Rule catalog Draft v1 written by Claude at the owner's request: one rule file per phase (139 rules, 8 flagged for review). A phase is done only when every rule in its file, and in earlier phases' files, has a passing test.
 - **2026-09-27:** Phase transitions: advance only when the current phase is done **and** the next phase's entry requirements are verified. `npm run preflight` (an M0 deliverable) checks them.
 - **2026-09-27:** The admin is the owner's Google account. Its email stays out of the repo, which is public, and is configured as `ADMIN_EMAIL` in `.env.local`, then applied to the database at setup.
 - **2026-09-27:** Every milestone has verifiable exit criteria (the G1–G9 gates, plus per-milestone criteria), and the autonomy run has stop conditions S1–S6. *Why:* the owner wants clear, checkable stopping points for an unattended run.
