@@ -6,13 +6,14 @@
 
 - **Planning:** complete (2026-09-25).
 - **UI mockup:** approved (2026-09-25). See [design.md](design.md).
-- **Autonomy run STARTED 2026-09-27** (the owner's start signal). Claude is building M0 → M5 without stopping between milestones, per the Run rules.
+- **Autonomy run** M0 → M5: started 2026-09-27 (the owner's start signal), finished 2026-09-28.
 - **M0 · Foundation: DONE** (certified 2026-09-27, tag `m0-done`, [report](../reports/M0.md)).
 - **M1 · Accounts & rooms: DONE** (certified 2026-09-27, tag `m1-done`, [report](../reports/M1.md)).
 - **M2 · Setup & roles: DONE** (certified 2026-09-27, tag `m2-done`, [report](../reports/M2.md)).
 - **M3 · Live game: DONE** (certified 2026-09-27, tag `m3-done`, [report](../reports/M3.md)).
 - **M4 · Grimoire: DONE** (certified 2026-09-28, tag `m4-done`, [report](../reports/M4.md)).
-- **Current milestone: M5 · Stats & history, in progress.**
+- **M5 · Stats & history: DONE** (certified 2026-09-28, tag `m5-done`, [report](../reports/M5.md)).
+- **Autonomy run COMPLETE (2026-09-28).** See [the final report](../reports/RUN.md). Claude has stopped. **M6 waits for the owner's go-ahead.**
 - **Rules in force through: M5.** `npm run check:rules` reads this line: every rule of these phases must have a test. Each milestone's PR bumps it along with that milestone's tests.
 
 ## Phase gate
@@ -51,7 +52,7 @@ The owner will only use the app with the group once it's fully ready, so the mil
 | M2 | Setup & roles | Official role library seeded in Chinese (LLM-generated, reviewed by the owner), manual script editor, setup wizard, manual and card-draw assignment, shown/actual roles | **Done** ([report](../reports/M2.md)) |
 | M3 | Live game | Phases with the day/night theme, deaths with causes, revives, ghost votes, nominations, vote clock circle, board, end game + summary, bot sandbox (dev only) | **Done** ([report](../reports/M3.md)) |
 | M4 | Grimoire | Reminder tokens, per-seat DM log, circle grimoire layout | **Done** ([report](../reports/M4.md)) |
-| M5 | Stats & history | Profile stats, game history pages | **In progress** |
+| M5 | Stats & history | Profile stats, game history pages | **Done** ([report](../reports/M5.md)) |
 | M6 | Scripts | Photo → Claude → review form, JSON import, custom roles saved into the library. Until then, scripts are entered with M2's manual editor. | Not started |
 
 ## Exit criteria (Definition of Done)
@@ -184,20 +185,20 @@ From M0 on, `npm run preflight` checks the automatable entry requirements. Befor
 This is the checklist for the M0–M5 autonomy run. **Secrets go in `.env.local` or the dashboards, never in chat or commits.**
 
 **Supabase** (the one existing project, used as the dev database until launch)
-- [ ] Go to Authentication → Sign In / Providers and enable **Anonymous sign-ins** (for guest login).
-- [ ] Enable the **Google** provider, using an OAuth client from Google Cloud Console (see Google below).
-- [ ] Go to Authentication → URL Configuration and add the redirect URLs: `http://localhost:5173/**` (local dev) and the Vercel URL.
-- [ ] Create `.env.local` at the repo root with `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (for test setup only), `SUPABASE_DB_URL` (the database connection string) and `ADMIN_EMAIL` (the owner's Google account). Claude creates `.gitignore` covering it in M0. **Don't commit or stage the file before then.**
+- [x] Go to Authentication → Sign In / Providers and enable **Anonymous sign-ins** (for guest login).
+- [x] Enable the **Google** provider, using an OAuth client from Google Cloud Console (see Google below).
+- [x] Go to Authentication → URL Configuration and add the redirect URLs: `http://localhost:5173/**` (local dev) and the Vercel URL.
+- [x] Create `.env.local` at the repo root with `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (for test setup only), `SUPABASE_DB_URL` (the database connection string) and `ADMIN_EMAIL` (the owner's Google account). Claude creates `.gitignore` covering it in M0. **Don't commit or stage the file before then.**
 
 **Google**
-- [ ] In Google Cloud Console, create an OAuth client (type "Web application") with the Supabase project's callback URL as an authorized redirect URI.
+- [x] In Google Cloud Console, create an OAuth client (type "Web application") with the Supabase project's callback URL as an authorized redirect URI.
 
 **Vercel**
-- [ ] Import the GitHub repo in Vercel (framework: Vite).
-- [ ] Set the env vars `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to the project's values.
+- [x] Import the GitHub repo in Vercel (framework: Vite).
+- [x] Set the env vars `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to the project's values.
 
 **Content and decisions**
-- [ ] The start signal.
+- [x] The start signal.
 
 Done:
 - [x] Create the Supabase project.
@@ -224,6 +225,8 @@ None right now.
 
 Newest first. Each entry records what was decided and why.
 
+- **2026-09-28:** **M5 certified** (`m5-done` on `4cea352`). All M5.1–M5.5 and G1–G11 passed. **The M0–M5 autonomy run is complete**, and Claude has stopped per M5.5. [Final report](../reports/RUN.md).
+- **2026-09-28:** `[autonomy]` M5 judgment calls: an ended game is readable only by its participants and the admin (onlookers lose access at the end); anyone sees a profile's stats, but the game list shows only the games the viewer may open; history rows show the starting role; the admin can't delete their own account or one sitting in a running game. Details in [the M5 report](../reports/M5.md).
 - **2026-09-28:** **M4 certified** (`m4-done` on `d11acb0`). All M4.1–M4.4 and G1–G11 passed. M5 entry requirements are met.
 - **2026-09-28:** `[autonomy]` M4 judgment calls: tokens are 中毒, 醉酒, any script reminder or custom text (≤ 8 characters); tokens and the DM log become visible to the game's participants after it ends; log entries (≤ 500 characters) belong to a seat or the whole game and keep their phase when edited; the DM may give two seats the same role mid-game; local E2E runs use 3 workers. Details in [the M4 report](../reports/M4.md).
 - **2026-09-27:** **M3 certified** (`m3-done` on `2743ba7`). All M3.1–M3.7 and G1–G11 passed. M4 entry requirements are met.
