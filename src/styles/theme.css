@@ -1,0 +1,191 @@
+@import 'tailwindcss';
+
+/*
+ * "Candlelit grimoire" design tokens (docs/plan/design.md).
+ * Three themes, chosen with data-theme on a ThemeScope:
+ *   day      — player screens by day: warm parchment
+ *   night    — player screens by night: midnight blue, stars
+ *   grimoire — the DM console: always dark, candlelit
+ * Components use only the semantic tokens below, never raw hex values.
+ */
+
+@theme {
+  --font-serif: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  --font-sans: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  --color-parchment: #f1e6cc;
+  --color-parchment-deep: #e6d6b2;
+  --color-parchment-ink: #2b2118;
+
+  --animate-twinkle: twinkle 3.2s ease-in-out infinite;
+  --animate-pulse-ring: pulse-ring 1.4s ease-out infinite;
+  --animate-flip-in: flip-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  @keyframes twinkle {
+    0%,
+    100% {
+      opacity: 0.25;
+    }
+    50% {
+      opacity: 0.9;
+    }
+  }
+  @keyframes pulse-ring {
+    0% {
+      box-shadow: 0 0 0 0 var(--blood-glow);
+    }
+    100% {
+      box-shadow: 0 0 0 12px transparent;
+    }
+  }
+  @keyframes flip-in {
+    0% {
+      transform: perspective(600px) rotateY(90deg) scale(1.05);
+    }
+    100% {
+      transform: perspective(600px) rotateY(0) scale(1);
+    }
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-gold: var(--gold);
+  --color-gold-ink: var(--gold-ink);
+  --color-gold-strong: var(--gold-strong);
+  --color-blood: var(--blood);
+  --color-blood-text: var(--blood-text);
+  --color-townsfolk: var(--townsfolk);
+  --color-outsider: var(--outsider);
+  --color-minion: var(--minion);
+  --color-demon: var(--demon);
+  --color-townsfolk-text: var(--townsfolk-text);
+  --color-outsider-text: var(--outsider-text);
+  --color-minion-text: var(--minion-text);
+  --color-demon-text: var(--demon-text);
+}
+
+:root,
+[data-theme='day'] {
+  color-scheme: light;
+  --bg: #f1e6cc;
+  --surface: #fbf6ea;
+  --surface-2: #f6eedc;
+  --line: #d8c49a;
+  --ink: #2b2118;
+  --ink-muted: #54452f;
+  --ink-faint: #665236;
+  --gold: #8f6214;
+  --gold-ink: #fff8e6;
+  --gold-strong: #704d0f;
+  --gold-glow: rgb(122 85 18 / 0.35);
+  --blood: #8e1b28;
+  --blood-text: #861a26;
+  --blood-glow: rgb(142 27 40 / 0.4);
+  --townsfolk: #2f62a8;
+  --outsider: #1e8585;
+  --minion: #c45a24;
+  --demon: #a3182b;
+  --townsfolk-text: #1d4a85;
+  --outsider-text: #125e5e;
+  --minion-text: #8a3b14;
+  --demon-text: #861a26;
+}
+
+[data-theme='night'] {
+  color-scheme: dark;
+  --bg: #0a0f1e;
+  --surface: #131a30;
+  --surface-2: #0f1528;
+  --line: #2a3456;
+  --ink: #e8ddc4;
+  --ink-muted: #b3bad0;
+  --ink-faint: #969fbb;
+  --gold: #e3c27a;
+  --gold-ink: #1b1405;
+  --gold-strong: #e3c27a;
+  --gold-glow: rgb(227 194 122 / 0.25);
+  --blood: #e0505f;
+  --blood-text: #f3a3ae;
+  --blood-glow: rgb(224 80 95 / 0.4);
+  --townsfolk: #4c82d1;
+  --outsider: #2fa3a3;
+  --minion: #e0703a;
+  --demon: #c8283c;
+  --townsfolk-text: #a9c7f0;
+  --outsider-text: #93d9d9;
+  --minion-text: #f6b995;
+  --demon-text: #f39aa5;
+}
+
+[data-theme='grimoire'] {
+  color-scheme: dark;
+  --bg: #0b1020;
+  --surface: #10172b;
+  --surface-2: #151d35;
+  --line: #2a3456;
+  --ink: #e8ddc4;
+  --ink-muted: #b3bad0;
+  --ink-faint: #969fbb;
+  --gold: #c9a55a;
+  --gold-ink: #1b1405;
+  --gold-strong: #e3c27a;
+  --gold-glow: rgb(201 165 90 / 0.25);
+  --blood: #e0505f;
+  --blood-text: #f3a3ae;
+  --blood-glow: rgb(224 80 95 / 0.4);
+  --townsfolk: #4c82d1;
+  --outsider: #2fa3a3;
+  --minion: #e0703a;
+  --demon: #c8283c;
+  --townsfolk-text: #a9c7f0;
+  --outsider-text: #93d9d9;
+  --minion-text: #f6b995;
+  --demon-text: #f39aa5;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    background: #0a0f1e;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+}
+
+/* UI-06: honor reduced motion everywhere. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@utility paper-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.25 0 0 0 0 0.1 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@utility gilded {
+  box-shadow:
+    inset 0 0 0 6px var(--color-parchment),
+    inset 0 0 0 7px #b8923f,
+    0 30px 70px -20px rgb(0 0 0 / 0.6);
+}

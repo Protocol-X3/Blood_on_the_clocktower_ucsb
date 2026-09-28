@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the test ledger compares against origin/main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run check:rules
+      - run: npm run ledger:check
+      - run: npm run test:unit
+
+  full-stack:
+    name: Full stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ADMIN_EMAIL: admin@example.test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start a fresh Supabase (Docker)
+        run: supabase start -x studio,imgproxy,logflare,vector,supavisor,edge-runtime
+      - name: Point the app and tests at it
+        run: |
+          eval "$(supabase status -o env)"
+          {
+            echo "VITE_SUPABASE_URL=$API_URL"
+            echo "VITE_SUPABASE_PUBLISHABLE_KEY=${PUBLISHABLE_KEY:-$ANON_KEY}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SECRET_KEY:-$SERVICE_ROLE_KEY}"
+            echo "SUPABASE_DB_URL=$DB_URL"
+          } >> "$GITHUB_ENV"
+      - run: npm run test:integration
+      - run: npm run test:db
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - run: npm run secrets:dist
+      - run: npm run secrets:repo
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
