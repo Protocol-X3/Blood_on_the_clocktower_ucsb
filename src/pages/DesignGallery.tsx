@@ -1,10 +1,12 @@
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
-import { Ornament } from '@/components/ui/Ornament';
 import { Panel } from '@/components/ui/Panel';
 import { RoleToken } from '@/components/ui/RoleToken';
 import { StarField } from '@/components/ui/StarField';
 import { ThemeScope, type ThemeName } from '@/components/ui/ThemeScope';
+import { SeatCircle, type CircleSeat } from '@/features/live/SeatCircle';
+import { HiddenRole } from '@/features/roles/HiddenRole';
+import { RoleCard } from '@/features/roles/RoleCard';
 import { TEAM_LABEL, TEAMS, type Team } from '@/lib/game/teams';
 
 const SAMPLE: Record<Team, { glyph: string; name: string }> = {
@@ -13,6 +15,18 @@ const SAMPLE: Record<Team, { glyph: string; name: string }> = {
   minion: { glyph: '毒', name: '投毒者' },
   demon: { glyph: '魔', name: '小恶魔' },
 };
+
+const CARD = { name: '共情者', team: 'townsfolk' as const, glyph: '共', ability: '每个夜晚，你会得知与你相邻的两名存活玩家之中，有几名属于邪恶阵营。' };
+
+const CIRCLE: CircleSeat[] = [1, 2, 3, 4, 5, 6, 7].map((seat) => ({
+  seat,
+  label: `玩家${seat}`,
+  alive: seat !== 2 && seat !== 5,
+  ghostVoteUsed: seat === 5,
+  vote: 'idle',
+  raised: false,
+  mine: seat === 3,
+}));
 
 const THEMES: { theme: ThemeName; title: string }[] = [
   { theme: 'day', title: '白天 · 玩家' },
@@ -64,17 +78,13 @@ export function DesignGallery() {
               <p className="m-0 text-sm leading-relaxed">我是占卜师。昨晚查验 4号 和 6号，结果：其中有恶魔。</p>
             </Panel>
 
-            <Panel variant="gilded" padding="lg" className="mx-auto flex w-full max-w-72 flex-col items-center text-center">
-              <RoleToken glyph="共" team="townsfolk" label="共情者" size="xl" />
-              <h3 className="mt-5 font-serif text-3xl font-black tracking-[0.2em]">共情者</h3>
-              <span className="mt-2 rounded-full border border-[#2f62a8]/40 bg-[#e3ecf8] px-2.5 py-0.5 text-xs font-medium text-[#1d4a85]">
-                镇民 · 善良阵营
-              </span>
-              <Ornament className="mt-4" />
-              <p className="mt-3 text-sm leading-7 text-[#3f3325]">
-                每个夜晚，你会得知与你相邻的两名存活玩家之中，有几名属于邪恶阵营。
-              </p>
-            </Panel>
+            <RoleCard role={CARD} className="max-w-72" />
+
+            {/* SECRET-05: the same card, face down until the player taps it. */}
+            <HiddenRole role={CARD} caption="我的角色 · 3号" />
+
+            {/* DEATH-03: dead seats are greyed and crossed out. */}
+            <SeatCircle label="示例座位" size={220} seats={CIRCLE} center={<span className="font-serif text-2xl font-black">5</span>} />
           </div>
         </ThemeScope>
       ))}

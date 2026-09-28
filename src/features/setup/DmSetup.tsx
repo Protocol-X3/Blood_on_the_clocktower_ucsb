@@ -11,17 +11,27 @@ import { checkComposition, countByTeam } from '@/lib/game/composition';
 import { recommendedTeamCounts } from '@/lib/game/teamCounts';
 import { TEAM_LABEL, TEAMS } from '@/lib/game/teams';
 import { supabase, type Game } from '@/services/supabase';
+import { BasicsFields, type AssignmentMode } from './BasicsFields';
+import { useScripts } from './useScripts';
 
 type Act = (run: () => PromiseLike<{ error: unknown }>, after?: () => void) => Promise<void>;
 
-/** The DM's setup wizard after "basics": composition, then assignment or draw, then start (SETUP-06). */
+type Step = 'basics' | 'composition' | 'assign';
+const STEP_INDEX: Record<Step, number> = { basics: 0, composition: 1, assign: 2 };
+
+/**
+ * The DM's setup wizard once a setup exists: basics, composition, then assignment or
+ * draw, then start (SETUP-06). Every step's 返回 goes back one step; from basics it
+ * returns to the lobby and discards the setup.
+ */
 export function DmSetup({ game, members, act }: { game: Game; members: Member[]; act: Act }) {
   const { data, reload } = useGameData(game.id);
-  const [editing, setEditing] = useState(false);
+  // null until the DM moves: then the step follows from the saved composition.
+  const [chosen, setChosen] = useState<Step | null>(null);
   if (!data) return null;
   const seatCount = game.seat_count ?? 0;
   const compositionDone = data.composition.length === seatCount;
-  const step = !compositionDone || editing ? 'composition' : 'assign';
+  const step: Step = chosen ?? (compositionDone ? 'assign' : 'composition');
   const run: Act = async (fn, after) => {
     await act(fn, after);
     await reload();
@@ -31,8 +41,8 @@ export function DmSetup({ game, members, act }: { game: Game; members: Member[];
     <div className="flex flex-col gap-5" data-testid="setup-wizard">
       <ol className="flex items-center gap-2 text-sm" aria-label="配置步骤">
         {['基础设置', '角色配置', game.assignment_mode === 'draw' ? '抽卡' : '分配角色', '开始游戏'].map((label, i) => {
-          const current = (step === 'composition' ? 1 : 2) === i;
-          const done = i === 0 || (i === 1 && step === 'assign');
+          const current = STEP_INDEX[step] === i;
+          const done = i < STEP_INDEX[step];
           return (
             <li key={label} className="flex items-center gap-2" aria-current={current ? 'step' : undefined}>
               <span
@@ -50,21 +60,64 @@ export function DmSetup({ game, members, act }: { game: Game; members: Member[];
         })}
       </ol>
 
-      {step === 'composition' ? (
+      {step === 'basics' ? (
+        <BasicsStep
+          game={game}
+          onBack={() => run(() => supabase.rpc('cancel_setup', { p_game: game.id }))}
+          onNext={(script, mode) =>
+            script === game.script_id && mode === game.assignment_mode
+              ? setChosen('composition')
+              : run(() => supabase.rpc('update_setup', { p_game: game.id, p_script: script, p_mode: mode }), () => setChosen('composition'))
+          }
+        />
+      ) : step === 'composition' ? (
         <CompositionStep
           game={game}
           roles={data.roles}
           initial={data.composition.map((c) => ({ role: c.role_id, shown: c.shown_role_id }))}
-          onBack={() => (compositionDone ? setEditing(false) : run(() => supabase.rpc('cancel_setup', { p_game: game.id })))}
-          backLabel={compositionDone ? '取消修改' : '返回基础设置'}
-          onSave={(entries) =>
-            run(() => supabase.rpc('set_composition', { p_game: game.id, p_roles: entries }), () => setEditing(false))
+          onBack={() => setChosen('basics')}
+          onSave={(entries, unchanged) =>
+            unchanged
+              ? setChosen('assign')
+              : run(() => supabase.rpc('set_composition', { p_game: game.id, p_roles: entries }), () => setChosen('assign'))
           }
         />
       ) : (
-        <AssignStep game={game} data={data} members={members} run={run} onEditComposition={() => setEditing(true)} />
+        <AssignStep game={game} data={data} members={members} run={run} onBack={() => setChosen('composition')} />
       )}
     </div>
+  );
+}
+
+/** SETUP-06: the basics again, showing the current script and mode. */
+function BasicsStep({ game, onBack, onNext }: { game: Game; onBack: () => void; onNext: (script: string, mode: AssignmentMode) => void }) {
+  const scripts = useScripts();
+  const [script, setScript] = useState(game.script_id ?? '');
+  const [mode, setMode] = useState<AssignmentMode>(game.assignment_mode === 'manual' ? 'manual' : 'draw');
+  return (
+    <>
+      <Panel className="flex flex-col gap-4" aria-label="基础设置">
+        <h2 className="font-serif text-lg font-bold tracking-wider text-gold-strong">基础设置 · {game.seat_count} 人</h2>
+        <BasicsFields scripts={scripts ?? []} script={script} onScript={setScript} mode={mode} onMode={setMode} />
+        {script !== game.script_id ? (
+          <p className="text-sm text-minion-text" role="status">
+            更换剧本会清空已选的角色配置。
+          </p>
+        ) : mode !== game.assignment_mode ? (
+          <p className="text-sm text-minion-text" role="status">
+            更换分配方式会清空已分配或已抽取的角色。
+          </p>
+        ) : null}
+      </Panel>
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button variant="ghost" onClick={onBack}>
+          返回
+        </Button>
+        <Button disabled={!scripts || !script} onClick={() => onNext(script, mode)}>
+          下一步
+        </Button>
+      </div>
+    </>
   );
 }
 
@@ -74,14 +127,13 @@ function CompositionStep({
   initial,
   onSave,
   onBack,
-  backLabel,
 }: {
   game: Game;
   roles: GameRole[];
   initial: { role: string; shown: string }[];
-  onSave: (entries: { role: string; shown: string }[]) => void;
+  /** `unchanged`: the same roles and shown roles as saved, so the assignments or draws can stay. */
+  onSave: (entries: { role: string; shown: string }[], unchanged: boolean) => void;
   onBack: () => void;
-  backLabel: string;
 }) {
   const seatCount = game.seat_count ?? 0;
   const [entries, setEntries] = useState(initial);
@@ -191,9 +243,9 @@ function CompositionStep({
 
       <div className="flex flex-wrap justify-end gap-2">
         <Button variant="ghost" onClick={onBack}>
-          {backLabel}
+          返回
         </Button>
-        <Button disabled={check.errors.length > 0} onClick={() => onSave(entries)}>
+        <Button disabled={check.errors.length > 0} onClick={() => onSave(entries, sameComposition(entries, initial))}>
           下一步
         </Button>
       </div>
@@ -206,13 +258,13 @@ function AssignStep({
   data,
   members,
   run,
-  onEditComposition,
+  onBack,
 }: {
   game: Game;
   data: NonNullable<ReturnType<typeof useGameData>['data']>;
   members: Member[];
   run: Act;
-  onEditComposition: () => void;
+  onBack: () => void;
 }) {
   const seatCount = game.seat_count ?? 0;
   const seats = Array.from({ length: seatCount }, (_, i) => i + 1);
@@ -286,12 +338,11 @@ function AssignStep({
             );
           })}
         </ul>
-        {!allSeated ? <p className="text-sm text-blood-text">还有座位没有玩家。请返回大厅让玩家入座。</p> : null}
       </Panel>
 
       <div className="flex flex-wrap justify-end gap-2">
-        <Button variant="ghost" onClick={onEditComposition}>
-          修改角色配置
+        <Button variant="ghost" onClick={onBack}>
+          返回
         </Button>
         <Button size="lg" className="w-auto" disabled={!ready} onClick={() => run(() => supabase.rpc('start_game', { p_game: game.id }))}>
           开始游戏
@@ -301,3 +352,8 @@ function AssignStep({
   );
 }
 
+/** The same roles with the same shown roles, in any order. */
+function sameComposition(a: { role: string; shown: string }[], b: { role: string; shown: string }[]): boolean {
+  const key = (xs: { role: string; shown: string }[]) => xs.map((x) => `${x.role}>${x.shown}`).sort().join(',');
+  return key(a) === key(b);
+}
