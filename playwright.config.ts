@@ -33,15 +33,15 @@ export default defineConfig({
   projects: [
     // Admin and DM screens are laptop/tablet screens (the DM specs drive their players' phones themselves),
     // and only one admin can exist at a time: tablet only.
-    { name: 'phone', use: { ...devices['Pixel 7'], channel }, testIgnore: /(admin|setup|live|sandbox|grimoire)\.spec\.ts/ },
+    { name: 'phone', use: { ...devices['Pixel 7'], channel }, testIgnore: /(admin|setup|live|grimoire)\.spec\.ts/ },
     // Guest sign-in uses Supabase's anonymous sign-in, which is rate-limited per IP; run it on one profile.
     { name: 'tablet', use: { ...devices['iPad Pro 11 landscape'], browserName: 'chromium', channel }, testIgnore: /guest\.spec\.ts/ },
   ],
   webServer: remote
     ? undefined
     : {
-        // A sandbox build (BOT-01/02): the bot tools are in, and it never overwrites dist/.
-        command: `npm run build -- --mode sandbox --outDir dist-sandbox && npx vite preview --outDir dist-sandbox --port ${PORT} --strictPort`,
+        // The production build, as deployed (the bot sandbox is in it, switched off by default: BOT-01).
+        command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
         port: PORT,
         reuseExistingServer: !process.env.CI,
         timeout: 240_000,

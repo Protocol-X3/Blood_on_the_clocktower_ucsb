@@ -512,6 +512,9 @@ isOneToOne: false
 "cancel_nomination":
 { Args: { "p_nomination": string }; Returns: undefined
                            },
+"bot_sandbox_enabled":
+{ Args: never; Returns: boolean
+                           },
 "cancel_setup":
 { Args: { "p_game": string }; Returns: undefined
                            },
@@ -614,6 +617,9 @@ isOneToOne: false
                            },
 "set_alignment":
 { Args: { "p_alignment": Database["public"]['Enums']["alignment"],"p_game": string,"p_seat": number }; Returns: undefined
+                           },
+"set_bot_sandbox":
+{ Args: { "p_on": boolean }; Returns: undefined
                            },
 "set_composition":
 { Args: { "p_game": string,"p_roles": Json }; Returns: undefined

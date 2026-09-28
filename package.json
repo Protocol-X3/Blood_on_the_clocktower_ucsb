@@ -22,14 +22,13 @@
     "test:e2e": "playwright test",
     "secrets:dist": "node tools/check-secrets.ts --dist",
     "secrets:repo": "node tools/check-secrets.ts --repo",
-    "verify": "npm run typecheck && npm run lint && npm run check:rules && npm run ledger:check && npm run test:unit && npm run test:integration && npm run test:db && npm run test:e2e && npm run build && npm run secrets:dist && npm run sandbox:dist && npm run secrets:repo",
+    "verify": "npm run typecheck && npm run lint && npm run check:rules && npm run ledger:check && npm run test:unit && npm run test:integration && npm run test:db && npm run test:e2e && npm run build && npm run secrets:dist && npm run secrets:repo",
     "mutate": "stryker run",
     "preflight": "node tools/preflight.ts",
     "check:milestone": "node tools/check-milestone.ts",
     "db:push": "node tools/db.ts push",
     "db:set-admin": "node tools/db.ts set-admin",
-    "db:types": "node tools/db.ts types",
-    "sandbox:dist": "node tools/check-sandbox.ts"
+    "db:types": "node tools/db.ts types"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",

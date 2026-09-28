@@ -6,7 +6,6 @@
 # Dependencies and build output
 node_modules/
 dist/
-dist-sandbox/
 
 # Test and tool output
 coverage/

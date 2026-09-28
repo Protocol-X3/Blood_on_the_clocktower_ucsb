@@ -50,10 +50,9 @@ run('G1/G4', 'unit + integration tests with coverage', npx, [
 ]);
 run('G1', 'database tests (pgTAP)', 'node', ['tools/run-pgtap.ts', '--json', join(RESULTS, 'pgtap.json')]);
 run('G1', 'E2E tests (phone + tablet)', npx, ['playwright', 'test'], { PW_JSON: join(RESULTS, 'e2e.json') });
-// The E2E run uses a sandbox build (dist-sandbox/); the checks below scan the production build.
+// The E2E run serves a production build; the check below scans it for secrets.
 run('G1', 'production build', npm, ['run', 'build']);
 run('SEC-02', 'no secrets in the build', 'node', ['tools/check-secrets.ts', '--dist']);
-run('BOT-01', 'no bot sandbox in the build', 'node', ['tools/check-sandbox.ts']);
 run('SEC-03', 'no secrets in the repo', 'node', ['tools/check-secrets.ts', '--repo']);
 run('G5', 'mutation score ≥ 85%', npm, ['run', 'mutate']);
 console.log('\n▶ G6 database matches migrations');

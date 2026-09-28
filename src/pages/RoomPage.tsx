@@ -15,7 +15,7 @@ import { useRoom, type Member } from '@/features/room/useRoom';
 import { errorMessage } from '@/services/errors';
 import { supabase, type Game, type Room } from '@/services/supabase';
 import { LiveGame } from '@/features/live/LiveGame';
-import { BotDriver, LobbyBots } from '@/features/sandbox/sandbox';
+import { BotDriver, LobbyBots, useBotSandbox } from '@/features/sandbox/sandbox';
 import { phaseLabel } from '@/lib/game/phase';
 import { DmSetup } from '@/features/setup/DmSetup';
 import { PlayerSetup } from '@/features/setup/PlayerSetup';
@@ -58,6 +58,7 @@ function GameStage({ room, members, game, reload }: { room: Room; members: Membe
   const { profile } = useAuth();
   const me = profile!;
   const isDm = room.dm_id === me.id;
+  const botsOn = useBotSandbox();
   const mySeat = members.find((m) => m.user_id === me.id)?.seat ?? null;
   const seatNames = new Map(members.filter((m) => m.seat).map((m) => [m.seat!, m.profile?.nickname ?? '']));
   const [notice, setNotice] = useState<string | null>(null);
@@ -90,7 +91,7 @@ function GameStage({ room, members, game, reload }: { room: Room; members: Membe
           </h1>
         </header>
         <main className="mt-6 flex flex-col gap-5 px-4">
-          {isDm && BotDriver && bots.size ? (
+          {isDm && botsOn && bots.size ? (
             <Suspense fallback={null}>
               <BotDriver game={game} bots={bots} />
             </Suspense>
@@ -120,6 +121,7 @@ function Lobby({ room, members, gameActive, reload }: { room: Room; members: Mem
   const navigate = useNavigate();
   const me = profile!;
   const isDm = room.dm_id === me.id;
+  const botsOn = useBotSandbox();
   const canDm = me.permission !== 'player' && !me.is_guest;
   const isAdmin = me.permission === 'admin';
   const mine = members.find((m) => m.user_id === me.id);
@@ -289,7 +291,7 @@ function Lobby({ room, members, gameActive, reload }: { room: Room; members: Mem
               </Panel>
             ) : null}
 
-            {isDm && !gameActive && !closed && LobbyBots ? (
+            {isDm && !gameActive && !closed && botsOn ? (
               <Suspense fallback={null}>
                 <LobbyBots room={room} />
               </Suspense>
