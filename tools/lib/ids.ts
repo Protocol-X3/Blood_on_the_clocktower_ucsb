@@ -52,9 +52,9 @@ export interface CoverageReport {
   covered: number;
 }
 
-/** The milestone currently being built, from the roadmap line "Current milestone: M<n>". */
+/** The last milestone whose rules are enforced, from the roadmap line "Rules in force through: M<n>". */
 export function currentMilestone(roadmap: string): number | null {
-  const m = /Current milestone:\s*M(\d)/.exec(roadmap);
+  const m = /Rules in force through:\s*M(\d)/.exec(roadmap);
   return m ? Number(m[1]) : null;
 }
 
