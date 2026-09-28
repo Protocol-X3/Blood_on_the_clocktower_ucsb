@@ -20,6 +20,13 @@ describe('secret scanner', () => {
     expect(findings.map((f) => f.kind)).toEqual(['Supabase secret key', 'Postgres URL with password', 'service_role JWT']);
   });
 
+  it('SEC-03: documentation placeholders in database URLs are not secrets', () => {
+    const docs = ['password', '[YOUR-PASSWORD]', '<password>', '${DB_PASSWORD}']
+      .map((pw) => `postgresql://user:${pw}@host:5432/postgres`)
+      .join('\n');
+    expect(scanForSecrets([{ path: 'docs/setup.md', text: docs }])).toEqual([]);
+  });
+
   it('SEC-02: the public anon JWT and publishable key are not secrets', () => {
     const publishable = ['sb', 'publishable', 'abcdefghijklmnopqrstuvwxyz'].join('_');
     expect(scanForSecrets([{ path: 'dist/a.js', text: `"${jwt('anon')}" "${publishable}"` }])).toEqual([]);

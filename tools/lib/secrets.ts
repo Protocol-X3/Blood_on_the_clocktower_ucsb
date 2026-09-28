@@ -2,10 +2,17 @@
 
 const PATTERNS: { name: string; re: RegExp }[] = [
   { name: 'Supabase secret key', re: /sb_secret_[A-Za-z0-9_-]{16,}/ },
-  { name: 'Postgres URL with password', re: /postgres(?:ql)?:\/\/[^:\s/]+:[^@\s]{6,}@/ },
   { name: 'Anthropic API key', re: /sk-ant-[A-Za-z0-9_-]{16,}/ },
   { name: 'Google OAuth client secret', re: /GOCSPX-[A-Za-z0-9_-]{16,}/ },
 ];
+
+const DB_URL = /postgres(?:ql)?:\/\/[^:\s/'"`]+:([^@\s'"`]{6,})@/g;
+// Documentation placeholders, not real passwords.
+const PLACEHOLDER = /^(?:password|\[?YOUR-PASSWORD\]?|<[^>]+>|\$\{[^}]+\}|\*+|x+)$/i;
+
+function hasRealDbPassword(text: string): boolean {
+  return [...text.matchAll(DB_URL)].some((m) => !PLACEHOLDER.test(m[1]!));
+}
 
 /** True when a JWT's payload claims the service_role. */
 function isServiceRoleJwt(token: string): boolean {
@@ -36,6 +43,7 @@ export function scanForSecrets(
   const values = literals.filter((l) => l.value.length >= 8);
   for (const { path, text } of files) {
     for (const { name, re } of PATTERNS) if (re.test(text)) findings.push({ path, kind: name });
+    if (hasRealDbPassword(text)) findings.push({ path, kind: 'Postgres URL with password' });
     for (const m of text.matchAll(/eyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g)) {
       if (isServiceRoleJwt(m[0])) findings.push({ path, kind: 'service_role JWT' });
     }
