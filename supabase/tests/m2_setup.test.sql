@@ -31,6 +31,13 @@ select (select id from r), x.uid, x.seat from (values
 select is(tests.try_as((select p1 from u), format($$ select start_setup(%L, '00000000-0000-0000-0000-00000000007b', 'manual') $$, (select id from r))),
   'NOT_DM', 'SETUP-05: only the room''s DM can start setup');
 
+-- SETUP-11: not while a seat is empty.
+delete from room_members where room_id = (select id from r) and seat = 5;
+select is(tests.try_as((select dm from u), format($$ select start_setup(%L, '00000000-0000-0000-0000-00000000007b', 'manual') $$, (select id from r))),
+  'NOT_ALL_SEATED', 'SETUP-11: setup cannot start while a seat is empty');
+select is((select count(*)::int from games where room_id = (select id from r)), 0, 'SETUP-11: …and no setup was created');
+insert into room_members (room_id, user_id, seat) values ((select id from r), (select p5 from u), 5);
+
 create temp table g (id uuid);
 grant all on g to authenticated, anon;
 select tests.login((select dm from u));
@@ -44,6 +51,41 @@ select cancel_setup((select id from g));
 select tests.logout();
 select is((select count(*)::int from games where room_id = (select id from r) and status <> 'ended'), 0, 'SETUP-06: going back to the basics step discards the setup');
 select tests.login((select dm from u));
+update g set id = start_setup((select id from r), '00000000-0000-0000-0000-00000000007b', 'manual');
+select tests.logout();
+
+-- SETUP-06: back at the basics step, the DM changes the mode or the script.
+insert into scripts (id, name, created_by) values ('00000000-0000-0000-0000-0000000000b0', '黯月初升', (select dm from u));
+insert into script_roles (script_id, role_id, position)
+select '00000000-0000-0000-0000-0000000000b0', id, row_number() over (order by id) from roles where edition = 'bmr';
+select tests.login((select dm from u));
+select set_composition((select id from g), '[{"role":"washerwoman"},{"role":"chef"},{"role":"drunk","shown":"empath"},{"role":"poisoner"},{"role":"imp"}]');
+select assign_seat((select id from g), 1, 'washerwoman');
+select tests.logout();
+select is(tests.try_as((select p1 from u), format($$ select update_setup(%L, '00000000-0000-0000-0000-00000000007b', 'draw') $$, (select id from g))),
+  'NOT_DM', 'SETUP-05: only the DM changes the basics');
+select is(tests.try_as((select dm from u), format($$ select update_setup(%L, '00000000-0000-0000-0000-00000000007b', null) $$, (select id from g))),
+  'MODE_REQUIRED', 'SETUP-06: the basics still need an assignment mode');
+select tests.login((select dm from u));
+select update_setup((select id from g), '00000000-0000-0000-0000-00000000007b', 'manual');
+select tests.logout();
+select is((select count(*)::int from seat_roles where game_id = (select id from g)), 1, 'SETUP-06: going back without changing the basics keeps the assignments');
+select tests.login((select dm from u));
+select update_setup((select id from g), '00000000-0000-0000-0000-00000000007b', 'draw');
+select tests.logout();
+select is((select assignment_mode::text from games where id = (select id from g)), 'draw', 'SETUP-06: the DM can switch the assignment mode');
+select is((select count(*)::int from game_composition where game_id = (select id from g)), 5, 'SETUP-06: switching the mode keeps the composition');
+select is((select count(*)::int from seat_roles where game_id = (select id from g)), 0, 'SETUP-06: …and clears the assignments');
+select tests.login((select dm from u));
+select update_setup((select id from g), '00000000-0000-0000-0000-0000000000b0', 'draw');
+select tests.logout();
+select is((select script_id from games where id = (select id from g)), '00000000-0000-0000-0000-0000000000b0'::uuid, 'SETUP-06: the DM can switch the script');
+select is((select count(*)::int from game_composition where game_id = (select id from g)), 0, 'SETUP-06: switching the script clears the composition');
+select set_eq($$ select role_id from game_roles where game_id = (select id from g) $$, $$ select id from roles where edition = 'bmr' $$,
+  'SETUP-06: …and the game''s roles become the new script''s');
+-- Start over with the Trouble Brewing script for the rest of the file.
+select tests.login((select dm from u));
+select cancel_setup((select id from g));
 update g set id = start_setup((select id from r), '00000000-0000-0000-0000-00000000007b', 'manual');
 select tests.logout();
 
@@ -105,6 +147,8 @@ select start_game((select id from g));
 select tests.logout();
 select is((select row(status::text, phase_kind, phase_number)::text from games where id = (select id from g)), row('in_progress', 'night', 1)::text,
   'SETUP-10: the game starts at the first night');
+select is(tests.try_as((select dm from u), format($$ select update_setup(%L, '00000000-0000-0000-0000-00000000007b', 'draw') $$, (select id from g))),
+  'NOT_IN_SETUP', 'SETUP-06: once the game has started, there is no going back');
 select is((select count(*)::int from game_seats where game_id = (select id from g)), 5, 'SETUP-10: every seat is in the game');
 select is((select count(*)::int from seat_shown_roles where game_id = (select id from g)), 5, 'SETUP-10: every player''s role card appears at once');
 

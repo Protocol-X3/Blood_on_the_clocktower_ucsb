@@ -16,7 +16,7 @@ Status: **Approved** by the owner, 2026-09-27.
 
 - **DEATH-01** The DM can mark any living player dead, with a cause: 处决 (executed), 夜间死亡 (died at night) or 其他 (other, with optional text). Everyone sees who died and why. · *pgTAP, E2E*
 - **DEATH-02** The DM can revive a dead player, and everyone sees them alive again. *Decided (2026-09-27): a revived player keeps their ghost-vote status in case they die again, and the DM can adjust it (DEATH-04).* · *pgTAP, E2E*
-- **DEATH-03** Dead players are shown greyed out with a shroud (亡) on every screen. · *E2E*
+- **DEATH-03** Dead players are shown greyed out with a shroud (亡) on every screen, and every seat token of a dead player is crossed out with a red X. *Changed (2026-09-28): the X was added to make deaths obvious at a glance.* · *E2E*
 - **DEATH-04** A player who dies starts with one unused ghost vote. The DM can manually mark it used or unused. · *pgTAP*
 
 ## NOM · Nominations

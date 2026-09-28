@@ -662,6 +662,9 @@ isOneToOne: false
                            },
 "unassign_seat":
 { Args: { "p_game": string,"p_seat": number }; Returns: undefined
+                           },
+"update_setup":
+{ Args: { "p_game": string,"p_mode": Database["public"]['Enums']["assignment_mode"],"p_script": string }; Returns: undefined
                            }
           }
           Enums: {

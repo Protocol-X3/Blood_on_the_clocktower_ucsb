@@ -33,18 +33,19 @@ Status: **Approved** by the owner, 2026-09-27.
 - **SETUP-03** Player counts outside 5–15, including non-whole numbers, have no recommendation. · *Property*
 - **SETUP-04** A seat's starting alignment comes from its actual role's team: Townsfolk and Outsiders start good (善良), and Minions and Demons start evil (邪恶). · *Unit, pgTAP*
 - **SETUP-05** Only the room's DM can run setup. · *pgTAP*
-- **SETUP-06** The wizard runs in order: basics (seat count, script, assignment mode) → role composition → assignment or draw → start. The DM can go back to any earlier step until the game starts. · *E2E*
+- **SETUP-06** The wizard runs in order: basics (seat count, script, assignment mode) → role composition → assignment or draw → start. Until the game starts, every step has a 返回 button that goes back one step; 返回 on the basics step returns to the lobby and discards the setup. Going back keeps what was chosen: the basics show the current script and mode, and the composition is kept unless the DM switches to another script. Switching the assignment mode clears the assignments or draws. *Changed (2026-09-28): one 返回 per step, replacing 返回基础设置 / 修改角色配置.* · *pgTAP, E2E*
 - **SETUP-07** The composition has exactly as many roles as there are seats. Every role comes from the chosen script, and none is used twice. If the team counts differ from the recommendation, the app shows a warning but still allows it. · *Unit, pgTAP*
 - **SETUP-08** Each role in the composition has a shown role, which defaults to itself. The DM can set it to any role in the script (e.g. the Drunk shown as a Townsfolk). · *pgTAP, E2E*
 - **SETUP-09** In manual mode, every seat must get exactly one role from the composition before the game can start. · *pgTAP, E2E*
-- **SETUP-10** The game can start only when every seat has a player and a role. At start, every player sees their role card at the same time, and the phase becomes 第1夜. · *pgTAP, E2E*
+- **SETUP-10** The game can start only when every seat has a player and a role. At start, every player gets their role card at the same time (hidden until they tap it, SECRET-05), and the phase becomes 第1夜. · *pgTAP, E2E*
+- **SETUP-11** Setup can start only when every seat has a player: until then the basics step's 下一步 is disabled and says how many seats are empty, and the server refuses. *Added 2026-09-28.* · *pgTAP, E2E*
 
 ## DRAW · Card draw
 
 - **DRAW-01** The server shuffles the cards (one per composition role) uniformly at random. Nobody can tell which card is which before drawing. · *Integration (statistical test on many shuffles)*
 - **DRAW-02** Each seated player draws exactly one card and can't draw a second. · *pgTAP*
 - **DRAW-03** If two players tap the same card at the same moment, exactly one gets it. The other sees "已被抽走，请重选" and picks again. · *Integration (repeated races)*
-- **DRAW-04** After drawing, a player sees their own shown role immediately. Other players only see that the card is taken, and by which seat. · *pgTAP, E2E*
+- **DRAW-04** After drawing, a player can see their own shown role immediately (by tapping the card, SECRET-05). Other players only see that the card is taken, and by which seat. · *pgTAP, E2E*
 - **DRAW-05** The DM sees each seat's actual and shown role live as the cards are drawn. · *E2E*
 - **DRAW-06** Before the game starts, the DM can reset the draw and reshuffle, for example after a mistake. · *pgTAP, E2E*
 
@@ -54,3 +55,5 @@ Status: **Approved** by the owner, 2026-09-27.
 - **SECRET-02** The DM can read every seat's actual role, shown role and alignment in their game. · *pgTAP*
 - **SECRET-03** After the game ends, every participant can read every seat's actual role, shown role and final alignment. · *pgTAP*
 - **SECRET-04** Role data never reaches a player's device before it's allowed. The network responses to a player contain no other seat's role and no actual roles. · *E2E (inspects network traffic)*
+- **SECRET-05** On a player's own screen, their role card and role information are hidden by default, so people nearby can't read them. The player taps to show them and taps again to hide them, and they hide again when the app goes to the background. *Added 2026-09-28.* · *E2E*
+- **SECRET-06** A player's role card shows the role's name, type (镇民/外来者/爪牙/恶魔) and ability, but never an alignment (善良/邪恶). If a player's alignment changes, the DM tells them in person. *Added 2026-09-28.* · *E2E*

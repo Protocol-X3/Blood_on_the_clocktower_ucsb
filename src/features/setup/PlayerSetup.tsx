@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { CARD_BACK, CardEmblem } from '@/components/ui/CardEmblem';
 import { cn } from '@/components/ui/cn';
 import { Ornament } from '@/components/ui/Ornament';
 import { useGameData } from '@/features/game/useGameData';
-import { RoleCard } from '@/features/roles/RoleCard';
+import { HiddenRole } from '@/features/roles/HiddenRole';
 import { errorMessage } from '@/services/errors';
 import { supabase, type Game } from '@/services/supabase';
 
@@ -22,10 +23,8 @@ export function PlayerSetup({ game, mySeat, seatNames }: { game: Game; mySeat: n
   if (myRole) {
     return (
       <div className="flex flex-col items-center gap-4">
-        <p className="text-sm tracking-[0.2em] text-ink-muted">你抽到了</p>
-        <div className="w-full motion-safe:animate-flip-in">
-          <RoleCard role={myRole} />
-        </div>
+        <p className="text-sm tracking-[0.2em] text-ink-muted">你已抽到角色</p>
+        <HiddenRole role={myRole} caption={`我的角色 · ${mySeat}号`} />
         <p className="text-sm text-ink-muted">请勿向他人展示 · 等待说书人开始游戏</p>
       </div>
     );
@@ -67,10 +66,7 @@ export function PlayerSetup({ game, mySeat, seatNames }: { game: Game; mySeat: n
                   aria-label={`抽取第 ${slot.card_no} 张牌`}
                   disabled={busy}
                   onClick={() => draw(slot.card_no)}
-                  className={cn(
-                    'grid h-32 w-24 place-items-center rounded-xl border border-[#c9a55a] bg-[#151c33] transition-transform',
-                    'shadow-[inset_0_0_0_5px_#151c33,inset_0_0_0_6px_rgb(201_165_90/0.5),0_10px_22px_rgb(0_0_0/0.45)] hover:-translate-y-1',
-                  )}
+                  className={cn('grid h-32 w-24 place-items-center rounded-xl transition-transform hover:-translate-y-1', CARD_BACK)}
                 >
                   <CardEmblem />
                 </button>
@@ -95,16 +91,5 @@ function Waiting({ title, text }: { title: string; text: string }) {
       <Ornament />
       <p className="text-sm text-ink-muted">{text}</p>
     </section>
-  );
-}
-
-function CardEmblem({ dim }: { dim?: boolean }) {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 52 52" className="size-12" fill="none" stroke={dim ? '#3a4466' : '#c9a55a'} strokeLinecap="round">
-      <circle cx="26" cy="26" r="20" strokeWidth="1.2" />
-      <circle cx="26" cy="26" r="15" strokeWidth="0.8" opacity="0.6" />
-      <path d="M26 8v3M26 41v3M8 26h3M41 26h3" strokeWidth="1" />
-      <path d="M26 26V16M26 26l6 4" strokeWidth="1.8" />
-    </svg>
   );
 }
