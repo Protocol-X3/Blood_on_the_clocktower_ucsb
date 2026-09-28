@@ -55,6 +55,7 @@ test('M3.4 · PHASE-02 · DEATH-01 · DEATH-02 · NOM-04 · VOTE-01 · VOTE-13 �
   await page.getByRole('button', { name: '开始游戏' }).click();
 
   // 第1夜: the Drunk sees the Empath. The DM marks seat 5 dead at night.
+  await phones[2]!.getByTestId('role-hidden').click();
   await expect(phones[2]!.getByTestId('role-card')).toContainText('共情者');
   await page.getByTestId('circle-seat-5').getByRole('button').click();
   await page.getByRole('radio', { name: '夜间死亡' }).check();
@@ -290,6 +291,8 @@ test('DEATH-03 · VOTE-02 · VOTE-04: the dead are greyed with 亡 everywhere; a
   for (const p of [page, p1]) {
     await expect(p.getByTestId('circle-seat-2')).toHaveAttribute('data-alive', 'false');
     await expect(p.getByTestId('circle-seat-2').getByText('亡', { exact: true })).toBeVisible();
+    await expect(p.getByTestId('circle-seat-2').getByTestId('dead-mark')).toBeVisible();
+    await expect(p.getByTestId('circle-seat-1').getByTestId('dead-mark')).toHaveCount(0);
     await expect(p.getByTestId('circle-seat-2').locator(':scope > :first-child')).toHaveClass(/grayscale/);
   }
   const { data: nom } = await t.dmc.rpc('open_nomination', {

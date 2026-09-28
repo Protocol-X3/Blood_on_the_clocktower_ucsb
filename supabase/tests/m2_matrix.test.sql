@@ -1,6 +1,6 @@
 -- M2 permission matrix: every M2 action × every kind of user × lobby / setup (card draw) / setup (manual).
 -- Each call runs as that user and is rolled back, so they don't affect each other.
-select plan(210);
+select plan(231);
 
 create temp table u as
 select tests.create_user('admin') as admin,
@@ -49,7 +49,8 @@ insert into calls values
   (7, 'unassign_seat', 'select unassign_seat(%s, 1)', '{}', '{}', '{dm}'),
   (8, 'shuffle_cards', 'select shuffle_cards(%s)', '{}', '{dm}', '{}'),
   (9, 'draw_card (a free card)', 'select draw_card(%s, 1)', '{}', '{player,guest}', '{}'),
-  (10, 'start_game', 'select start_game(%s)', '{}', '{}', '{dm}');
+  (10, 'start_game', 'select start_game(%s)', '{}', '{}', '{dm}'),
+  (11, 'update_setup', $$select update_setup(%s, '00000000-0000-0000-0000-00000000007b', 'draw')$$, '{}', '{dm}', '{dm}');
 
 create temp table outcomes (state text, state_ord int, call_ord int, actor_ord int, call text, actor text, expected text, actual text);
 

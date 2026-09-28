@@ -41,7 +41,7 @@ Players join the room with the code and pick a seat number matching their physic
 
 ### 2. Setup
 
-The DM has a dedicated step-by-step setup wizard:
+The DM has a dedicated step-by-step setup wizard. It opens only once every seat has a player. Every step has a **返回** button that goes back one step, keeping what was already chosen; 返回 on the basics step returns to the lobby and discards the setup. Changing the script clears the composition, and changing the assignment mode clears the assignments or draws.
 
 1. **Basics:** seat count (5–15), script, and assignment mode.
    - **Manual:** the DM assigns roles to seats.
@@ -53,13 +53,15 @@ The DM has a dedicated step-by-step setup wizard:
    - In manual mode, which seat gets each role.
 3. **Draw / confirm:** in card-draw mode, players draw their cards.
    - Players draw freely, in any order.
-   - A player sees their shown role immediately after drawing, like pulling a token from the bag. The DM sees the results live.
+   - A player can see their shown role immediately after drawing, like pulling a token from the bag. The DM sees the results live.
    - Two players can tap the same card at once. The first tap wins, enforced atomically in the database, and the other player sees "已被抽走，请重选" and picks again.
 4. **Start (开始游戏).**
 
 **Shown role vs. actual role:**
 - Every seat always has both an **actual role** (真实角色) and a **shown role** (展示角色). They're identical by default and differ for roles like the Drunk or the Lunatic.
 - A player only ever sees their own **shown role**. Actual roles are DM-only until the summary.
+- On the player's own screen, the role card is **face down by default**, so people nearby can't read it. The player taps to see it, taps again to hide it, and it turns back over when the app goes to the background.
+- The role card shows the role's name, type and ability, but **no alignment** (善良/邪恶). Alignment is DM-only; if a player's alignment changes, the DM tells them in person.
 
 ### 3. In progress
 

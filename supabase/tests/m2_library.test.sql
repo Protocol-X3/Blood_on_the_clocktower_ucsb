@@ -76,8 +76,13 @@ select is(tests.try_as((select dm from u), format($$ select save_script(null, '�
 -- SCRIPT-06: a game keeps its own copy of the roles.
 select tests.login((select dm from u));
 create temp table r as select create_room(5) as code;
+select tests.logout();
 alter table r add column id uuid;
 update r set id = (select id from rooms where code = (select code from r) and status = 'open');
+-- SETUP-11: every seat needs a player before setup starts.
+insert into room_members (room_id, user_id, seat)
+select (select id from r), tests.create_user('s' || n), n from generate_series(1, 5) n;
+select tests.login((select dm from u));
 create temp table g as select start_setup((select id from r), (select id from s), 'manual') as id;
 select save_script((select id from s), '暗流涌动', '官方', array['imp']);
 select tests.logout();

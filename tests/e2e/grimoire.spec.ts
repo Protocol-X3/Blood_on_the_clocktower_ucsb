@@ -143,7 +143,10 @@ test('GRIM-03 · TOKEN-01 · LOG-01 · LOG-03: the seat panel does everything fo
   // GRIM-03: the player just sees their new shown role.
   const phone = t.phones[0]!;
   await rpc(t.dmc, 'set_seat_role', { p_game: t.gameId, p_seat: 1, p_actual: 'chef', p_shown: 'chef' });
-  await expect(phone.getByRole('button', { name: /我的角色/ })).toContainText('厨师');
+  // The card is face down (SECRET-05): the player taps it to see the new role.
+  await expect(phone.getByTestId('role-hidden')).toBeVisible();
+  await phone.getByTestId('role-hidden').click();
+  await expect(phone.getByTestId('role-card')).toContainText('厨师');
   await page.screenshot({ path: 'docs/reports/M4/seat-panel-tablet.png', fullPage: true });
   await closeAll(t);
 });
