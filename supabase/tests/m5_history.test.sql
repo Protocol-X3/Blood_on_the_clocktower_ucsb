@@ -115,7 +115,7 @@ select tests.logout();
 select is(tests.try_as((select dm from u), format('select admin_delete_user(%L)', (select p4 from u))), 'FORBIDDEN', 'HIST-06: only the admin deletes accounts');
 select is(tests.try_as((select admin from u), format('select admin_delete_user(%L)', (select admin from u))), 'CANNOT_DELETE_SELF', 'HIST-06: the admin cannot delete their own account');
 -- A second, running game in the room: its seated players can't be deleted yet.
--- SETUP-11: it needs every seat filled, so seat 1's player (who left above) comes back.
+-- Setup needs every seat filled, so seat 1's player (who left above) comes back.
 insert into room_members (room_id, user_id, seat) values ((select id from r), (select p1 from u), 1);
 select tests.login((select dm from u));
 update g set g2 = start_setup((select id from r), '00000000-0000-0000-0000-00000000007b', 'draw');
