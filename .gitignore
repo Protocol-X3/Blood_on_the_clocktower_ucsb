@@ -10,6 +10,7 @@ dist/
 # Test and tool output
 coverage/
 reports/mutation/
+reports/results/
 .stryker-tmp/
 playwright-report/
 test-results/

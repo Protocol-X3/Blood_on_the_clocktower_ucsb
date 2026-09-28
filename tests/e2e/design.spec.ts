@@ -30,10 +30,10 @@ test('UI-04 · M0.2: every design-system component renders in all three themes',
   await page.screenshot({ path: `${SHOTS}/design-gallery-${info.project.name}.png`, fullPage: true });
 });
 
-test('M0.2: home page screenshot', async ({ page }, info) => {
-  await page.goto('/');
+test('M0.2: sign-in page screenshot', async ({ page }, info) => {
+  await page.goto('/login');
   await page.evaluate(() => document.fonts.ready);
   await expect(page.getByRole('heading', { name: '血染钟楼' })).toBeVisible();
   mkdirSync(SHOTS, { recursive: true });
-  await page.screenshot({ path: `${SHOTS}/home-${info.project.name}.png` });
+  await page.screenshot({ path: `${SHOTS}/login-${info.project.name}.png` });
 });

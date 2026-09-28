@@ -1,6 +1,7 @@
 // Runs every supabase/tests/*.test.sql file against SUPABASE_DB_URL and reports
-// TAP results. Each test file wraps itself in begin … rollback, so it leaves no
-// trace. Works against the cloud project locally and Docker Supabase in CI.
+// TAP results. Each file runs in its own transaction, together with the shared
+// helpers in supabase/tests/helpers/, and is rolled back afterwards: it leaves
+// no trace. Works against the cloud project locally and Docker Supabase in CI.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import pg from 'pg';
@@ -14,39 +15,53 @@ if (!dbUrl) {
   process.exit(1);
 }
 const jsonOut = process.argv.includes('--json') ? process.argv[process.argv.indexOf('--json') + 1] : undefined;
+const only = process.argv.find((a) => a.endsWith('.test.sql'));
 
-const files = walk(join(ROOT, 'supabase', 'tests')).filter((f) => f.endsWith('.test.sql')).sort();
+const testsDir = join(ROOT, 'supabase', 'tests');
+const helpers = walk(join(testsDir, 'helpers'))
+  .filter((f) => f.endsWith('.sql'))
+  .sort()
+  .map((f) => readFileSync(f, 'utf8'))
+  .join('\n');
+const files = walk(testsDir)
+  .filter((f) => f.endsWith('.test.sql') && (!only || f.endsWith(only)))
+  .sort();
+
 const results: (TestResult & { file: string })[] = [];
 let failed = false;
-
-const client = new pg.Client({ connectionString: dbUrl, ssl: dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1') ? false : { rejectUnauthorized: false } });
+const local = /localhost|127\.0\.0\.1/.test(dbUrl);
+const client = new pg.Client({ connectionString: dbUrl, ssl: local ? false : { rejectUnauthorized: false } });
 await client.connect();
+
 try {
   for (const file of files) {
     const lines: string[] = [];
+    const sql = ['begin;', 'create extension if not exists pgtap with schema extensions;', 'set local search_path = public, extensions;', helpers, readFileSync(file, 'utf8')].join('\n');
     try {
-      const res = await client.query(readFileSync(file, 'utf8'));
+      const res = await client.query(sql);
       for (const r of Array.isArray(res) ? res : [res]) {
         for (const row of r.rows ?? []) for (const v of Object.values(row)) if (typeof v === 'string') lines.push(...v.split('\n'));
       }
     } catch (e) {
-      await client.query('rollback').catch(() => undefined);
       lines.push(`not ok 0 - ${basename(file)} errored: ${(e as Error).message}`);
+    } finally {
+      await client.query('rollback').catch(() => undefined);
     }
     const tap = fromTap(lines);
     const planned = lines.map((l) => /^1\.\.(\d+)/.exec(l.trim())).find(Boolean);
     if (planned && Number(planned[1]) !== tap.length) {
       tap.push({ title: `${basename(file)}: planned ${planned[1]} tests but ran ${tap.length}`, status: 'failed' });
     }
+    if (tap.length === 0) tap.push({ title: `${basename(file)}: produced no results`, status: 'failed' });
     for (const t of tap) {
       results.push({ ...t, file: basename(file) });
-      console.log(`${t.status === 'passed' ? '✓' : '✗'} ${basename(file)} › ${t.title}`);
-      if (t.status !== 'passed') failed = true;
+      if (t.status !== 'passed') {
+        failed = true;
+        console.log(`✗ ${basename(file)} › ${t.title}`);
+      }
     }
-    if (tap.length === 0) {
-      failed = true;
-      console.error(`✗ ${basename(file)} produced no TAP results`);
-    }
+    const passed = tap.filter((t) => t.status === 'passed').length;
+    console.log(`${passed === tap.length ? '✓' : '✗'} ${basename(file)}: ${passed}/${tap.length}`);
   }
 } finally {
   await client.end();
