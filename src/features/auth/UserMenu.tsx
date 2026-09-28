@@ -70,6 +70,11 @@ export function UserMenu() {
                 个人主页
               </Link>
             </Button>
+            <Button asChild variant="outline">
+              <Link to="/scripts" onClick={() => setOpen(false)}>
+                剧本库
+              </Link>
+            </Button>
             {profile.permission === 'admin' ? (
               <Button asChild variant="outline">
                 <Link to="/admin" onClick={() => setOpen(false)}>

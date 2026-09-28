@@ -95,6 +95,15 @@ export function HomePage() {
           ) : null}
         </Panel>
 
+        {/* SCRIPT-01: every signed-in user can browse the scripts and the role library. */}
+        <Link
+          to="/scripts"
+          className="mt-4 flex min-h-12 items-center justify-between rounded-xl border border-line bg-surface px-4 hover:border-gold"
+        >
+          <span className="font-serif text-lg font-bold tracking-[0.2em] text-gold-strong">剧本库</span>
+          <span className="text-sm text-ink-muted">浏览剧本与角色 ›</span>
+        </Link>
+
         {myRooms.length > 0 ? (
           <section className="mt-6">
             <h2 className="text-sm tracking-[0.2em] text-ink-muted">我的房间</h2>

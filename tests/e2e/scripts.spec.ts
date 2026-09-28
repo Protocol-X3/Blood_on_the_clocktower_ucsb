@@ -45,7 +45,14 @@ test('M2.3 · SCRIPT-01 · SCRIPT-03 · SCRIPT-04 · SCRIPT-05: a DM builds a sc
 
 test('SCRIPT-01: players browse scripts but cannot create or edit them', async ({ page, users }) => {
   await signIn(page, await users.make());
-  await page.goto('/scripts');
+  // Reached from the home page and from the account menu, not only by address.
+  await page.goto('/');
+  await page.getByRole('link', { name: /剧本库/ }).click();
+  await expect(page).toHaveURL(/\/scripts$/);
+  await expect(page.getByRole('heading', { name: '剧本库' })).toBeVisible();
+  await page.goto('/');
+  await page.getByRole('button', { name: /^账号：/ }).click();
+  await page.getByRole('dialog').getByRole('link', { name: '剧本库' }).click();
   await expect(page.getByRole('heading', { name: '剧本库' })).toBeVisible();
   await expect(page.getByRole('link', { name: '新建剧本' })).toHaveCount(0);
   await page.goto('/scripts/new');
