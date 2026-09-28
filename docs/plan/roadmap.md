@@ -14,6 +14,7 @@
 - **M4 · Grimoire: DONE** (certified 2026-09-28, tag `m4-done`, [report](../reports/M4.md)).
 - **M5 · Stats & history: DONE** (certified 2026-09-28, tag `m5-done`, [report](../reports/M5.md)).
 - **Autonomy run COMPLETE (2026-09-28).** See [the final report](../reports/RUN.md). **M6 opened by the owner (2026-09-28), redefined:** scripts from photos are made by Claude in a Claude Code session, not by an in-app feature. **M6 DONE (2026-09-28):** after a guided walkthrough of three scripts, the workflow lives in the project skill [`.claude/skills/script-from-photo`](../../.claude/skills/script-from-photo/SKILL.md). All milestones M0–M6 are complete.
+- **Planned, waiting for the owner's go-ahead:** the DM log as a spreadsheet ([log-spreadsheet.md](log-spreadsheet.md)).
 - **Rules in force through: M5.** `npm run check:rules` reads this line: every rule of these phases must have a test. Each milestone's PR bumps it along with that milestone's tests.
 
 ## Phase gate
@@ -233,6 +234,7 @@ None right now.
 
 Newest first. Each entry records what was decided and why.
 
+- **2026-09-28:** **The DM log becomes a spreadsheet** (planned, not yet built): one row per player plus note rows the DM adds, and one column per night and day after 座位 / 玩家 / 初始角色 / 角色设置. The owner chose: the full table sits at the bottom of the DM's page (the round table stays); one text per cell; 角色设置 is free text only; any phase up to the current one stays editable. Claude's defaults and the proposed rules are in [log-spreadsheet.md](log-spreadsheet.md).
 - **2026-09-28:** **AUTH-09:** users (Google or guest) can rename themselves on their 个人主页 at any time, under AUTH-03's rules; the new name shows everywhere at once, since nothing stores a copy of a nickname. Renaming isn't blocked during a game. *Why:* owner request; a mid-game rename just updates the name others see.
 - **2026-09-28:** **M6 done.** The owner checked the three walkthrough scripts, and Claude wrote the `script-from-photo` skill with two tools: `compare-script` (matches a transcription against the live library, 自制角色 included, with a character diff and other versions) and `save-script` (creates 自制角色 and saves the script as the owner, with a dry run). Edge-case rules from the owner: Travellers are left out like Fabled; a homebrew name clash gets 名字（改）/（改2）/… after asking; an existing script name → ask (replace / new name / stop); new 自制角色 get reminder tokens only if the sheet shows them.
 - **2026-09-28:** The original 气球驾驶员 joins 实验性角色 as **气球驾驶员（旧版）** (`balloonist_old`, the ability text from the 夜半狂欢 sheet): 188 official roles. When a role has more than one version in the library, Claude asks the owner which one a new script uses. *Why:* both versions are official roles from different times, and older sheets still use the original.
