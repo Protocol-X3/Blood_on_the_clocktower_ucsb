@@ -1,5 +1,5 @@
 -- M1 · accounts: profiles, nicknames and permission levels.
-select plan(24);
+select plan(28);
 
 create temp table u as
 select tests.create_user('admin') as admin,
@@ -86,5 +86,14 @@ select is(tests.try_as((select dora from u), $$ select set_nickname('BOB') $$), 
   'AUTH-03: uniqueness ignores letter case');
 select is(tests.try_as((select bob from u), $$ select set_nickname('一二三四五六七八九十一二三') $$), 'NICKNAME_INVALID',
   'AUTH-03: 13 characters is too long; 1–12 are allowed');
+
+-- AUTH-09: renaming later
+select tests.login((select alice from u));
+select set_nickname('林老板');
+select tests.logout();
+select is((select nickname from profiles where id = (select alice from u)), '林老板', 'AUTH-09: a user with a nickname can change it');
+select is(tests.try_as((select dora from u), $$ select set_nickname('小林') $$), 'allow', 'AUTH-09: …and the old name becomes free');
+select is(tests.try_as((select gus from u), $$ select set_nickname('游客甲') $$), 'allow', 'AUTH-09: guests can rename too');
+select is(tests.try_as((select bob from u), $$ select set_nickname('Alice') $$), 'allow', 'AUTH-09: changing only the letter case of your own name is allowed');
 
 select * from finish();

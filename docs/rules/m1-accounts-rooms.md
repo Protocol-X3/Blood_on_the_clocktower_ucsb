@@ -12,6 +12,7 @@ Status: **Approved** by the owner, 2026-09-27.
 - **AUTH-06** Signing out ends the session on that device. A guest who signs out is warned first (in Chinese) that the guest account can't be recovered. · *E2E*
 - **AUTH-07** Every page except `/login` needs a signed-in user. Visitors who aren't signed in are sent to `/login` and brought back afterwards. · *E2E*
 - **AUTH-08** A session survives page reloads and the phone locking. Players don't have to sign in again during a game night. · *E2E*
+- **AUTH-09** A signed-in user, Google or guest, can change their own nickname at any time on their 个人主页, under the same rules as AUTH-03 (their own current name, even in another letter case, doesn't count as taken). The new name shows everywhere at once, including in rooms and past games, and the old name becomes free. *Added 2026-09-28.* · *pgTAP, E2E*
 
 ## PERM · Permission levels
 

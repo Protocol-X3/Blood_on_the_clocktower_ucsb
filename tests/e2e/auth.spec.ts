@@ -79,3 +79,37 @@ test('AUTH-05: a guest is offered to link a Google account', async ({ page, user
   await page.getByRole('button', { name: `账号：${g.nickname}` }).click();
   await expect(page.getByRole('button', { name: '绑定 Google 账号' })).toBeVisible();
 });
+
+test('AUTH-09: a user renames themselves on their 个人主页, and everyone sees the new name', async ({ page, users }) => {
+  const u = await users.make();
+  const other = await users.make();
+  await signIn(page, u);
+  await page.goto('/');
+  await page.getByRole('button', { name: `账号：${u.nickname}` }).click();
+  await page.getByRole('link', { name: '个人主页' }).click();
+  await expect(page.getByRole('heading', { name: u.nickname! })).toBeVisible();
+
+  await page.getByRole('button', { name: '修改昵称' }).click();
+  const dialog = page.getByRole('dialog', { name: '修改昵称' });
+  await expect(dialog.getByLabel('新昵称')).toHaveValue(u.nickname!);
+  await expect(dialog.getByRole('button', { name: '保存' })).toBeDisabled();
+  // AUTH-03 still applies: someone else's name is refused, in Chinese.
+  await dialog.getByLabel('新昵称').fill(other.nickname!.toUpperCase());
+  await dialog.getByRole('button', { name: '保存' }).click();
+  await expect(dialog.getByRole('alert')).toHaveText('昵称已被使用');
+
+  const renamed = `改名${Date.now() % 100000}`;
+  await dialog.getByLabel('新昵称').fill(`  ${renamed}  `);
+  await dialog.getByRole('button', { name: '保存' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: renamed })).toBeVisible();
+  await expect(page.getByRole('button', { name: `账号：${renamed}` })).toBeVisible();
+  // Everyone else reads the new name.
+  const { data } = await (await clientFor(other)).from('profiles').select('nickname').eq('id', u.id).single();
+  expect(data!.nickname).toBe(renamed);
+
+  // Only on your own page.
+  await page.goto(`/profile/${other.id}`);
+  await expect(page.getByRole('heading', { name: other.nickname! })).toBeVisible();
+  await expect(page.getByRole('button', { name: '修改昵称' })).toHaveCount(0);
+});
