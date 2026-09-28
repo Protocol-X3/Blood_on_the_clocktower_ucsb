@@ -121,7 +121,8 @@ Internal script format: compatible with the standard BotC script JSON.
 - Custom roles as full objects: `id`, `name`, `team`, `ability`, and optionally `reminders`.
 
 The **role library** holds the official roles (with Chinese names and abilities: the three base editions, 实验性角色 and 华灯初上) plus custom roles saved from imported scripts, so they're reusable.
-- Claude maps recognized roles to library IDs and only creates custom roles for unknown or homebrew ones.
+- Claude maps recognized roles to library IDs and only creates custom roles for unknown or homebrew ones. A photo's role reuses the library role when its ability means the same thing, even if worded differently; any change in meaning (e.g. "选择一名玩家" vs "选择一名存活的玩家") makes it a separate custom role. When unsure, Claude asks the owner.
+- Custom roles, from the editor or from photos, live in the library's **自制角色** collection.
 - **Seeding the library:** the official roles' Chinese names, abilities and reminders come from the official Chinese wiki. Photo imports add custom roles to the library over time.
 
 ## Pages

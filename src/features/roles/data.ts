@@ -10,6 +10,7 @@ export const EDITION_LABEL: Record<string, string> = {
   snv: '梦殒春宵',
   exp: '实验性角色',
   hdcs: '华灯初上',
+  homebrew: '自制角色',
 };
 
 /** Roles grouped by team, in the order Townsfolk, Outsiders, Minions, Demons (SCRIPT-05). */
