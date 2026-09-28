@@ -11,7 +11,8 @@
 - **M1 · Accounts & rooms: DONE** (certified 2026-09-27, tag `m1-done`, [report](../reports/M1.md)).
 - **M2 · Setup & roles: DONE** (certified 2026-09-27, tag `m2-done`, [report](../reports/M2.md)).
 - **M3 · Live game: DONE** (certified 2026-09-27, tag `m3-done`, [report](../reports/M3.md)).
-- **Current milestone: M4 · Grimoire, in progress.**
+- **M4 · Grimoire: DONE** (certified 2026-09-28, tag `m4-done`, [report](../reports/M4.md)).
+- **Current milestone: M5 · Stats & history, in progress.**
 - **Rules in force through: M4.** `npm run check:rules` reads this line: every rule of these phases must have a test. Each milestone's PR bumps it along with that milestone's tests.
 
 ## Phase gate
@@ -49,8 +50,8 @@ The owner will only use the app with the group once it's fully ready, so the mil
 | M1 | Accounts & rooms | Google and guest login, profiles, permission levels + `/admin`, create/join room, seats, DM seat | **Done** ([report](../reports/M1.md)) |
 | M2 | Setup & roles | Official role library seeded in Chinese (LLM-generated, reviewed by the owner), manual script editor, setup wizard, manual and card-draw assignment, shown/actual roles | **Done** ([report](../reports/M2.md)) |
 | M3 | Live game | Phases with the day/night theme, deaths with causes, revives, ghost votes, nominations, vote clock circle, board, end game + summary, bot sandbox (dev only) | **Done** ([report](../reports/M3.md)) |
-| M4 | Grimoire | Reminder tokens, per-seat DM log, circle grimoire layout | **In progress** |
-| M5 | Stats & history | Profile stats, game history pages | Not started |
+| M4 | Grimoire | Reminder tokens, per-seat DM log, circle grimoire layout | **Done** ([report](../reports/M4.md)) |
+| M5 | Stats & history | Profile stats, game history pages | **In progress** |
 | M6 | Scripts | Photo → Claude → review form, JSON import, custom roles saved into the library. Until then, scripts are entered with M2's manual editor. | Not started |
 
 ## Exit criteria (Definition of Done)
@@ -223,6 +224,8 @@ None right now.
 
 Newest first. Each entry records what was decided and why.
 
+- **2026-09-28:** **M4 certified** (`m4-done` on `d11acb0`). All M4.1–M4.4 and G1–G11 passed. M5 entry requirements are met.
+- **2026-09-28:** `[autonomy]` M4 judgment calls: tokens are 中毒, 醉酒, any script reminder or custom text (≤ 8 characters); tokens and the DM log become visible to the game's participants after it ends; log entries (≤ 500 characters) belong to a seat or the whole game and keep their phase when edited; the DM may give two seats the same role mid-game; local E2E runs use 3 workers. Details in [the M4 report](../reports/M4.md).
 - **2026-09-27:** **M3 certified** (`m3-done` on `2743ba7`). All M3.1–M3.7 and G1–G11 passed. M4 entry requirements are met.
 - **2026-09-27:** `[autonomy]` M3 judgment calls: a nomination goes 提名中 → 计票中 → 计票完成 → closed, with corrections until it closes; the threshold is fixed when the circle starts; self-nomination is allowed and cancelled nominations don't trigger NOM-02 warnings; no phase change during a nomination and no nominations after the day's execution is confirmed; the DM's screen drives the clock with idempotent ticks; posts only while the game runs; the summary lives at `/room/<code>/summary`; the bot sandbox's database functions are guarded by `app_config.bot_sandbox`, which the launch cleanup turns off; local E2E runs use 4 workers so the free-tier project keeps up. Details in [the M3 report](../reports/M3.md).
 - **2026-09-27:** **M2 certified** (`m2-done` on `966ab19`). All M2.1–M2.7 and G1–G11 passed. M3 entry requirements are met.
