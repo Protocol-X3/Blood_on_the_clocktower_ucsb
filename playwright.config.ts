@@ -15,6 +15,7 @@ const channel = process.env.CI ? undefined : 'chrome';
 
 export default defineConfig({
   testDir: 'tests/e2e',
+  globalTeardown: './tests/e2e/global-teardown.ts',
   fullyParallel: true,
   forbidOnly: true,
   retries: process.env.CI ? 1 : 0,

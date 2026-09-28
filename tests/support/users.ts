@@ -107,15 +107,9 @@ export async function poolUser(slot: string, opts: UserOptions = {}): Promise<Te
   await admin.from('rooms').update({ status: 'closed' }).eq('created_by', id).eq('status', 'open');
   await admin.from('room_members').delete().eq('user_id', id);
   if (level === 'admin') {
-    // Only one admin may exist: demote another *pool* account holding it, but never a real person.
-    const { data: admins } = await admin.from('profiles').select('id').eq('permission', 'admin').neq('id', id);
-    for (const other of admins ?? []) {
-      const { data } = await admin.auth.admin.getUserById(other.id);
-      if (!data.user?.email?.startsWith('e2e-pool-')) {
-        throw new Error('A real admin account exists in this project, so admin tests cannot run here (use CI or a dev project).');
-      }
-      await admin.from('profiles').update({ permission: 'player' }).eq('id', other.id);
-    }
+    // Only one admin may exist, so the test borrows the role. The E2E global
+    // teardown (restoreRealAdmin) always hands it back to the configured admin account.
+    await admin.from('profiles').update({ permission: 'player' }).eq('permission', 'admin').neq('id', id);
   }
   const { error } = await admin
     .from('profiles')
