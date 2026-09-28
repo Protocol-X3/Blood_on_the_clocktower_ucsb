@@ -156,13 +156,17 @@ test('TOKEN-02 · LOG-02 · M4.4 · GRIM-05: players never receive tokens or the
   const t = await liveGame(users, browser, 1);
   const phone = t.phones[0]!;
   const leaks: string[] = [];
+  // Once the game ends, the log and tokens are the players' to read (LOG-02): only record until then.
+  let running = true;
   phone.on('response', async (res) => {
+    if (!running) return;
     if (!/\/rest\/v1\/(grimoire_tokens|dm_log)/.test(res.url())) return;
     const body = await res.json().catch(() => null);
     if (Array.isArray(body) && body.length > 0) leaks.push(`${res.url()}: ${body.length} rows`);
   });
   phone.on('websocket', (ws) =>
     ws.on('framereceived', (f) => {
+      if (!running) return;
       const text = typeof f.payload === 'string' ? f.payload : '';
       // A deleted row's event carries only its id; anything with the token or log text is a leak.
       if (/"table":"(grimoire_tokens|dm_log)"/.test(text) && /"(label|body)":/.test(text)) leaks.push(`realtime: ${text.slice(0, 200)}`);
@@ -190,6 +194,7 @@ test('TOKEN-02 · LOG-02 · M4.4 · GRIM-05: players never receive tokens or the
   for (let i = 3; i < 5; i += 1) await rpc(t.dmc, 'advance_vote', { p_nomination: nom!, p_expected: i });
   await rpc(t.dmc, 'close_vote', { p_nomination: nom! });
 
+  running = false;
   await rpc(t.dmc, 'end_game', { p_game: t.gameId, p_winner: 'evil' });
   await expect(phone).toHaveURL(new RegExp(`/room/${t.code}/summary$`));
   expect(leaks).toEqual([]);
