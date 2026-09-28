@@ -11,7 +11,7 @@ function user(opts: UserOptions = {}) {
 
 const FIVE = [{ role: 'washerwoman' }, { role: 'chef' }, { role: 'drunk', shown: 'empath' }, { role: 'poisoner' }, { role: 'imp' }];
 
-/** A room with a DM, `seated` players in seats 1…n, and a Trouble Brewing draw-mode setup with five roles. */
+/** A room with a DM, `seated` signed-in players in seats 1…n (the rest filled), and a Trouble Brewing draw-mode setup with five roles. */
 async function drawSetup(seated: number) {
   const dm = await user({ level: 'dm_eligible' });
   const dmc = await clientFor(dm);
@@ -26,6 +26,11 @@ async function drawSetup(seated: number) {
     await c.rpc('join_room', { p_code: code! });
     expect((await c.rpc('take_seat', { p_room: roomId, p_seat: seat })).error).toBeNull();
     players.push(c);
+  }
+  // SETUP-11: setup needs every seat filled. The other seats' players never act, so they never sign in.
+  for (let seat = seated + 1; seat <= 5; seat += 1) {
+    const filler = await user();
+    expect((await admin.from('room_members').insert({ room_id: roomId, user_id: filler.id, seat })).error).toBeNull();
   }
   const { data: gameId, error } = await dmc.rpc('start_setup', { p_room: roomId, p_script: scriptId!, p_mode: 'draw' });
   expect(error).toBeNull();

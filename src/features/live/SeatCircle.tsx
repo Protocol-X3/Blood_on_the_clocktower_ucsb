@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/components/ui/cn';
+import { DeadMark } from '@/components/ui/DeadMark';
 import type { Team } from '@/lib/game/teams';
 
 const TEAM_RIM: Record<Team, string> = {
@@ -52,8 +53,8 @@ const polar = (cx: number, r: number, index: number, count: number) => {
 /**
  * The town square: seats clockwise from the top, in seat order. During a vote the
  * clock hand sweeps from the seat after the nominee (VOTE-03), gilding the arc it
- * has passed; locked raised hands turn gold (VOTE-04). Dead seats are greyed with a
- * 亡 shroud (DEATH-03).
+ * has passed; locked raised hands turn gold (VOTE-04). Dead seats are greyed, crossed
+ * out with a red X and carry a 亡 shroud (DEATH-03).
  */
 export function SeatCircle({ seats, size, tokenSize = 40, sweep, center, onSelect, label }: Props) {
   const n = seats.length;
@@ -147,6 +148,7 @@ export function SeatCircle({ seats, size, tokenSize = 40, sweep, center, onSelec
               >
                 {s.token ?? s.seat}
               </Tag>
+              {!s.alive ? <DeadMark /> : null}
               {large && s.detail ? (
                 <div className="absolute top-full left-1/2 mt-1 flex w-32 -translate-x-1/2 flex-col items-center gap-0.5 text-center">{s.detail}</div>
               ) : large ? (

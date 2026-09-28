@@ -1,6 +1,7 @@
 import { cva } from 'class-variance-authority';
 import type { Team } from '@/lib/game/teams';
 import { cn } from './cn';
+import { DeadMark } from './DeadMark';
 
 const tokenVariants = cva(
   'relative inline-flex shrink-0 select-none items-center justify-center rounded-full bg-parchment font-serif font-black text-parchment-ink transition-[filter,opacity] duration-500',
@@ -49,6 +50,7 @@ export function RoleToken({ glyph, team, label, size = 'md', dead, selected, cla
       )}
     >
       <span aria-hidden="true">{glyph}</span>
+      {dead ? <DeadMark /> : null}
     </span>
   );
 }

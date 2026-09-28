@@ -1,13 +1,8 @@
-import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Chip } from '@/components/ui/Chip';
 import { cn } from '@/components/ui/cn';
 import { Panel } from '@/components/ui/Panel';
-import { RoleToken } from '@/components/ui/RoleToken';
 import type { GameData } from '@/features/game/useGameData';
-import { RoleCard } from '@/features/roles/RoleCard';
-import { roleGlyph } from '@/lib/game/composition';
-import { TEAM_LABEL } from '@/lib/game/teams';
+import { HiddenRole } from '@/features/roles/HiddenRole';
 import { canRaiseHand, voteThreshold } from '@/lib/game/vote';
 import { supabase, type Game } from '@/services/supabase';
 import { Board } from './Board';
@@ -37,7 +32,6 @@ export function PlayerLive({
   act: Act;
 }) {
   const night = game.phase_kind !== 'day';
-  const [showRole, setShowRole] = useState(false);
   const mine = data.shown[0];
   const role = mine ? data.roles.find((r) => r.role_id === mine.shown_role_id) : undefined;
   const seat = data.seats.find((s) => s.seat === mySeat);
@@ -52,32 +46,9 @@ export function PlayerLive({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* The role: a full card at night, a compact bar by day that expands on tap. */}
-      {role && (night || showRole) ? (
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-full motion-safe:animate-flip-in">
-            <RoleCard role={role} />
-          </div>
-          {!night ? (
-            <Button variant="ghost" onClick={() => setShowRole(false)}>
-              收起角色
-            </Button>
-          ) : null}
-        </div>
-      ) : role ? (
-        <button
-          type="button"
-          onClick={() => setShowRole(true)}
-          aria-expanded="false"
-          className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-line bg-surface px-3 py-2 text-left"
-        >
-          <RoleToken glyph={roleGlyph(role)} team={role.team} label={role.name} size="sm" />
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="text-xs text-ink-faint">我的角色 · {mySeat}号</span>
-            <span className="font-serif text-[17px] font-bold">{role.name}</span>
-          </span>
-          <Chip tone={role.team}>{TEAM_LABEL[role.team]}</Chip>
-        </button>
+      {/* SECRET-05: the role stays face down until the player taps it. */}
+      {role ? (
+        <HiddenRole role={role} caption={`我的角色 · ${mySeat}号`} />
       ) : (
         <p className="text-center text-sm text-ink-muted" role="status">
           对局进行中，你正在旁观。
@@ -215,7 +186,9 @@ export function TownList({ data, names, mySeat }: { data: GameData; names: Map<n
             className={cn('flex min-h-12 items-center gap-3 border-b border-line px-4 last:border-b-0', !s.alive && 'text-ink-faint')}
           >
             <span className={cn('w-8 font-serif font-bold', s.alive ? 'text-gold-strong' : 'text-ink-faint')}>{s.seat}号</span>
-            <span className={cn('min-w-0 flex-1 truncate', s.seat === mySeat && 'font-bold')}>{names.get(s.seat)}</span>
+            <span className={cn('min-w-0 flex-1 truncate', s.seat === mySeat && 'font-bold', !s.alive && 'line-through decoration-blood decoration-2')}>
+              {names.get(s.seat)}
+            </span>
             {s.alive ? (
               <span className="text-xs text-ink-faint">存活</span>
             ) : (

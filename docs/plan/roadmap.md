@@ -225,6 +225,13 @@ None right now.
 
 Newest first. Each entry records what was decided and why.
 
+- **2026-09-28:** Owner-requested changes to setup and the player's screen (rules SETUP-06, SETUP-10, SETUP-11, DRAW-04, SECRET-05, SECRET-06, DEATH-03):
+  - Setup opens only once every seat has a player; the server refuses too. *Why:* owner request; seats can't change during setup, so it can't start half-empty.
+  - Each wizard step has one 返回 that goes back a step (replacing 返回基础设置 / 修改角色配置 / 取消修改). Going back keeps the choices: switching the mode keeps the composition, and only switching the script clears it. *Why:* owner request; a mode change shouldn't cost the DM their composition.
+  - The role card no longer shows an alignment; the DM tells a player in person when theirs changes. The DM's alignment controls stay as they are. *Why:* the owner's decision, instead of showing a separate "shown alignment", since roles like the 提线木偶 and the Lunatic don't know their real team.
+  - The player's role card and role info are face down until tapped, and turn back over on a second tap or when the app goes to the background. *Why:* owner request, so neighbours can't read the screen.
+  - Dead players' seat tokens are crossed out with a red X on every screen, and their names are struck through in the town list. *Why:* owner request, to make deaths obvious.
+
 - **2026-09-28:** The role library grows from 72 to 187 roles: all 66 实验性角色 and 49 华灯初上 roles (47 from 华灯初上 and 山雨欲来, plus 戏子（改） and 禁卫军（改） next to their originals), with ability text and reminders from the official Chinese wiki (clocktower-wiki.gstonegames.com). The TB Recluse is renamed 隐士 → 陌客 (the current translation; 隐士 is now the experimental Hermit). Travellers, Fabled and Lorics stay out for now (19 roles). *Why:* owner request; supporting the other role types is a feature of its own.
 - **2026-09-28:** **M5 certified** (`m5-done` on `4cea352`). All M5.1–M5.5 and G1–G11 passed. **The M0–M5 autonomy run is complete**, and Claude has stopped per M5.5. [Final report](../reports/RUN.md).
 - **2026-09-28:** `[autonomy]` M5 judgment calls: an ended game is readable only by its participants and the admin (onlookers lose access at the end); anyone sees a profile's stats, but the game list shows only the games the viewer may open; history rows show the starting role; the admin can't delete their own account or one sitting in a running game. Details in [the M5 report](../reports/M5.md).
