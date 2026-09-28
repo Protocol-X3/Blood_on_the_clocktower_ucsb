@@ -110,10 +110,10 @@ The DM picks the winning team. Everyone sees the **summary page**: actual and sh
 
 The group switches between many custom scripts, and it usually has **only a photo** of the script, not a file. Custom scripts may contain **homebrew roles that aren't in the official library**.
 
-Ways to add a script, from most to least important:
-1. **Photo → LLM → script (primary).** The DM uploads a photo. A server-side function sends it to Claude (vision + structured output) and gets back a script in our format. The DM then **reviews and edits the result in a form before saving**, since LLM output can't be trusted blindly.
+Ways to add a script:
+1. **Photo → Claude (primary).** The owner sends a photo of the script to Claude in a Claude Code session. Claude reads it, maps the roles to the library, adds homebrew roles as custom roles, and saves the script to the database, following a project skill. *Changed (2026-09-28): this replaces the planned in-app photo upload, Edge Function and review form.* The owner checks the result in the app, where the manual editor can fix anything.
 2. **Manual editor:** pick roles from the library, or add custom roles by hand.
-3. **JSON import:** the standard BotC script JSON, supported as a cheap bonus.
+3. ~~**JSON import**~~: dropped for now (2026-09-28).
 
 Internal script format: compatible with the standard BotC script JSON.
 - A `{"id":"_meta", "name", "author"}` entry.
@@ -121,8 +121,8 @@ Internal script format: compatible with the standard BotC script JSON.
 - Custom roles as full objects: `id`, `name`, `team`, `ability`, and optionally `reminders`.
 
 The **role library** holds the official roles (with Chinese names and abilities: the three base editions, 实验性角色 and 华灯初上) plus custom roles saved from imported scripts, so they're reusable.
-- The LLM prompt includes the library's role list, so it maps recognized roles to library IDs and only outputs full objects for unknown or homebrew roles.
-- **Seeding the library:** generate the official roles' Chinese names and abilities once with an LLM script, and have the owner review them. Reviewed photo imports then add to the library over time.
+- Claude maps recognized roles to library IDs and only creates custom roles for unknown or homebrew ones.
+- **Seeding the library:** the official roles' Chinese names, abilities and reminders come from the official Chinese wiki. Photo imports add custom roles to the library over time.
 
 ## Pages
 
@@ -134,6 +134,6 @@ The **role library** holds the official roles (with Chinese names and abilities:
 | `/room/:code/summary` | 对局结算: end-of-game reveal of all roles and the grimoire |
 | `/profile/:id` | 个人主页: stats and game history |
 | `/games/:id` | 历史对局详情 |
-| `/scripts` | 剧本库: photo upload, manual editor, JSON import, browse |
+| `/scripts` | 剧本库: manual editor, browse |
 | `/scripts/:id` | 剧本详情: role list by team, editable |
 | `/admin` | 管理: grant or revoke DM-eligible (admin only) |
