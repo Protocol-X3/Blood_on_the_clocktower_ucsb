@@ -4,7 +4,7 @@ Status: **Approved** by the owner, 2026-09-27.
 
 ## LIB · Role library
 
-- **LIB-01** The library contains every character of Trouble Brewing, Bad Moon Rising and Sects & Violets, the Experimental characters (实验性角色) and 华灯初上 (with its second season 山雨欲来, including both versions of the revised （改） roles), excluding Travellers, Fabled and Lorics. Each one has a stable ID (the standard English script-tool ID, or pinyin for 华灯初上), a Chinese name, a team and a Chinese ability description. Names, abilities and reminder tokens follow the official Chinese wiki (clocktower-wiki.gstonegames.com). *Changed (2026-09-28): the base editions' paraphrased wording was replaced with the wiki's.* · *Script (a completeness check against the list of IDs)*
+- **LIB-01** The library contains every character of Trouble Brewing, Bad Moon Rising and Sects & Violets, the Experimental characters (实验性角色) and 华灯初上 (with its second season 山雨欲来, including both versions of the revised （改） roles), plus the original version of 气球驾驶员 as 气球驾驶员（旧版）, excluding Travellers, Fabled and Lorics. Each one has a stable ID (the standard English script-tool ID, or pinyin for 华灯初上), a Chinese name, a team and a Chinese ability description. Names, abilities and reminder tokens follow the official Chinese wiki (clocktower-wiki.gstonegames.com). *Changed (2026-09-28): the base editions' paraphrased wording was replaced with the wiki's.* · *Script (a completeness check against the list of IDs)*
 - **LIB-02** Official library roles can't be edited or deleted through the app. · *pgTAP*
 - **LIB-03** Each role shows a one-character token glyph (e.g. 占 for 占卜师). A role may override its glyph. · *Unit*
 
@@ -13,7 +13,7 @@ Status: **Approved** by the owner, 2026-09-27.
 - **SCRIPT-01** Every signed-in user can browse scripts. Only DM-eligible users can create or edit them. · *pgTAP, E2E*
 - **SCRIPT-02** A script has a name (required, at most 30 characters), an optional author and at least one role. No role appears twice in the same script. · *Unit, pgTAP*
 - **SCRIPT-03** A script can mix library roles and custom roles. A custom role needs a Chinese name, a team and an ability, and its ID must be unique. · *pgTAP, E2E*
-- **SCRIPT-04** A custom role created in the editor is saved into the library, marked 自定义, so other scripts can reuse it. *Decided (2026-09-27): this is in M2, not M6, because the manual editor needs it.* · *pgTAP, E2E*
+- **SCRIPT-04** A custom role created in the editor (or by Claude from a script photo, M6) is saved into the library in the **自制角色** collection, so other scripts can reuse it. *Changed (2026-09-28): 自制角色 replaces the 自定义 label.* *Decided (2026-09-27): this is in M2, not M6, because the manual editor needs it.* · *pgTAP, E2E*
 - **SCRIPT-05** A script's roles are shown grouped by team, in this order: Townsfolk, Outsiders, Minions, Demons. · *E2E*
 - **SCRIPT-06** Editing a script later doesn't change games already played with it, because each game keeps its own copy of the roles used. · *pgTAP*
 

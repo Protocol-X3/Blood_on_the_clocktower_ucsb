@@ -9,18 +9,17 @@ How the app is built and tested. What it does is in [requirements.md](requiremen
 | Language | TypeScript |
 | Frontend | React + Vite + React Router: a multi-page app with client-side routing, installable as a PWA. Next.js isn't needed: there's no SEO, and client-side navigation keeps the room's realtime connection alive. |
 | UI | Tailwind CSS + shadcn/ui (Radix primitives, heavily re-themed) + Motion (framer-motion) for animation |
-| Backend | Supabase: Postgres, Auth (Google + anonymous), Realtime, Row Level Security, Storage (script photos), Edge Functions |
-| LLM | Claude API (`claude-opus-5`) from a Supabase Edge Function using the `@anthropic-ai/sdk`. It takes an image input and returns structured JSON output (`output_config.format`). |
+| Backend | Supabase: Postgres, Auth (Google + anonymous), Realtime, Row Level Security |
+| LLM | None in the app. Scripts from photos are made by Claude in a Claude Code session, following a project skill (M6, changed 2026-09-28). |
 | Hosting | Vercel (auto-deploys `main`) |
 
 Notes:
 - Supabase's free tier pauses a project after about 7 days of inactivity.
-- Anthropic API usage is pay-as-you-go. The estimate is roughly $0.10–0.25 per script photo on Opus 5.
 
 ## Key principles
 
 - **Keep roles secret at the data level, not only in the UI.** Players can read only public state and their own seat's role. The grimoire (all roles, tokens and DM notes) is readable only by that room's DM. Enforce this with Postgres Row Level Security, never by hiding things in the client.
-- **Keep secrets server-side.** The Anthropic API key lives only in the Supabase Edge Function, never in the frontend.
+- **Keep secrets server-side.** The service-role key never reaches the frontend. (There is no Anthropic API key: M6 makes scripts in Claude Code, not in the app.)
 - **Favor simplicity:** free-tier hosting and low maintenance.
 
 ## Game actions
@@ -28,7 +27,7 @@ Notes:
 - **Game actions are Postgres functions called via RPC** (e.g. `supabase.rpc('draw_card')`). This includes starting the game, drawing a card, changing phase, nominating, voting, advancing the vote and changing roles.
   - Each function checks permissions and state inside one transaction, so the actions are atomic and cheat-proof.
   - The client reads tables and subscribes to Realtime changes, but never writes game state directly.
-- **Edge Functions** are only for things that need secrets or outside APIs: the Claude photo → script call.
+- **Edge Functions:** none. The planned photo → script function was dropped when M6 moved to Claude Code (2026-09-28).
 - **Vote clock timer:** the DM's client drives it, calling `advance_vote()` every tick, and the database validates each step. If the DM's device sleeps, the vote just pauses.
 
 ## Draft data model
@@ -56,7 +55,7 @@ src/lib/              pure game logic (the strict coverage + mutation gates appl
 src/services/         Supabase client, generated DB types
 src/styles/           design tokens for the day / night / grimoire themes
 supabase/migrations/  versioned SQL: tables, RLS, RPC functions
-supabase/functions/   Edge Functions (parse-script)
+supabase/functions/   Edge Functions (none; M6 moved to Claude Code)
 supabase/tests/       pgTAP tests for security rules
 supabase/seed.sql     dev data + role library
 tests/unit/  tests/integration/  tests/e2e/   Vitest, simulation and Playwright tests

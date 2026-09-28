@@ -13,7 +13,7 @@
 - **M3 · Live game: DONE** (certified 2026-09-27, tag `m3-done`, [report](../reports/M3.md)).
 - **M4 · Grimoire: DONE** (certified 2026-09-28, tag `m4-done`, [report](../reports/M4.md)).
 - **M5 · Stats & history: DONE** (certified 2026-09-28, tag `m5-done`, [report](../reports/M5.md)).
-- **Autonomy run COMPLETE (2026-09-28).** See [the final report](../reports/RUN.md). Claude has stopped. **M6 waits for the owner's go-ahead.**
+- **Autonomy run COMPLETE (2026-09-28).** See [the final report](../reports/RUN.md). **M6 opened by the owner (2026-09-28), redefined:** scripts from photos are made by Claude in a Claude Code session, not by an in-app feature. The owner walks Claude through a few scripts, then Claude writes a project skill for the workflow.
 - **Rules in force through: M5.** `npm run check:rules` reads this line: every rule of these phases must have a test. Each milestone's PR bumps it along with that milestone's tests.
 
 ## Phase gate
@@ -53,7 +53,7 @@ The owner will only use the app with the group once it's fully ready, so the mil
 | M3 | Live game | Phases with the day/night theme, deaths with causes, revives, ghost votes, nominations, vote clock circle, board, end game + summary, bot sandbox (dev only) | **Done** ([report](../reports/M3.md)) |
 | M4 | Grimoire | Reminder tokens, per-seat DM log, circle grimoire layout | **Done** ([report](../reports/M4.md)) |
 | M5 | Stats & history | Profile stats, game history pages | **Done** ([report](../reports/M5.md)) |
-| M6 | Scripts | Photo → Claude → review form, JSON import, custom roles saved into the library. Until then, scripts are entered with M2's manual editor. | Not started |
+| M6 | Scripts | The owner sends Claude (in Claude Code) a photo of a script; Claude reads it, maps the roles to the library, adds any homebrew roles as custom roles, and saves the script to the database. The workflow is captured in a project skill. No in-app photo upload. | In progress |
 
 ## Exit criteria (Definition of Done)
 
@@ -147,7 +147,15 @@ A milestone is done **only when every criterion below can be verified**: by a co
 
 ### M6 · Scripts
 
-Exit criteria will be defined when the owner opens M6. It isn't part of the autonomy run.
+Redefined by the owner on 2026-09-28: there is no photo-upload feature in the app. Instead:
+1. The owner walks Claude through creating a few scripts from photos, one at a time, correcting the workflow as they go.
+2. Claude then writes a project skill (`.claude/skills/`) that captures the workflow: read the photo, map each role to the library, create custom roles for homebrew ones, save the script to the database, and verify it.
+3. In later sessions, the owner sends a photo and asks for a new script, and Claude follows the skill.
+
+| # | Criterion | How it's checked |
+|---|---|---|
+| M6.1 | The walkthrough scripts are in the database and match their photos | The owner checks each script in the app |
+| M6.2 | The skill exists and captures the workflow | The owner reviews the skill; a fresh session can follow it |
 
 ## Phase transitions
 
@@ -178,7 +186,7 @@ From M0 on, `npm run preflight` checks the automatable entry requirements. Befor
 | **M3 → M4** | E4.1 M3 is done | M3 report: G1–G11 and M3.1–M3.7 verified |
 | **M4 → M5** | E5.1 M4 is done | M4 report: G1–G11 and M4.1–M4.4 verified |
 | **M5 → end of run** | M5 is done | M5 report: G1–G11 and M5.1–M5.4 verified, then M5.5 (final report) → **stop** |
-| **→ M6** (outside the run) | The owner explicitly opens M6, an Anthropic API key is available as a Supabase Edge Function secret, and M6's exit criteria have been written | The owner's message. `npx supabase secrets list` shows `ANTHROPIC_API_KEY` (name only). |
+| **→ M6** (outside the run) | The owner explicitly opens M6, and M6's exit criteria have been written | The owner's message (2026-09-28). No API key is needed, since Claude reads the photos in Claude Code. |
 
 ## Waiting on the owner
 
@@ -225,6 +233,9 @@ None right now.
 
 Newest first. Each entry records what was decided and why.
 
+- **2026-09-28:** The original 气球驾驶员 joins 实验性角色 as **气球驾驶员（旧版）** (`balloonist_old`, the ability text from the 夜半狂欢 sheet): 188 official roles. When a role has more than one version in the library, Claude asks the owner which one a new script uses. *Why:* both versions are official roles from different times, and older sheets still use the original.
+- **2026-09-28:** **自制角色 collection.** Every non-official role now sits in one library collection, 自制角色 (edition `homebrew`), whether made in the script editor or by Claude from a photo; the editor's 自定义 label becomes 自制角色, and the database enforces it. M6 role matching: a photo's role reuses the library role when the ability means the same thing, even if worded differently; any change in meaning (e.g. "a player" vs "a living player") makes it a new 自制角色; Claude asks the owner when unsure. *Why:* owner's rules for the photo workflow.
+- **2026-09-28:** **M6 redefined.** Scripts from photos are no longer an in-app feature (photo upload → Edge Function → Claude API → review form). Instead the owner gives Claude a photo in a Claude Code session, and Claude creates the script in the database, following a project skill written after a guided walkthrough of a few scripts. JSON import is dropped for now. *Why:* owner's choice: no API key, Edge Function or review UI to build and maintain, and scripts are added rarely, by the owner.
 - **2026-09-28:** The 72 base-edition roles (暗流涌动, 黯月初升, 梦殒春宵) now use the official Chinese wiki's text: 70 abilities reworded to the wiki's exact wording (several paraphrases had dropped rules detail, e.g. 调查员's "or no Minion in play", 主谋's extra night, 侍臣's "if in play"), 32 roles' reminder tokens aligned (e.g. 红鲱鱼→干扰项), and 圣女→贞洁者, 杀手→猎手. *Why:* the owner checked the library against the wiki and chose to match it exactly, like the 115 roles added earlier.
 - **2026-09-28:** Owner-requested changes to setup and the player's screen (rules SETUP-06, SETUP-10, SETUP-11, DRAW-04, SECRET-05, SECRET-06, DEATH-03):
   - Setup opens only once every seat has a player; the server refuses too. *Why:* owner request; seats can't change during setup, so it can't start half-empty.

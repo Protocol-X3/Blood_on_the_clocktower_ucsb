@@ -25,7 +25,7 @@ const FILTERS = [
   { key: 'snv', label: EDITION_LABEL.snv },
   { key: 'exp', label: EDITION_LABEL.exp },
   { key: 'hdcs', label: EDITION_LABEL.hdcs },
-  { key: 'custom', label: '自定义' },
+  { key: 'homebrew', label: EDITION_LABEL.homebrew },
 ] as const;
 
 /** Create (`/scripts/new`) or edit (`/scripts/:id/edit`) a script (SCRIPT-01..04). */
@@ -70,7 +70,7 @@ function Editor() {
     const q = query.trim();
     return (library ?? []).filter(
       (r) =>
-        (filter === 'all' || (filter === 'custom' ? !r.is_official : r.edition === filter)) &&
+        (filter === 'all' || r.edition === filter) &&
         (!q || r.name.includes(q) || r.ability.includes(q)),
     );
   }, [library, filter, query]);
@@ -141,7 +141,7 @@ function Editor() {
             <div className="flex items-center justify-between gap-2">
               <h2 className="font-serif text-lg font-bold tracking-wider text-gold-strong">角色库</h2>
               <Button variant="outline" onClick={() => setCreating(true)}>
-                新建自定义角色
+                新建自制角色
               </Button>
             </div>
             <div className="flex flex-wrap gap-1.5" role="group" aria-label="筛选">
@@ -219,7 +219,7 @@ function Editor() {
         onCreated={(role) => {
           setLibrary((l) => [...(l ?? []), role]);
           setSelected((s) => [...s, role.id]);
-          setFilter('custom');
+          setFilter('homebrew');
         }}
       />
     </ThemeScope>
@@ -257,7 +257,7 @@ function CustomRoleDialog({ open, onOpenChange, onCreated }: { open: boolean; on
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title="新建自定义角色" description="保存后会加入角色库，其他剧本也可以使用。" className="max-w-md">
+    <Dialog open={open} onOpenChange={onOpenChange} title="新建自制角色" description="保存后会加入角色库，其他剧本也可以使用。" className="max-w-md">
       <form onSubmit={create} className="flex flex-col gap-3">
         <TextField label="角色名称" value={name} onChange={(e) => setName(e.target.value)} maxLength={20} required />
         <label className="flex flex-col gap-1.5 text-sm text-ink-muted">

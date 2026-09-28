@@ -1,5 +1,5 @@
 -- M2 · role library and scripts.
-select plan(28);
+select plan(30);
 
 create temp table u as
 select tests.create_user('dora', 'dm_eligible') as dm,
@@ -8,11 +8,11 @@ select tests.create_user('dora', 'dm_eligible') as dm,
 grant select on u to authenticated, anon;
 
 -- LIB-01 · M2.2: the base editions, the Experimental characters and 华灯初上 are complete.
-select is((select count(*)::int from roles where is_official), 187, 'LIB-01 · M2.2: the library has all 187 characters');
+select is((select count(*)::int from roles where is_official), 188, 'LIB-01 · M2.2: the library has all 188 characters');
 select is((select count(*)::int from roles where edition = 'tb'), 22, 'LIB-01 · M2.2: Trouble Brewing: 22 characters');
 select is((select count(*)::int from roles where edition = 'bmr'), 25, 'LIB-01 · M2.2: Bad Moon Rising: 25 characters');
 select is((select count(*)::int from roles where edition = 'snv'), 25, 'LIB-01 · M2.2: Sects & Violets: 25 characters');
-select is((select count(*)::int from roles where edition = 'exp'), 66, 'LIB-01: Experimental characters (实验性角色): 66 characters');
+select is((select count(*)::int from roles where edition = 'exp'), 67, 'LIB-01: Experimental characters (实验性角色): 67 characters, including the original 气球驾驶员');
 select is((select count(*)::int from roles where edition = 'hdcs'), 49, 'LIB-01: 华灯初上 and 山雨欲来: 49 characters');
 select is((select name from roles where id = 'recluse'), '陌客', 'LIB-01: the Recluse is called 陌客, and 隐士 is the Hermit');
 select results_eq($$ select id from roles where name like '%（改）' order by id $$, $$ values ('jinweijun_gai'), ('xizi_gai') $$,
@@ -64,8 +64,12 @@ select tests.login((select dm from u));
 create temp table c as select create_custom_role('月光骑士', 'townsfolk', '每个夜晚，你会得知一名玩家是否醒来过。', '骑', array['已查验']) as id;
 select tests.logout();
 select matches((select id from c), '^custom-[0-9a-f]{10}$', 'SCRIPT-03: a custom role gets a unique id');
-select is((select row(name, team::text, is_official)::text from roles where id = (select id from c)), row('月光骑士', 'townsfolk', false)::text,
-  'SCRIPT-04: the custom role joins the library, marked as custom');
+select is((select row(name, team::text, is_official, edition)::text from roles where id = (select id from c)), row('月光骑士', 'townsfolk', false, 'homebrew')::text,
+  'SCRIPT-04: the custom role joins the library, in the 自制角色 collection');
+select throws_ok($$ insert into roles (id, name, team, ability, is_official) values ('stray', '无名', 'townsfolk', '能力', false) $$, '23514', null,
+  'SCRIPT-04: every custom role belongs to 自制角色, even at the database level');
+select throws_ok($$ update roles set edition = 'homebrew' where id = 'imp' $$, '23514', null,
+  'SCRIPT-04: …and no official role does');
 select is(tests.try_as((select dm from u), format($$ select save_script(null, '自定义剧本', null, array['imp', %L]) $$, (select id from c))), 'allow',
   'SCRIPT-03 · SCRIPT-04: a script can mix library and custom roles, so other scripts can reuse it');
 

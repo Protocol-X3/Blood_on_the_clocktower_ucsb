@@ -11,8 +11,8 @@ test('M2.3 · SCRIPT-01 · SCRIPT-03 · SCRIPT-04 · SCRIPT-05: a DM builds a sc
   const library = page.getByRole('region', { name: '角色库' });
   for (const role of ['洗衣妇', '投毒者', '小恶魔']) await library.getByRole('button', { name: role, exact: true }).click();
 
-  await page.getByRole('button', { name: '新建自定义角色' }).click();
-  const dialog = page.getByRole('dialog', { name: '新建自定义角色' });
+  await page.getByRole('button', { name: '新建自制角色' }).click();
+  const dialog = page.getByRole('dialog', { name: '新建自制角色' });
   const custom = `月光骑士${Date.now() % 1000}`;
   await dialog.getByLabel('角色名称').fill(custom);
   await dialog.getByLabel('阵营').selectOption('townsfolk');
@@ -20,6 +20,11 @@ test('M2.3 · SCRIPT-01 · SCRIPT-03 · SCRIPT-04 · SCRIPT-05: a DM builds a sc
   await dialog.getByRole('button', { name: '创建角色' }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole('region', { name: '已选角色' })).toContainText(custom);
+  // SCRIPT-04: it joins the library under 自制角色.
+  await library.getByRole('button', { name: '自制角色', exact: true }).click();
+  await expect(library.getByRole('button', { name: custom, exact: true })).toBeVisible();
+  await expect(library.getByRole('button', { name: '洗衣妇', exact: true })).toHaveCount(0);
+  await library.getByRole('button', { name: '全部', exact: true }).click();
 
   await page.getByRole('button', { name: '保存剧本' }).click();
   await expect(page.getByRole('heading', { name })).toBeVisible();
