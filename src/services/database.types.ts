@@ -497,6 +497,9 @@ isOneToOne: false
 "admin_assign_dm":
 { Args: { "p_room": string,"p_user": string }; Returns: undefined
                            },
+"admin_delete_user":
+{ Args: { "p_user": string }; Returns: undefined
+                           },
 "advance_phase":
 { Args: { "p_game": string }; Returns: undefined
                            },
@@ -589,6 +592,16 @@ isOneToOne: false
                            },
 "post_board":
 { Args: { "p_body": string,"p_game": string }; Returns: string
+                           },
+"profile_history":
+{ Args: { "p_user": string }; Returns: {
+              "as_dm": boolean,"ended_at": string,"final_alignment": Database["public"]['Enums']["alignment"],"game_id": string,"role_name": string,"script_name": string,"seat": number,"winner": Database["public"]['Enums']["alignment"]
+            }[]
+                           },
+"profile_stat_rows":
+{ Args: { "p_user": string }; Returns: {
+              "as_dm": boolean,"ended_at": string,"final_alignment": Database["public"]['Enums']["alignment"],"starting_role": string,"winner": Database["public"]['Enums']["alignment"]
+            }[]
                            },
 "remove_token":
 { Args: { "p_token": string }; Returns: undefined

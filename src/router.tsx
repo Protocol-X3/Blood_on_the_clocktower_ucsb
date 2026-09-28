@@ -2,10 +2,12 @@ import type { ReactNode } from 'react';
 import { createBrowserRouter } from 'react-router';
 import { RequireAuth } from '@/features/auth/RequireAuth';
 import { AdminPage } from '@/pages/AdminPage';
-import { ComingSoon, NotFoundPage } from '@/pages/ComingSoon';
+import { NotFoundPage } from '@/pages/ComingSoon';
 import { DesignGallery } from '@/pages/DesignGallery';
+import { GameHistoryPage } from '@/pages/GameHistoryPage';
 import { HomePage } from '@/pages/HomePage';
 import { LoginPage } from '@/pages/LoginPage';
+import { ProfilePage } from '@/pages/ProfilePage';
 import { RoomPage } from '@/pages/RoomPage';
 import { ScriptDetailPage } from '@/pages/ScriptDetailPage';
 import { ScriptEditorPage } from '@/pages/ScriptEditorPage';
@@ -21,8 +23,8 @@ export const router = createBrowserRouter([
   { path: '/welcome', element: <WelcomePage /> },
   { path: '/room/:code', element: auth(<RoomPage />) },
   { path: '/room/:code/summary', element: auth(<SummaryPage />) },
-  { path: '/profile/:id', element: auth(<ComingSoon title="个人主页" milestone="M5" theme="day" />) },
-  { path: '/games/:id', element: auth(<ComingSoon title="历史对局" milestone="M5" theme="day" />) },
+  { path: '/profile/:id', element: auth(<ProfilePage />) },
+  { path: '/games/:id', element: auth(<GameHistoryPage />) },
   { path: '/scripts', element: auth(<ScriptsPage />) },
   { path: '/scripts/new', element: auth(<ScriptEditorPage />) },
   { path: '/scripts/:id', element: auth(<ScriptDetailPage />) },

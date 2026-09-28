@@ -31,10 +31,6 @@ export function MessagePage({
   );
 }
 
-export function ComingSoon({ title, milestone, theme }: { title: string; milestone: string; theme?: ThemeName }) {
-  return <MessagePage title={title} message={`此页面将在 ${milestone} 中实现`} theme={theme} />;
-}
-
 export function NotFoundPage() {
   return <MessagePage title="页面不存在" message="你访问的页面不存在或已被移除。" />;
 }

@@ -7,6 +7,8 @@ import { expect, signIn, test } from './support/session.ts';
 interface Ctx {
   code: string;
   scriptId: string;
+  me: string;
+  gameId: string;
 }
 // game: the signed-in user sits in seat 1 of a running game at night, mid-vote by day, or after it ended.
 type GameState = 'night' | 'vote' | 'ended';
@@ -20,6 +22,8 @@ const PAGES: { name: string; signedIn: boolean; game?: GameState; path: (ctx: Ct
   { name: 'live game, night', signedIn: true, game: 'night', path: (c) => `/room/${c.code}` },
   { name: 'live game, day vote', signedIn: true, game: 'vote', path: (c) => `/room/${c.code}` },
   { name: 'game summary', signedIn: true, game: 'ended', path: (c) => `/room/${c.code}/summary` },
+  { name: 'profile', signedIn: true, game: 'ended', path: (c) => `/profile/${c.me}` },
+  { name: 'game history', signedIn: true, game: 'ended', path: (c) => `/games/${c.gameId}` },
 ];
 
 /** Seats the players in the room, starts a game through the API and brings it to the given state. */
@@ -32,6 +36,7 @@ async function runningGame(dmc: Awaited<ReturnType<typeof clientFor>>, ctx: Ctx,
     await c.rpc('take_seat', { p_room: roomId, p_seat: i + 1 });
   }
   const game = (await dmc.rpc('start_setup', { p_room: roomId, p_script: ctx.scriptId, p_mode: 'manual' })).data!;
+  ctx.gameId = game;
   const roles = ['washerwoman', 'fortuneteller', 'drunk', 'poisoner', 'imp'];
   await dmc.rpc('set_composition', { p_game: game, p_roles: roles.map((role) => ({ role })) });
   for (const [i, role] of roles.entries()) await dmc.rpc('assign_seat', { p_game: game, p_seat: i + 1, p_role: role });
@@ -48,7 +53,7 @@ async function runningGame(dmc: Awaited<ReturnType<typeof clientFor>>, ctx: Ctx,
 }
 
 async function open(page: Page, p: (typeof PAGES)[number], make: () => Promise<TestUser>, makeDm: () => Promise<TestUser>) {
-  const ctx: Ctx = { code: '', scriptId: '' };
+  const ctx: Ctx = { code: '', scriptId: '', me: '', gameId: '' };
   if (p.signedIn) {
     const dmc = await clientFor(await makeDm());
     ctx.code = (await dmc.rpc('create_room', { p_seat_count: 10 })).data!;
@@ -59,11 +64,13 @@ async function open(page: Page, p: (typeof PAGES)[number], make: () => Promise<T
       p_roles: ['washerwoman', 'fortuneteller', 'drunk', 'poisoner', 'imp'],
     })).data!;
     const me = await make();
+    ctx.me = me.id;
     if (p.game) await runningGame(dmc, ctx, [me, ...(await Promise.all([1, 2, 3, 4].map(() => make())))], p.game);
     await signIn(page, me);
   }
   await page.goto(p.path(ctx));
-  await expect(page.locator('#root h1')).toBeVisible();
+  // A live game's first load does several round trips (join, room, game data): allow for a slow network.
+  await expect(page.locator('#root h1')).toBeVisible({ timeout: 15_000 });
   await page.evaluate(() => document.fonts.ready);
 }
 
