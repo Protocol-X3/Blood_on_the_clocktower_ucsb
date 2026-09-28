@@ -78,6 +78,9 @@ export const ERROR_MESSAGES: Record<string, string> = {
   TOKEN_NOT_FOUND: '标记不存在',
   LOG_LENGTH: '日志需为 1–500 字',
   LOG_NOT_FOUND: '日志不存在',
+  // M5 · accounts
+  CANNOT_DELETE_SELF: '不能删除自己的账号',
+  USER_IN_GAME: '该用户正在对局中，请在对局结束后再删除',
   // Development tools (BOT-01: the messages must not name the sandbox)
   SANDBOX_OFF: '开发工具未开启',
   NOT_A_BOT: '该座位不是机器人',

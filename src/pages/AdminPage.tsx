@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
+import { Dialog } from '@/components/ui/Dialog';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Panel } from '@/components/ui/Panel';
 import { ThemeScope } from '@/components/ui/ThemeScope';
@@ -25,6 +26,7 @@ function AdminUsers() {
   const [busy, setBusy] = useState<string | null>(null);
 
   const [version, setVersion] = useState(0);
+  const [deleting, setDeleting] = useState<Profile | null>(null);
 
   useEffect(() => {
     supabase
@@ -42,6 +44,20 @@ function AdminUsers() {
     setBusy(null);
     if (error) setNotice(errorMessage(error));
     else setVersion((v) => v + 1);
+  }
+
+  // HIST-06: on the user's request; their games stay, shown as 已删除用户.
+  async function remove(user: Profile) {
+    setBusy(user.id);
+    setNotice(null);
+    const { error } = await supabase.rpc('admin_delete_user', { p_user: user.id });
+    setBusy(null);
+    setDeleting(null);
+    if (error) setNotice(errorMessage(error));
+    else {
+      setNotice(`已删除账号：${user.nickname ?? ''}`);
+      setVersion((v) => v + 1);
+    }
   }
 
   return (
@@ -74,11 +90,33 @@ function AdminUsers() {
                     取消资格
                   </Button>
                 ) : null}
+                {u.permission !== 'admin' ? (
+                  <Button variant="ghost" className="text-blood-text" disabled={busy === u.id} onClick={() => setDeleting(u)} aria-label={`删除账号 ${u.nickname ?? ''}`}>
+                    删除
+                  </Button>
+                ) : null}
               </li>
             ))}
           </ul>
         </Panel>
       </div>
+      {deleting ? (
+        <Dialog
+          open
+          onOpenChange={(o) => !o && setDeleting(null)}
+          title={`删除账号：${deleting.nickname ?? ''}`}
+          description="将删除该用户的登录方式、邮箱和昵称，且无法恢复。TA 参与过的对局会保留，并显示为「已删除用户」。"
+        >
+          <div className="flex flex-col gap-3">
+            <Button variant="danger" disabled={busy === deleting.id} onClick={() => remove(deleting)}>
+              确认删除
+            </Button>
+            <Button variant="ghost" onClick={() => setDeleting(null)}>
+              取消
+            </Button>
+          </div>
+        </Dialog>
+      ) : null}
     </ThemeScope>
   );
 }

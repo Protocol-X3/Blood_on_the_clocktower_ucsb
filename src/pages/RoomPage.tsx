@@ -28,17 +28,20 @@ export function RoomPage() {
   const navigate = useNavigate();
   const { state, reload } = useRoom(code.toUpperCase(), profile!.id);
 
-  // END-02: when the running game ends, everyone goes to its summary.
+  // END-02: when the running game ends, its players and DM go to its summary.
   const running = useRef<string | null>(null);
   const game = state.status === 'ready' ? state.game : undefined;
+  // Only the game's players and DM can read its summary (HIST-02); onlookers stay in the lobby.
+  const participant =
+    state.status === 'ready' && (state.room.dm_id === profile!.id || state.members.some((m) => m.user_id === profile!.id && m.seat !== null));
   useEffect(() => {
     if (game === undefined) return;
-    if (game?.status === 'in_progress') running.current = game.id;
+    if (game?.status === 'in_progress' && participant) running.current = game.id;
     else if (!game && running.current) {
       running.current = null;
       navigate(`/room/${code.toUpperCase()}/summary`);
     }
-  }, [game, code, navigate]);
+  }, [game, participant, code, navigate]);
 
   if (state.status === 'loading') return <LoadingScreen label="正在进入房间…" />;
   if (state.status === 'not_found') return <MessagePage title="房间不存在" message={`没有找到房间 ${code.toUpperCase()}，它可能已经关闭。`} />;
