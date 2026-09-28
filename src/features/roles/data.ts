@@ -8,6 +8,8 @@ export const EDITION_LABEL: Record<string, string> = {
   tb: '暗流涌动',
   bmr: '黯月初升',
   snv: '梦殒春宵',
+  exp: '实验性角色',
+  hdcs: '华灯初上',
 };
 
 /** Roles grouped by team, in the order Townsfolk, Outsiders, Minions, Demons (SCRIPT-05). */
