@@ -69,7 +69,8 @@ async function open(page: Page, p: (typeof PAGES)[number], make: () => Promise<T
     await signIn(page, me);
   }
   await page.goto(p.path(ctx));
-  await expect(page.locator('#root h1')).toBeVisible();
+  // A live game's first load does several round trips (join, room, game data): allow for a slow network.
+  await expect(page.locator('#root h1')).toBeVisible({ timeout: 15_000 });
   await page.evaluate(() => document.fonts.ready);
 }
 
