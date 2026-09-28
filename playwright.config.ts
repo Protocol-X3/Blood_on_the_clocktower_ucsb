@@ -19,24 +19,29 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: true,
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  // Locally the tests share one free-tier cloud project: more parallel browsers overload its realtime service.
+  workers: process.env.CI ? 2 : 4,
   reporter: process.env.PW_JSON
     ? [['list'], ['json', { outputFile: process.env.PW_JSON }]]
     : process.env.CI
       ? [['github'], ['html', { open: 'never' }]]
       : [['list']],
+  // @prod tests check the production build, so they only run against the deployed site.
+  grepInvert: remote ? undefined : /@prod/,
   use: { baseURL: remote ?? `http://localhost:${PORT}`, trace: 'retain-on-failure' },
   // Players are phone-first; the DM is laptop/iPad-first (design.md, Device targets).
   projects: [
-    // Admin screens are laptop/tablet screens, and only one admin can exist at a time: tablet only.
-    { name: 'phone', use: { ...devices['Pixel 7'], channel }, testIgnore: /(admin|setup)\.spec\.ts/ },
+    // Admin and DM screens are laptop/tablet screens (the DM specs drive their players' phones themselves),
+    // and only one admin can exist at a time: tablet only.
+    { name: 'phone', use: { ...devices['Pixel 7'], channel }, testIgnore: /(admin|setup|live|sandbox)\.spec\.ts/ },
     // Guest sign-in uses Supabase's anonymous sign-in, which is rate-limited per IP; run it on one profile.
     { name: 'tablet', use: { ...devices['iPad Pro 11 landscape'], browserName: 'chromium', channel }, testIgnore: /guest\.spec\.ts/ },
   ],
   webServer: remote
     ? undefined
     : {
-        command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
+        // A sandbox build (BOT-01/02): the bot tools are in, and it never overwrites dist/.
+        command: `npm run build -- --mode sandbox --outDir dist-sandbox && npx vite preview --outDir dist-sandbox --port ${PORT} --strictPort`,
         port: PORT,
         reuseExistingServer: !process.env.CI,
         timeout: 240_000,

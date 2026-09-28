@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { errorMessage } from '@/services/errors';
 import { supabase, type Game, type Profile, type Room, type RoomMember } from '@/services/supabase';
 
-export type Member = RoomMember & { profile: Pick<Profile, 'nickname' | 'permission' | 'is_guest'> | null };
+export type Member = RoomMember & { profile: Pick<Profile, 'nickname' | 'permission' | 'is_guest' | 'is_bot'> | null };
 
 export type RoomState =
   | { status: 'loading' }
@@ -24,7 +24,7 @@ export function useRoom(code: string, userId: string) {
     if (!id) return;
     const [roomRes, membersRes, gameRes] = await Promise.all([
       supabase.from('rooms').select('*').eq('id', id).maybeSingle(),
-      supabase.from('room_members').select('*, profile:profiles(nickname, permission, is_guest)').eq('room_id', id).order('joined_at'),
+      supabase.from('room_members').select('*, profile:profiles(nickname, permission, is_guest, is_bot)').eq('room_id', id).order('joined_at'),
       supabase.from('games').select('*').eq('room_id', id).neq('status', 'ended').maybeSingle(),
     ]);
     if (roomRes.error || membersRes.error || gameRes.error) {

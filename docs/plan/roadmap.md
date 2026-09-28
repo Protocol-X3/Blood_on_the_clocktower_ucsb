@@ -11,7 +11,7 @@
 - **M1 · Accounts & rooms: DONE** (certified 2026-09-27, tag `m1-done`, [report](../reports/M1.md)).
 - **M2 · Setup & roles: DONE** (certified 2026-09-27, tag `m2-done`, [report](../reports/M2.md)).
 - **Current milestone: M3 · Live game, in progress.**
-- **Rules in force through: M2.** `npm run check:rules` reads this line: every rule of these phases must have a test. Each milestone's PR bumps it along with that milestone's tests.
+- **Rules in force through: M3.** `npm run check:rules` reads this line: every rule of these phases must have a test. Each milestone's PR bumps it along with that milestone's tests.
 
 ## Phase gate
 

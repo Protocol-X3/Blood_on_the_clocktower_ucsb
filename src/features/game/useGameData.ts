@@ -9,63 +9,110 @@ export type SeatRole = T['seat_roles']['Row'];
 export type ShownRole = T['seat_shown_roles']['Row'];
 export type DrawSlot = T['draw_slots']['Row'];
 export type GameSeat = T['game_seats']['Row'];
+export type Nomination = T['nominations']['Row'];
+export type VoteRow = T['votes']['Row'];
+export type Death = T['game_deaths']['Row'];
+export type DayResult = T['day_results']['Row'];
+export type BoardPost = T['board_posts']['Row'];
 
 export interface GameData {
   roles: GameRole[];
   /** DM only (empty for players, by row level security). */
   composition: CompositionRow[];
-  /** DM only. */
+  /** DM only, until the game ends. */
   seatRoles: SeatRole[];
   /** A player's own shown role; every seat's for the DM. */
   shown: ShownRole[];
   slots: DrawSlot[];
   seats: GameSeat[];
+  nominations: Nomination[];
+  votes: VoteRow[];
+  deaths: Death[];
+  dayResults: DayResult[];
+  posts: BoardPost[];
 }
 
-const TABLES = ['game_composition', 'seat_roles', 'seat_shown_roles', 'draw_slots', 'game_seats'] as const;
+// Each table is reloaded on its own when it changes, so a vote tick doesn't refetch the roles.
+const LOADERS = {
+  roles: (g: string) => supabase.from('game_roles').select('*').eq('game_id', g),
+  composition: (g: string) => supabase.from('game_composition').select('*').eq('game_id', g),
+  seatRoles: (g: string) => supabase.from('seat_roles').select('*').eq('game_id', g).order('seat'),
+  shown: (g: string) => supabase.from('seat_shown_roles').select('*').eq('game_id', g).order('seat'),
+  slots: (g: string) => supabase.from('draw_slots').select('*').eq('game_id', g).order('card_no'),
+  seats: (g: string) => supabase.from('game_seats').select('*').eq('game_id', g).order('seat'),
+  nominations: (g: string) => supabase.from('nominations').select('*').eq('game_id', g).order('created_at'),
+  votes: (g: string) => supabase.from('votes').select('*').eq('game_id', g),
+  deaths: (g: string) => supabase.from('game_deaths').select('*').eq('game_id', g).order('id'),
+  dayResults: (g: string) => supabase.from('day_results').select('*').eq('game_id', g).order('day_number'),
+  posts: (g: string) => supabase.from('board_posts').select('*').eq('game_id', g).order('created_at', { ascending: false }),
+} satisfies Record<keyof GameData, (g: string) => PromiseLike<{ data: unknown[] | null }>>;
 
-/** Everything the current user may see about one game, kept live. */
+type Key = keyof GameData;
+const TABLE_OF: Partial<Record<string, Key>> = {
+  game_composition: 'composition',
+  seat_roles: 'seatRoles',
+  seat_shown_roles: 'shown',
+  draw_slots: 'slots',
+  game_seats: 'seats',
+  nominations: 'nominations',
+  votes: 'votes',
+  game_deaths: 'deaths',
+  day_results: 'dayResults',
+  board_posts: 'posts',
+};
+const KEYS = Object.keys(LOADERS) as Key[];
+
+// supabase-js reuses a channel with the same name, so each hook instance gets its own.
+let channels = 0;
+
+/** Everything the current user may see about one game, kept live (RECON-01: all of it comes from the database). */
 export function useGameData(gameId: string) {
   const [data, setData] = useState<GameData | null>(null);
 
-  const load = useCallback(async () => {
-    const [roles, composition, seatRoles, shown, slots, seats] = await Promise.all([
-      supabase.from('game_roles').select('*').eq('game_id', gameId),
-      supabase.from('game_composition').select('*').eq('game_id', gameId),
-      supabase.from('seat_roles').select('*').eq('game_id', gameId).order('seat'),
-      supabase.from('seat_shown_roles').select('*').eq('game_id', gameId).order('seat'),
-      supabase.from('draw_slots').select('*').eq('game_id', gameId).order('card_no'),
-      supabase.from('game_seats').select('*').eq('game_id', gameId).order('seat'),
-    ]);
-    setData({
-      roles: roles.data ?? [],
-      composition: composition.data ?? [],
-      seatRoles: seatRoles.data ?? [],
-      shown: shown.data ?? [],
-      slots: slots.data ?? [],
-      seats: seats.data ?? [],
-    });
-  }, [gameId]);
+  const loadKeys = useCallback(
+    async (keys: Key[]) => {
+      const results = await Promise.all(keys.map((k) => LOADERS[k](gameId)));
+      setData((prev) => {
+        const next = { ...(prev ?? (Object.fromEntries(KEYS.map((k) => [k, []])) as unknown as GameData)) };
+        keys.forEach((k, i) => {
+          (next as Record<Key, unknown[]>)[k] = results[i]!.data ?? [];
+        });
+        return next;
+      });
+    },
+    [gameId],
+  );
+  const load = useCallback(() => loadKeys(KEYS), [loadKeys]);
 
   useEffect(() => {
+    const pending = new Set<Key>();
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const reload = () => {
+    const reload = (keys: Key[]) => {
+      keys.forEach((k) => pending.add(k));
       clearTimeout(timer);
-      timer = setTimeout(() => void load(), 60);
+      timer = setTimeout(() => {
+        const batch = [...pending];
+        pending.clear();
+        void loadKeys(batch);
+      }, 40);
     };
-    reload();
-    let channel = supabase.channel(`game:${gameId}`);
-    for (const table of TABLES) {
-      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `game_id=eq.${gameId}` }, reload);
+    reload(KEYS);
+    channels += 1;
+    let channel = supabase.channel(`game:${gameId}:${channels}`);
+    for (const [table, key] of Object.entries(TABLE_OF)) {
+      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `game_id=eq.${gameId}` }, () => reload([key!]));
     }
+    // Realtime can't filter deletes (their payload holds only the key), so listen to all post deletions.
+    channel = channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'board_posts' }, () => reload(['posts']));
     channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') reload();
+      // (Re)subscribed, e.g. after the phone slept: catch up on everything.
+      if (status === 'SUBSCRIBED') reload(KEYS);
     });
     return () => {
       clearTimeout(timer);
       void supabase.removeChannel(channel);
     };
-  }, [gameId, load]);
+  }, [gameId, loadKeys]);
 
   return { data, reload: load };
 }

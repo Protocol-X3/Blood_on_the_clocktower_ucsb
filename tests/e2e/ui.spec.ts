@@ -8,14 +8,44 @@ interface Ctx {
   code: string;
   scriptId: string;
 }
-const PAGES: { name: string; signedIn: boolean; path: (ctx: Ctx) => string }[] = [
+// game: the signed-in user sits in seat 1 of a running game at night, mid-vote by day, or after it ended.
+type GameState = 'night' | 'vote' | 'ended';
+const PAGES: { name: string; signedIn: boolean; game?: GameState; path: (ctx: Ctx) => string }[] = [
   { name: 'login', signedIn: false, path: () => '/login' },
   { name: 'not found', signedIn: false, path: () => '/no-such-page' },
   { name: 'home', signedIn: true, path: () => '/' },
   { name: 'room lobby', signedIn: true, path: (c) => `/room/${c.code}` },
   { name: 'script library', signedIn: true, path: () => '/scripts' },
   { name: 'script detail', signedIn: true, path: (c) => `/scripts/${c.scriptId}` },
+  { name: 'live game, night', signedIn: true, game: 'night', path: (c) => `/room/${c.code}` },
+  { name: 'live game, day vote', signedIn: true, game: 'vote', path: (c) => `/room/${c.code}` },
+  { name: 'game summary', signedIn: true, game: 'ended', path: (c) => `/room/${c.code}/summary` },
 ];
+
+/** Seats the players in the room, starts a game through the API and brings it to the given state. */
+async function runningGame(dmc: Awaited<ReturnType<typeof clientFor>>, ctx: Ctx, players: TestUser[], state: GameState) {
+  const roomId = (await dmc.rpc('join_room', { p_code: ctx.code })).data!;
+  await dmc.rpc('set_seat_count', { p_room: roomId, p_count: 5 });
+  for (const [i, u] of players.entries()) {
+    const c = await clientFor(u);
+    await c.rpc('join_room', { p_code: ctx.code });
+    await c.rpc('take_seat', { p_room: roomId, p_seat: i + 1 });
+  }
+  const game = (await dmc.rpc('start_setup', { p_room: roomId, p_script: ctx.scriptId, p_mode: 'manual' })).data!;
+  const roles = ['washerwoman', 'fortuneteller', 'drunk', 'poisoner', 'imp'];
+  await dmc.rpc('set_composition', { p_game: game, p_roles: roles.map((role) => ({ role })) });
+  for (const [i, role] of roles.entries()) await dmc.rpc('assign_seat', { p_game: game, p_seat: i + 1, p_role: role });
+  expect((await dmc.rpc('start_game', { p_game: game })).error).toBeNull();
+  await dmc.rpc('kill_seat', { p_game: game, p_seat: 3, p_cause: 'night' });
+  if (state === 'night') return;
+  await dmc.rpc('advance_phase', { p_game: game });
+  await dmc.rpc('post_board', { p_game: game, p_body: '天亮了，请大家发言。' });
+  const nom = (await dmc.rpc('open_nomination', { p_game: game, p_nominator: 2, p_nominee: 4 })).data!;
+  await dmc.rpc('start_vote', { p_nomination: nom });
+  await dmc.rpc('advance_vote', { p_nomination: nom, p_expected: 0 });
+  if (state === 'vote') return;
+  expect((await dmc.rpc('end_game', { p_game: game, p_winner: 'good' })).error).toBeNull();
+}
 
 async function open(page: Page, p: (typeof PAGES)[number], make: () => Promise<TestUser>, makeDm: () => Promise<TestUser>) {
   const ctx: Ctx = { code: '', scriptId: '' };
@@ -28,7 +58,9 @@ async function open(page: Page, p: (typeof PAGES)[number], make: () => Promise<T
       p_author: '',
       p_roles: ['washerwoman', 'fortuneteller', 'drunk', 'poisoner', 'imp'],
     })).data!;
-    await signIn(page, await make());
+    const me = await make();
+    if (p.game) await runningGame(dmc, ctx, [me, ...(await Promise.all([1, 2, 3, 4].map(() => make())))], p.game);
+    await signIn(page, me);
   }
   await page.goto(p.path(ctx));
   await expect(page.locator('#root h1')).toBeVisible();

@@ -10,6 +10,7 @@ import { RoomPage } from '@/pages/RoomPage';
 import { ScriptDetailPage } from '@/pages/ScriptDetailPage';
 import { ScriptEditorPage } from '@/pages/ScriptEditorPage';
 import { ScriptsPage } from '@/pages/ScriptsPage';
+import { SummaryPage } from '@/pages/SummaryPage';
 import { WelcomePage } from '@/pages/WelcomePage';
 
 const auth = (page: ReactNode) => <RequireAuth>{page}</RequireAuth>;
@@ -19,7 +20,7 @@ export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/welcome', element: <WelcomePage /> },
   { path: '/room/:code', element: auth(<RoomPage />) },
-  { path: '/room/:code/summary', element: auth(<ComingSoon title="对局结算" milestone="M3" />) },
+  { path: '/room/:code/summary', element: auth(<SummaryPage />) },
   { path: '/profile/:id', element: auth(<ComingSoon title="个人主页" milestone="M5" theme="day" />) },
   { path: '/games/:id', element: auth(<ComingSoon title="历史对局" milestone="M5" theme="day" />) },
   { path: '/scripts', element: auth(<ScriptsPage />) },

@@ -5,7 +5,51 @@ export type Database = {
   
   "public": {
           Tables: {
-            "draw_cards": {
+            "board_posts": {
+                  Row: {
+                    "author_id": string | null,"body": string,"created_at": string,"game_id": string,"id": string,"is_dm": boolean,"phase_kind": string,"phase_number": number,"seat": number | null
+                  }
+                  Insert: {
+                    "author_id"?: string | null,"body": string,"created_at"?: string,"game_id": string,"id"?: string,"is_dm"?: boolean,"phase_kind": string,"phase_number": number,"seat"?: number | null
+                  }
+                  Update: {
+                    "author_id"?: string | null,"body"?: string,"created_at"?: string,"game_id"?: string,"id"?: string,"is_dm"?: boolean,"phase_kind"?: string,"phase_number"?: number,"seat"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "board_posts_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "board_posts_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"day_results": {
+                  Row: {
+                    "created_at": string,"day_number": number,"executed_seat": number | null,"game_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"day_number": number,"executed_seat"?: number | null,"game_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"day_number"?: number,"executed_seat"?: number | null,"game_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "day_results_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"draw_cards": {
                   Row: {
                     "card_no": number,"game_id": string,"role_id": string,"shown_role_id": string
                   }
@@ -74,6 +118,25 @@ isOneToOne: false
       referencedColumns: ["game_id","role_id"]
     }
                   ]
+                },"game_deaths": {
+                  Row: {
+                    "cause": Database["public"]['Enums']["death_cause"],"created_at": string,"game_id": string,"id": number,"note": string | null,"phase_kind": string,"phase_number": number,"revived": boolean,"seat": number
+                  }
+                  Insert: {
+                    "cause": Database["public"]['Enums']["death_cause"],"created_at"?: string,"game_id": string,"id"?: never,"note"?: string | null,"phase_kind": string,"phase_number": number,"revived"?: boolean,"seat": number
+                  }
+                  Update: {
+                    "cause"?: Database["public"]['Enums']["death_cause"],"created_at"?: string,"game_id"?: string,"id"?: never,"note"?: string | null,"phase_kind"?: string,"phase_number"?: number,"revived"?: boolean,"seat"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "game_deaths_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"game_roles": {
                   Row: {
                     "ability": string,"game_id": string,"glyph": string,"name": string,"reminders": (string)[],"role_id": string,"team": Database["public"]['Enums']["team"]
@@ -95,13 +158,13 @@ isOneToOne: false
                   ]
                 },"game_seats": {
                   Row: {
-                    "alive": boolean,"game_id": string,"seat": number,"user_id": string | null
+                    "alive": boolean,"death_cause": Database["public"]['Enums']["death_cause"] | null,"death_note": string | null,"game_id": string,"ghost_vote_used": boolean,"seat": number,"user_id": string | null
                   }
                   Insert: {
-                    "alive"?: boolean,"game_id": string,"seat": number,"user_id"?: string | null
+                    "alive"?: boolean,"death_cause"?: Database["public"]['Enums']["death_cause"] | null,"death_note"?: string | null,"game_id": string,"ghost_vote_used"?: boolean,"seat": number,"user_id"?: string | null
                   }
                   Update: {
-                    "alive"?: boolean,"game_id"?: string,"seat"?: number,"user_id"?: string | null
+                    "alive"?: boolean,"death_cause"?: Database["public"]['Enums']["death_cause"] | null,"death_note"?: string | null,"game_id"?: string,"ghost_vote_used"?: boolean,"seat"?: number,"user_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -120,13 +183,13 @@ isOneToOne: false
                   ]
                 },"games": {
                   Row: {
-                    "assignment_mode": Database["public"]['Enums']["assignment_mode"] | null,"created_at": string,"dm_id": string | null,"ended_at": string | null,"id": string,"phase_kind": string | null,"phase_number": number | null,"room_id": string,"script_id": string | null,"seat_count": number | null,"started_at": string | null,"status": Database["public"]['Enums']["game_status"]
+                    "assignment_mode": Database["public"]['Enums']["assignment_mode"] | null,"created_at": string,"dm_id": string | null,"ended_at": string | null,"id": string,"phase_kind": string | null,"phase_number": number | null,"room_id": string,"script_id": string | null,"seat_count": number | null,"started_at": string | null,"status": Database["public"]['Enums']["game_status"],"vote_speed_ms": number,"winner": Database["public"]['Enums']["alignment"] | null
                   }
                   Insert: {
-                    "assignment_mode"?: Database["public"]['Enums']["assignment_mode"] | null,"created_at"?: string,"dm_id"?: string | null,"ended_at"?: string | null,"id"?: string,"phase_kind"?: string | null,"phase_number"?: number | null,"room_id": string,"script_id"?: string | null,"seat_count"?: number | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["game_status"]
+                    "assignment_mode"?: Database["public"]['Enums']["assignment_mode"] | null,"created_at"?: string,"dm_id"?: string | null,"ended_at"?: string | null,"id"?: string,"phase_kind"?: string | null,"phase_number"?: number | null,"room_id": string,"script_id"?: string | null,"seat_count"?: number | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["game_status"],"vote_speed_ms"?: number,"winner"?: Database["public"]['Enums']["alignment"] | null
                   }
                   Update: {
-                    "assignment_mode"?: Database["public"]['Enums']["assignment_mode"] | null,"created_at"?: string,"dm_id"?: string | null,"ended_at"?: string | null,"id"?: string,"phase_kind"?: string | null,"phase_number"?: number | null,"room_id"?: string,"script_id"?: string | null,"seat_count"?: number | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["game_status"]
+                    "assignment_mode"?: Database["public"]['Enums']["assignment_mode"] | null,"created_at"?: string,"dm_id"?: string | null,"ended_at"?: string | null,"id"?: string,"phase_kind"?: string | null,"phase_number"?: number | null,"room_id"?: string,"script_id"?: string | null,"seat_count"?: number | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["game_status"],"vote_speed_ms"?: number,"winner"?: Database["public"]['Enums']["alignment"] | null
                   }
                   Relationships: [
                     {
@@ -149,15 +212,34 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"profiles": {
+                },"nominations": {
                   Row: {
-                    "created_at": string,"id": string,"is_guest": boolean,"nickname": string | null,"permission": Database["public"]['Enums']["permission_level"]
+                    "closed_at": string | null,"created_at": string,"day_number": number,"game_id": string,"hand_index": number,"id": string,"nominator_seat": number,"nominee_seat": number,"paused": boolean,"status": Database["public"]['Enums']["nomination_status"],"threshold": number | null,"vote_count": number | null
                   }
                   Insert: {
-                    "created_at"?: string,"id": string,"is_guest"?: boolean,"nickname"?: string | null,"permission"?: Database["public"]['Enums']["permission_level"]
+                    "closed_at"?: string | null,"created_at"?: string,"day_number": number,"game_id": string,"hand_index"?: number,"id"?: string,"nominator_seat": number,"nominee_seat": number,"paused"?: boolean,"status"?: Database["public"]['Enums']["nomination_status"],"threshold"?: number | null,"vote_count"?: number | null
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"is_guest"?: boolean,"nickname"?: string | null,"permission"?: Database["public"]['Enums']["permission_level"]
+                    "closed_at"?: string | null,"created_at"?: string,"day_number"?: number,"game_id"?: string,"hand_index"?: number,"id"?: string,"nominator_seat"?: number,"nominee_seat"?: number,"paused"?: boolean,"status"?: Database["public"]['Enums']["nomination_status"],"threshold"?: number | null,"vote_count"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "nominations_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profiles": {
+                  Row: {
+                    "created_at": string,"id": string,"is_bot": boolean,"is_guest": boolean,"nickname": string | null,"permission": Database["public"]['Enums']["permission_level"]
+                  }
+                  Insert: {
+                    "created_at"?: string,"id": string,"is_bot"?: boolean,"is_guest"?: boolean,"nickname"?: string | null,"permission"?: Database["public"]['Enums']["permission_level"]
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"is_bot"?: boolean,"is_guest"?: boolean,"nickname"?: string | null,"permission"?: Database["public"]['Enums']["permission_level"]
                   }
                   Relationships: [
                     
@@ -277,13 +359,13 @@ isOneToOne: false
                   ]
                 },"seat_roles": {
                   Row: {
-                    "actual_role_id": string,"alignment": Database["public"]['Enums']["alignment"],"game_id": string,"seat": number,"shown_role_id": string
+                    "actual_role_id": string,"alignment": Database["public"]['Enums']["alignment"],"game_id": string,"seat": number,"shown_role_id": string,"starting_role_id": string | null
                   }
                   Insert: {
-                    "actual_role_id": string,"alignment": Database["public"]['Enums']["alignment"],"game_id": string,"seat": number,"shown_role_id": string
+                    "actual_role_id": string,"alignment": Database["public"]['Enums']["alignment"],"game_id": string,"seat": number,"shown_role_id": string,"starting_role_id"?: string | null
                   }
                   Update: {
-                    "actual_role_id"?: string,"alignment"?: Database["public"]['Enums']["alignment"],"game_id"?: string,"seat"?: number,"shown_role_id"?: string
+                    "actual_role_id"?: string,"alignment"?: Database["public"]['Enums']["alignment"],"game_id"?: string,"seat"?: number,"shown_role_id"?: string,"starting_role_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -337,6 +419,31 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"votes": {
+                  Row: {
+                    "game_id": string,"ghost_spent": boolean,"locked": boolean,"nomination_id": string,"raised": boolean,"seat": number
+                  }
+                  Insert: {
+                    "game_id": string,"ghost_spent"?: boolean,"locked"?: boolean,"nomination_id": string,"raised"?: boolean,"seat": number
+                  }
+                  Update: {
+                    "game_id"?: string,"ghost_spent"?: boolean,"locked"?: boolean,"nomination_id"?: string,"raised"?: boolean,"seat"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "votes_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "votes_nomination_id_fkey"
+      columns: ["nomination_id"]
+isOneToOne: false
+      referencedRelation: "nominations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -346,8 +453,17 @@ isOneToOne: false
             "admin_assign_dm":
 { Args: { "p_room": string,"p_user": string }; Returns: undefined
                            },
+"advance_phase":
+{ Args: { "p_game": string }; Returns: undefined
+                           },
+"advance_vote":
+{ Args: { "p_expected": number,"p_nomination": string }; Returns: number
+                           },
 "assign_seat":
 { Args: { "p_game": string,"p_role": string,"p_seat": number }; Returns: undefined
+                           },
+"cancel_nomination":
+{ Args: { "p_nomination": string }; Returns: undefined
                            },
 "cancel_setup":
 { Args: { "p_game": string }; Returns: undefined
@@ -355,11 +471,38 @@ isOneToOne: false
 "close_room":
 { Args: { "p_room": string }; Returns: undefined
                            },
+"close_vote":
+{ Args: { "p_nomination": string }; Returns: undefined
+                           },
+"conclude_day":
+{ Args: { "p_execute": boolean,"p_game": string }; Returns: number
+                           },
+"correct_vote":
+{ Args: { "p_nomination": string,"p_raised": boolean,"p_seat": number }; Returns: undefined
+                           },
 "create_custom_role":
 { Args: { "p_ability": string,"p_glyph"?: string,"p_name": string,"p_reminders"?: (string)[],"p_team": Database["public"]['Enums']["team"] }; Returns: string
                            },
 "create_room":
 { Args: { "p_seat_count"?: number }; Returns: string
+                           },
+"delete_post":
+{ Args: { "p_post": string }; Returns: undefined
+                           },
+"dev_add_bots":
+{ Args: { "p_room": string }; Returns: number
+                           },
+"dev_bot_draw":
+{ Args: { "p_bot": string,"p_card": number,"p_game": string }; Returns: undefined
+                           },
+"dev_bot_hand":
+{ Args: { "p_bot": string,"p_nomination": string,"p_raised": boolean }; Returns: undefined
+                           },
+"dev_bot_post":
+{ Args: { "p_body": string,"p_bot": string,"p_game": string }; Returns: undefined
+                           },
+"dev_remove_bots":
+{ Args: { "p_room": string }; Returns: number
                            },
 "dm_kick":
 { Args: { "p_room": string,"p_user": string }; Returns: undefined
@@ -373,8 +516,14 @@ isOneToOne: false
 "draw_card":
 { Args: { "p_card": number,"p_game": string }; Returns: undefined
                            },
+"end_game":
+{ Args: { "p_game": string,"p_winner": Database["public"]['Enums']["alignment"] }; Returns: undefined
+                           },
 "join_room":
 { Args: { "p_code": string }; Returns: string
+                           },
+"kill_seat":
+{ Args: { "p_cause": Database["public"]['Enums']["death_cause"],"p_game": string,"p_note"?: string,"p_seat": number }; Returns: undefined
                            },
 "leave_dm_seat":
 { Args: { "p_room": string }; Returns: undefined
@@ -385,11 +534,26 @@ isOneToOne: false
 "leave_seat":
 { Args: { "p_room": string }; Returns: undefined
                            },
+"open_nomination":
+{ Args: { "p_game": string,"p_nominator": number,"p_nominee": number }; Returns: string
+                           },
+"post_board":
+{ Args: { "p_body": string,"p_game": string }; Returns: string
+                           },
+"revive_seat":
+{ Args: { "p_game": string,"p_seat": number }; Returns: undefined
+                           },
 "save_script":
 { Args: { "p_author": string,"p_name": string,"p_roles": (string)[],"p_script": string }; Returns: string
                            },
 "set_composition":
 { Args: { "p_game": string,"p_roles": Json }; Returns: undefined
+                           },
+"set_ghost_vote":
+{ Args: { "p_game": string,"p_seat": number,"p_used": boolean }; Returns: undefined
+                           },
+"set_hand":
+{ Args: { "p_nomination": string,"p_raised": boolean }; Returns: undefined
                            },
 "set_nickname":
 { Args: { "p_nickname": string }; Returns: undefined
@@ -400,6 +564,12 @@ isOneToOne: false
 "set_seat_count":
 { Args: { "p_count": number,"p_room": string }; Returns: undefined
                            },
+"set_vote_paused":
+{ Args: { "p_nomination": string,"p_paused": boolean }; Returns: undefined
+                           },
+"set_vote_speed":
+{ Args: { "p_game": string,"p_ms": number }; Returns: undefined
+                           },
 "shuffle_cards":
 { Args: { "p_game": string }; Returns: undefined
                            },
@@ -408,6 +578,9 @@ isOneToOne: false
                            },
 "start_setup":
 { Args: { "p_mode": Database["public"]['Enums']["assignment_mode"],"p_room": string,"p_script": string }; Returns: string
+                           },
+"start_vote":
+{ Args: { "p_nomination": string }; Returns: undefined
                            },
 "take_dm_seat":
 { Args: { "p_room": string }; Returns: undefined
@@ -420,7 +593,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "alignment": "good"|"evil","assignment_mode": "manual"|"draw","game_status": "setup"|"in_progress"|"ended","permission_level": "player"|"dm_eligible"|"admin","team": "townsfolk"|"outsider"|"minion"|"demon"
+            "alignment": "good"|"evil","assignment_mode": "manual"|"draw","death_cause": "executed"|"night"|"other","game_status": "setup"|"in_progress"|"ended","nomination_status": "open"|"voting"|"counted"|"closed"|"cancelled","permission_level": "player"|"dm_eligible"|"admin","team": "townsfolk"|"outsider"|"minion"|"demon"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -536,7 +709,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "alignment": ["good", "evil"],"assignment_mode": ["manual", "draw"],"game_status": ["setup", "in_progress", "ended"],"permission_level": ["player", "dm_eligible", "admin"],"team": ["townsfolk", "outsider", "minion", "demon"]
+            "alignment": ["good", "evil"],"assignment_mode": ["manual", "draw"],"death_cause": ["executed", "night", "other"],"game_status": ["setup", "in_progress", "ended"],"nomination_status": ["open", "voting", "counted", "closed", "cancelled"],"permission_level": ["player", "dm_eligible", "admin"],"team": ["townsfolk", "outsider", "minion", "demon"]
           }
         }
 } as const
