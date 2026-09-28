@@ -8,7 +8,8 @@
 - **UI mockup:** approved (2026-09-25). See [design.md](design.md).
 - **Autonomy run STARTED 2026-09-27** (the owner's start signal). Claude is building M0 → M5 without stopping between milestones, per the Run rules.
 - **M0 · Foundation: DONE** (certified 2026-09-27, tag `m0-done`, [report](../reports/M0.md)).
-- **Current milestone: M1 · Accounts & rooms, in progress.**
+- **M1 · Accounts & rooms: DONE** (certified 2026-09-27, tag `m1-done`, [report](../reports/M1.md)).
+- **Current milestone: M2 · Setup & roles, in progress.**
 - **Rules in force through: M1.** `npm run check:rules` reads this line: every rule of these phases must have a test. Each milestone's PR bumps it along with that milestone's tests.
 
 ## Phase gate
@@ -43,8 +44,8 @@ The owner will only use the app with the group once it's fully ready, so the mil
 | # | Milestone | Scope | Status |
 |---|---|---|---|
 | M0 | Foundation | Scaffold, design system (theme, fonts, tokens), Supabase project + CLI link, deploy pipeline, **the full test harness** (`npm run verify`, CI, coverage and mutation config, rule-coverage check) | **Done** ([report](../reports/M0.md)) |
-| M1 | Accounts & rooms | Google and guest login, profiles, permission levels + `/admin`, create/join room, seats, DM seat | **In progress** |
-| M2 | Setup & roles | Official role library seeded in Chinese (LLM-generated, reviewed by the owner), manual script editor, setup wizard, manual and card-draw assignment, shown/actual roles | Not started |
+| M1 | Accounts & rooms | Google and guest login, profiles, permission levels + `/admin`, create/join room, seats, DM seat | **Done** ([report](../reports/M1.md)) |
+| M2 | Setup & roles | Official role library seeded in Chinese (LLM-generated, reviewed by the owner), manual script editor, setup wizard, manual and card-draw assignment, shown/actual roles | **In progress** |
 | M3 | Live game | Phases with the day/night theme, deaths with causes, revives, ghost votes, nominations, vote clock circle, board, end game + summary, bot sandbox (dev only) | Not started |
 | M4 | Grimoire | Reminder tokens, per-seat DM log, circle grimoire layout | Not started |
 | M5 | Stats & history | Profile stats, game history pages | Not started |
@@ -219,6 +220,8 @@ None right now.
 
 Newest first. Each entry records what was decided and why.
 
+- **2026-09-27:** **M1 certified** (`m1-done` on `c7e85ad`). All M1.1–M1.8 and G1–G11 passed, including the Google redirect against the live site. M2 entry requirements are met.
+- **2026-09-27:** `[autonomy]` M1 judgment calls: public 404 and design gallery; taking the DM seat gives up the player seat; seated players and the DM can't leave mid-game; a pg_cron job closes idle rooms; sign-out is per device; a test-account pool with cached sessions stays under Supabase's sign-in limits, and admin tests borrow the admin role with guaranteed restore. Details in [the M1 report](../reports/M1.md).
 - **2026-09-27:** **M0 certified** (`m0-done` on `c8b4ffb`). All M0.1–M0.9 criteria and gates G1–G11 passed. M1 entry requirements verified by `npm run preflight`. `[autonomy]` Day-theme colors were darkened slightly for WCAG AA, and the secret scanner ignores placeholder passwords.
 - **2026-09-27:** **Autonomy run started** (the owner's start signal). The setup checklist is complete: env, Vercel (`botc-ucsb.vercel.app`), redirect URLs, the Google OAuth client (published), and Google + anonymous sign-in, all verified end to end.
 - **2026-09-27:** Rule HIST-06 was added and approved (account deletion and anonymization), matching the promise in `docs/PRIVACY.md`.
