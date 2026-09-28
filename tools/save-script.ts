@@ -5,6 +5,7 @@
 //   {
 //     "name": "钟声来了",
 //     "author": "Bruce C.",            // or null
+//     "replace": false,                // true: overwrite the existing script of that name (owner's choice)
 //     "roles": [                       // in script order
 //       "clockmaker",                  // a library role id
 //       { "custom": { "name": "卡牌大师", "team": "townsfolk", "ability": "…", "glyph": "牌", "reminders": [] } }
@@ -31,6 +32,7 @@ interface CustomRole {
 interface Spec {
   name: string;
   author?: string | null;
+  replace?: boolean;
   roles: (string | { custom: CustomRole })[];
 }
 
@@ -55,12 +57,16 @@ try {
   await client.query('begin');
   const owner = (await client.query(`select id from auth.users where email = $1`, [env.ADMIN_EMAIL])).rows[0]?.id;
   if (!owner) throw new Error('the admin account has not signed in yet');
-  if ((await client.query(`select 1 from public.scripts where name = $1`, [spec.name])).rowCount) throw new Error(`a script named ${spec.name} already exists`);
+  // A name already in use needs the owner's decision: replace it ("replace": true), rename, or stop.
+  const existing = (await client.query(`select id from public.scripts where name = $1`, [spec.name])).rows[0]?.id ?? null;
+  if (existing && !spec.replace) throw new Error(`a script named ${spec.name} already exists; ask the owner (replace, new name or stop)`);
+  if (!existing && spec.replace) throw new Error(`"replace" is set, but there is no script named ${spec.name}`);
   // Act as the owner, like the app does, so RLS and the RPCs' own checks apply.
   await client.query(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ sub: owner, role: 'authenticated' })]);
   await client.query('set local role authenticated');
 
   const ids: string[] = [];
+  const created = new Set<string>();
   for (const r of spec.roles) {
     if (typeof r === 'string') {
       ids.push(r);
@@ -78,8 +84,9 @@ try {
       c.reminders ?? [],
     ]);
     ids.push(rows[0].id);
+    created.add(rows[0].id);
   }
-  const script = (await client.query(`select public.save_script(null, $1, $2, $3::text[]) as id`, [spec.name, spec.author ?? null, ids])).rows[0].id;
+  const script = (await client.query(`select public.save_script($1, $2, $3, $4::text[]) as id`, [existing, spec.name, spec.author ?? null, ids])).rows[0].id;
 
   // Read it back: every role, in order, with its team and collection.
   const { rows } = await client.query(
@@ -90,11 +97,11 @@ try {
   );
   const counts = rows.reduce<Record<string, number>>((m, r) => ({ ...m, [r.team]: (m[r.team] ?? 0) + 1 }), {});
   console.log(`${dryRun ? '[dry run] ' : ''}${spec.name}${spec.author ? ` · ${spec.author}` : ''} · ${rows.length} roles`, counts);
-  for (const r of rows) console.log(`  ${String(r.position).padStart(2)} ${r.team.padEnd(9)} ${r.name} (${r.id}, ${r.edition}${r.is_official ? '' : ', new 自制角色'})`);
+  for (const r of rows) console.log(`  ${String(r.position).padStart(2)} ${r.team.padEnd(9)} ${r.name} (${r.id}, ${r.edition}${r.is_official ? '' : created.has(r.id) ? ', new 自制角色' : ', 自制角色'})`);
   if (rows.length !== spec.roles.length) throw new Error(`expected ${spec.roles.length} roles, read back ${rows.length}`);
 
   await client.query(dryRun ? 'rollback' : 'commit');
-  console.log(dryRun ? '✓ dry run: rolled back, nothing saved' : `✓ saved script ${script}`);
+  console.log(dryRun ? '✓ dry run: rolled back, nothing saved' : `✓ ${existing ? 'replaced' : 'saved'} script ${script}`);
 } catch (e) {
   await client.query('rollback');
   console.error('✗ rolled back:', (e as Error).message);

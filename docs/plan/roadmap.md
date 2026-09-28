@@ -13,7 +13,7 @@
 - **M3 · Live game: DONE** (certified 2026-09-27, tag `m3-done`, [report](../reports/M3.md)).
 - **M4 · Grimoire: DONE** (certified 2026-09-28, tag `m4-done`, [report](../reports/M4.md)).
 - **M5 · Stats & history: DONE** (certified 2026-09-28, tag `m5-done`, [report](../reports/M5.md)).
-- **Autonomy run COMPLETE (2026-09-28).** See [the final report](../reports/RUN.md). **M6 opened by the owner (2026-09-28), redefined:** scripts from photos are made by Claude in a Claude Code session, not by an in-app feature. The owner walks Claude through a few scripts, then Claude writes a project skill for the workflow.
+- **Autonomy run COMPLETE (2026-09-28).** See [the final report](../reports/RUN.md). **M6 opened by the owner (2026-09-28), redefined:** scripts from photos are made by Claude in a Claude Code session, not by an in-app feature. **M6 DONE (2026-09-28):** after a guided walkthrough of three scripts, the workflow lives in the project skill [`.claude/skills/script-from-photo`](../../.claude/skills/script-from-photo/SKILL.md). All milestones M0–M6 are complete.
 - **Rules in force through: M5.** `npm run check:rules` reads this line: every rule of these phases must have a test. Each milestone's PR bumps it along with that milestone's tests.
 
 ## Phase gate
@@ -53,7 +53,7 @@ The owner will only use the app with the group once it's fully ready, so the mil
 | M3 | Live game | Phases with the day/night theme, deaths with causes, revives, ghost votes, nominations, vote clock circle, board, end game + summary, bot sandbox (dev only) | **Done** ([report](../reports/M3.md)) |
 | M4 | Grimoire | Reminder tokens, per-seat DM log, circle grimoire layout | **Done** ([report](../reports/M4.md)) |
 | M5 | Stats & history | Profile stats, game history pages | **Done** ([report](../reports/M5.md)) |
-| M6 | Scripts | The owner sends Claude (in Claude Code) a photo of a script; Claude reads it, maps the roles to the library, adds any homebrew roles as custom roles, and saves the script to the database. The workflow is captured in a project skill. No in-app photo upload. | In progress |
+| M6 | Scripts | The owner sends Claude (in Claude Code) a photo of a script; Claude reads it, maps the roles to the library, adds any homebrew roles as custom roles, and saves the script to the database. The workflow is captured in a project skill. No in-app photo upload. | **Done** (2026-09-28) |
 
 ## Exit criteria (Definition of Done)
 
@@ -154,8 +154,8 @@ Redefined by the owner on 2026-09-28: there is no photo-upload feature in the ap
 
 | # | Criterion | How it's checked |
 |---|---|---|
-| M6.1 | The walkthrough scripts are in the database and match their photos | The owner checks each script in the app |
-| M6.2 | The skill exists and captures the workflow | The owner reviews the skill; a fresh session can follow it |
+| M6.1 | The walkthrough scripts are in the database and match their photos | The owner checks each script in the app. **Met 2026-09-28:** 梦殒春宵, 夜半狂欢 (Zets) and 钟声来了 (Bruce C., with the 自制角色 卡牌大师) saved; the owner checked them. |
+| M6.2 | The skill exists and captures the workflow | The owner reviews the skill; a fresh session can follow it. **Met 2026-09-28:** `.claude/skills/script-from-photo/SKILL.md`, backed by `tools/compare-script.ts` and `tools/save-script.ts`; the matcher's tests (`tests/tools/scriptPhoto.test.ts`) replay the walkthrough's cases. |
 
 ## Phase transitions
 
@@ -233,6 +233,7 @@ None right now.
 
 Newest first. Each entry records what was decided and why.
 
+- **2026-09-28:** **M6 done.** The owner checked the three walkthrough scripts, and Claude wrote the `script-from-photo` skill with two tools: `compare-script` (matches a transcription against the live library, 自制角色 included, with a character diff and other versions) and `save-script` (creates 自制角色 and saves the script as the owner, with a dry run). Edge-case rules from the owner: Travellers are left out like Fabled; a homebrew name clash gets 名字（改）/（改2）/… after asking; an existing script name → ask (replace / new name / stop); new 自制角色 get reminder tokens only if the sheet shows them.
 - **2026-09-28:** The original 气球驾驶员 joins 实验性角色 as **气球驾驶员（旧版）** (`balloonist_old`, the ability text from the 夜半狂欢 sheet): 188 official roles. When a role has more than one version in the library, Claude asks the owner which one a new script uses. *Why:* both versions are official roles from different times, and older sheets still use the original.
 - **2026-09-28:** **自制角色 collection.** Every non-official role now sits in one library collection, 自制角色 (edition `homebrew`), whether made in the script editor or by Claude from a photo; the editor's 自定义 label becomes 自制角色, and the database enforces it. M6 role matching: a photo's role reuses the library role when the ability means the same thing, even if worded differently; any change in meaning (e.g. "a player" vs "a living player") makes it a new 自制角色; Claude asks the owner when unsure. *Why:* owner's rules for the photo workflow.
 - **2026-09-28:** **M6 redefined.** Scripts from photos are no longer an in-app feature (photo upload → Edge Function → Claude API → review form). Instead the owner gives Claude a photo in a Claude Code session, and Claude creates the script in the database, following a project skill written after a guided walkthrough of a few scripts. JSON import is dropped for now. *Why:* owner's choice: no API key, Edge Function or review UI to build and maintain, and scripts are added rarely, by the owner.
