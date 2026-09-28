@@ -7,7 +7,7 @@
 - **Planning:** complete (2026-09-25).
 - **UI mockup:** approved (2026-09-25). See [design.md](design.md).
 - **Autonomy run STARTED 2026-09-27** (the owner's start signal). Claude is building M0 → M5 without stopping between milestones, per the Run rules.
-- **Current milestone: M0 · Foundation, in progress.**
+- **Current milestone: M0 · Foundation, in progress.** `npm run check:rules` reads this line: the rules of this milestone and all earlier ones must have tests.
 
 ## Phase gate
 

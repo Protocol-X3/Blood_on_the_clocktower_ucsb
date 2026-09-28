@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "ES2023",
+    "lib": [
+      "ES2023",
+      "DOM"
+    ],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": [
+    "vite.config.ts",
+    "vitest.stryker.config.ts",
+    "playwright.config.ts",
+    "tools",
+    "tests/e2e",
+    "tests/tools",
+    "tests/integration"
+  ]
+}

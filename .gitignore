@@ -2,3 +2,25 @@
 .env
 .env.*
 !.env.example
+
+# Dependencies and build output
+node_modules/
+dist/
+
+# Test and tool output
+coverage/
+reports/mutation/
+.stryker-tmp/
+playwright-report/
+test-results/
+blob-report/
+*.tsbuildinfo
+
+# Supabase CLI local state
+supabase/.branches
+supabase/.temp
+
+# Editors and OS
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
