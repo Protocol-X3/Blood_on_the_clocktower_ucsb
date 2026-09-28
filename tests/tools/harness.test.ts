@@ -19,7 +19,9 @@ describe('test harness', () => {
       'npm run test:integration',
       'npm run test:db',
       'npm run test:e2e',
+      'npm run build',
       'npm run secrets:dist',
+      'npm run sandbox:dist',
       'npm run secrets:repo',
     ]);
     expect(pkg.scripts.lint).toContain('check-no-skip');
@@ -32,7 +34,7 @@ describe('test harness', () => {
     expect(ci).toContain('name: Checks');
     expect(ci).toContain('name: Full stack');
     expect(ci).toContain('supabase start');
-    for (const step of ['npm run typecheck', 'npm run lint', 'npm run check:rules', 'npm run ledger:check', 'npm run test:unit', 'npm run test:integration', 'npm run test:db', 'npm run test:e2e', 'npm run secrets:dist', 'npm run secrets:repo']) {
+    for (const step of ['npm run typecheck', 'npm run lint', 'npm run check:rules', 'npm run ledger:check', 'npm run test:unit', 'npm run test:integration', 'npm run test:db', 'npm run test:e2e', 'npm run build', 'npm run secrets:dist', 'npm run sandbox:dist', 'npm run secrets:repo']) {
       expect(ci).toContain(step);
     }
   });

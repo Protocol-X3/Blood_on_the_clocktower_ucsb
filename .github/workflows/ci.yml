@@ -59,7 +59,9 @@ jobs:
       - run: npm run test:db
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - run: npm run build
       - run: npm run secrets:dist
+      - run: npm run sandbox:dist
       - run: npm run secrets:repo
       - uses: actions/upload-artifact@v4
         if: failure()

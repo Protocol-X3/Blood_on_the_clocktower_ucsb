@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
@@ -14,7 +14,9 @@ import { UserMenu } from '@/features/auth/UserMenu';
 import { useRoom, type Member } from '@/features/room/useRoom';
 import { errorMessage } from '@/services/errors';
 import { supabase, type Game, type Room } from '@/services/supabase';
-import { GameStarted } from '@/features/game/GameStarted';
+import { LiveGame } from '@/features/live/LiveGame';
+import { BotDriver, LobbyBots } from '@/features/sandbox/sandbox';
+import { phaseLabel } from '@/lib/game/phase';
 import { DmSetup } from '@/features/setup/DmSetup';
 import { PlayerSetup } from '@/features/setup/PlayerSetup';
 import { StartSetup } from '@/features/setup/StartSetup';
@@ -23,7 +25,20 @@ import { MessagePage } from './ComingSoon';
 export function RoomPage() {
   const { code = '' } = useParams();
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const { state, reload } = useRoom(code.toUpperCase(), profile!.id);
+
+  // END-02: when the running game ends, everyone goes to its summary.
+  const running = useRef<string | null>(null);
+  const game = state.status === 'ready' ? state.game : undefined;
+  useEffect(() => {
+    if (game === undefined) return;
+    if (game?.status === 'in_progress') running.current = game.id;
+    else if (!game && running.current) {
+      running.current = null;
+      navigate(`/room/${code.toUpperCase()}/summary`);
+    }
+  }, [game, code, navigate]);
 
   if (state.status === 'loading') return <LoadingScreen label="正在进入房间…" />;
   if (state.status === 'not_found') return <MessagePage title="房间不存在" message={`没有找到房间 ${code.toUpperCase()}，它可能已经关闭。`} />;
@@ -55,9 +70,12 @@ function GameStage({ room, members, game, reload }: { room: Room; members: Membe
   }
 
   const setup = game.status === 'setup';
+  // GRIM-04: the DM's screen is always the grimoire; PHASE-03: players follow day and night.
+  const theme = isDm ? 'grimoire' : !setup && game.phase_kind === 'day' ? 'day' : 'night';
+  const bots = new Map(members.filter((m) => m.seat && m.profile?.is_bot).map((m) => [m.seat!, m.user_id]));
   return (
-    <ThemeScope theme={isDm ? 'grimoire' : 'night'} className="relative min-h-dvh overflow-hidden">
-      {isDm ? null : <StarField count={36} seed={5} />}
+    <ThemeScope theme={theme} className="relative min-h-dvh overflow-hidden" data-testid="game-theme">
+      {theme === 'night' ? <StarField count={36} seed={5} /> : null}
       <div className={cn('relative mx-auto flex min-h-dvh flex-col pb-10', isDm ? 'max-w-6xl' : 'max-w-md')}>
         <PageHeader>
           <UserMenu />
@@ -65,10 +83,15 @@ function GameStage({ room, members, game, reload }: { room: Room; members: Membe
         <header className="px-5 pt-1 text-center">
           <p className="text-xs tracking-[0.4em] text-ink-faint" data-testid="room-code">{room.code}</p>
           <h1 className="mt-1 font-serif text-3xl font-black tracking-[0.2em] text-gold">
-            {setup ? '对局配置' : `第${game.phase_number ?? 1}${game.phase_kind === 'day' ? '天' : '夜'}`}
+            {setup ? '对局配置' : phaseLabel({ kind: game.phase_kind === 'day' ? 'day' : 'night', number: game.phase_number ?? 1 })}
           </h1>
         </header>
         <main className="mt-6 flex flex-col gap-5 px-4">
+          {isDm && BotDriver && bots.size ? (
+            <Suspense fallback={null}>
+              <BotDriver game={game} bots={bots} />
+            </Suspense>
+          ) : null}
           {setup ? (
             isDm ? (
               <DmSetup game={game} members={members} act={act} />
@@ -76,7 +99,7 @@ function GameStage({ room, members, game, reload }: { room: Room; members: Membe
               <PlayerSetup game={game} mySeat={mySeat} seatNames={seatNames} />
             )
           ) : (
-            <GameStarted game={game} isDm={isDm} seatNames={seatNames} />
+            <LiveGame game={game} isDm={isDm} me={me.id} mySeat={mySeat} names={seatNames} act={act} />
           )}
           {notice ? (
             <p role="alert" className="rounded-xl border border-blood/50 bg-blood/10 px-4 py-3 text-sm text-blood-text">
@@ -261,6 +284,12 @@ function Lobby({ room, members, gameActive, reload }: { room: Room; members: Mem
                   </div>
                 </div>
               </Panel>
+            ) : null}
+
+            {isDm && !gameActive && !closed && LobbyBots ? (
+              <Suspense fallback={null}>
+                <LobbyBots room={room} />
+              </Suspense>
             ) : null}
 
             {notice ? (
