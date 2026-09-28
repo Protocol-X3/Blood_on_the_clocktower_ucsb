@@ -11,7 +11,8 @@ import { RoleToken } from '@/components/ui/RoleToken';
 import { StarField } from '@/components/ui/StarField';
 import { ThemeScope } from '@/components/ui/ThemeScope';
 import { UserMenu } from '@/features/auth/UserMenu';
-import type { Death, GameRole, GameSeat, SeatRole } from '@/features/game/useGameData';
+import type { Death, GameRole, GameSeat, LogEntry, SeatRole } from '@/features/game/useGameData';
+import { entryPhase } from '@/features/grimoire/seats';
 import { DEATH_CAUSE_LABEL, type DeathCause } from '@/features/live/model';
 import { roleGlyph } from '@/lib/game/composition';
 import { phaseLabel, type PhaseKind } from '@/lib/game/phase';
@@ -25,6 +26,7 @@ interface Summary {
   roles: SeatRole[];
   library: GameRole[];
   deaths: Death[];
+  log: LogEntry[];
   names: Map<string, string>;
 }
 
@@ -63,11 +65,12 @@ export function SummaryPage() {
         if (!cancelled) setState({ status: 'none' });
         return;
       }
-      const [seats, roles, library, deaths] = await Promise.all([
+      const [seats, roles, library, deaths, log] = await Promise.all([
         supabase.from('game_seats').select('*').eq('game_id', game.id).order('seat'),
         supabase.from('seat_roles').select('*').eq('game_id', game.id).order('seat'),
         supabase.from('game_roles').select('*').eq('game_id', game.id),
         supabase.from('game_deaths').select('*').eq('game_id', game.id).order('id'),
+        supabase.from('dm_log').select('*').eq('game_id', game.id).order('created_at'),
       ]);
       const ids = (seats.data ?? []).map((s) => s.user_id).filter((x): x is string => !!x);
       const { data: profiles } = ids.length ? await supabase.from('profiles').select('id, nickname').in('id', ids) : { data: [] };
@@ -80,6 +83,7 @@ export function SummaryPage() {
           roles: roles.data ?? [],
           library: library.data ?? [],
           deaths: deaths.data ?? [],
+          log: log.data ?? [],
           names: new Map((profiles ?? []).map((p) => [p.id, p.nickname ?? ''])),
         },
       });
@@ -91,7 +95,7 @@ export function SummaryPage() {
 
   if (state.status === 'loading') return <LoadingScreen label="正在载入结算…" />;
   if (state.status === 'none') return <MessagePage title="暂无结算" message="这个房间还没有结束的对局。" />;
-  const { game, seats, roles, library, deaths, names } = state.summary;
+  const { game, seats, roles, library, deaths, log, names } = state.summary;
   const roleById = new Map(library.map((r) => [r.role_id, r]));
   const roleOf = new Map(roles.map((r) => [r.seat, r]));
   const good = game.winner === 'good';
@@ -163,6 +167,25 @@ export function SummaryPage() {
               })}
             </ol>
           </Panel>
+          {log.length ? (
+            <Panel className="flex flex-col gap-3" aria-label="说书人日志">
+              <h2 className="font-serif text-lg font-bold tracking-wider text-gold-strong">说书人日志</h2>
+              <ol className="flex flex-col gap-2">
+                {log.map((e) => {
+                  const who = e.seat ? seats.find((x) => x.seat === e.seat) : undefined;
+                  return (
+                    <li key={e.id} data-testid="summary-log" className="flex gap-3 text-sm">
+                      <span className="w-12 shrink-0 text-xs text-ink-faint">{entryPhase(e)}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs text-ink-faint">{e.seat ? `${e.seat}号 ${(who?.user_id && names.get(who.user_id)) || ''}` : '整局'}</span>
+                        <span className="break-words whitespace-pre-wrap">{e.body}</span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </Panel>
+          ) : null}
           <Button asChild variant="outline" size="lg">
             <Link to={`/room/${code.toUpperCase()}`}>返回房间</Link>
           </Button>

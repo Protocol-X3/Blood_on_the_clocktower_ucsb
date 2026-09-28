@@ -12,7 +12,7 @@
 - **M2 · Setup & roles: DONE** (certified 2026-09-27, tag `m2-done`, [report](../reports/M2.md)).
 - **M3 · Live game: DONE** (certified 2026-09-27, tag `m3-done`, [report](../reports/M3.md)).
 - **Current milestone: M4 · Grimoire, in progress.**
-- **Rules in force through: M3.** `npm run check:rules` reads this line: every rule of these phases must have a test. Each milestone's PR bumps it along with that milestone's tests.
+- **Rules in force through: M4.** `npm run check:rules` reads this line: every rule of these phases must have a test. Each milestone's PR bumps it along with that milestone's tests.
 
 ## Phase gate
 
@@ -210,6 +210,7 @@ Done:
 
 Do this before the group's first real game night. Claude reminds the owner at the end of the autonomy run.
 - [ ] **Launch cleanup:** wipe all test users, rooms and games. Rebuild the database from the migrations, containing only the role library and the admin account.
+- [ ] **Turn off the bot sandbox:** set `private.app_config.bot_sandbox` to `off` and delete the bot accounts (profiles with `is_bot`). Its buttons are already absent from the production site (BOT-01).
 - [ ] **Rotate the service-role key.** It sat in `.env.local` during development.
 - [ ] **Decide the post-launch dev setup:** either create a separate dev project, or rely on CI's Docker database plus careful migrations. After launch, the cloud project holds real data and must never be reset.
 - [ ] Dress rehearsal with 2–3 friends (see architecture.md, Testing strategy).

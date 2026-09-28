@@ -71,6 +71,13 @@ export const ERROR_MESSAGES: Record<string, string> = {
   POST_LENGTH: '内容需为 1–140 字',
   POST_NOT_FOUND: '帖子不存在',
   WINNER_REQUIRED: '请选择获胜阵营',
+  // M4 · the grimoire
+  TOKEN_INVALID: '标记无效',
+  TOKEN_NOT_IN_SCRIPT: '这个提示不属于本局剧本的角色',
+  TOKEN_TEXT_LENGTH: '自定义标记需为 1–8 个字',
+  TOKEN_NOT_FOUND: '标记不存在',
+  LOG_LENGTH: '日志需为 1–500 字',
+  LOG_NOT_FOUND: '日志不存在',
   // Development tools (BOT-01: the messages must not name the sandbox)
   SANDBOX_OFF: '开发工具未开启',
   NOT_A_BOT: '该座位不是机器人',

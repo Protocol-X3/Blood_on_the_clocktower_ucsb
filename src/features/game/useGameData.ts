@@ -14,6 +14,8 @@ export type VoteRow = T['votes']['Row'];
 export type Death = T['game_deaths']['Row'];
 export type DayResult = T['day_results']['Row'];
 export type BoardPost = T['board_posts']['Row'];
+export type GrimoireToken = T['grimoire_tokens']['Row'];
+export type LogEntry = T['dm_log']['Row'];
 
 export interface GameData {
   roles: GameRole[];
@@ -30,6 +32,10 @@ export interface GameData {
   deaths: Death[];
   dayResults: DayResult[];
   posts: BoardPost[];
+  /** DM only, until the game ends (TOKEN-02). */
+  tokens: GrimoireToken[];
+  /** DM only, until the game ends (LOG-02). */
+  log: LogEntry[];
 }
 
 // Each table is reloaded on its own when it changes, so a vote tick doesn't refetch the roles.
@@ -45,6 +51,8 @@ const LOADERS = {
   deaths: (g: string) => supabase.from('game_deaths').select('*').eq('game_id', g).order('id'),
   dayResults: (g: string) => supabase.from('day_results').select('*').eq('game_id', g).order('day_number'),
   posts: (g: string) => supabase.from('board_posts').select('*').eq('game_id', g).order('created_at', { ascending: false }),
+  tokens: (g: string) => supabase.from('grimoire_tokens').select('*').eq('game_id', g).order('created_at'),
+  log: (g: string) => supabase.from('dm_log').select('*').eq('game_id', g).order('created_at'),
 } satisfies Record<keyof GameData, (g: string) => PromiseLike<{ data: unknown[] | null }>>;
 
 type Key = keyof GameData;
@@ -59,6 +67,8 @@ const TABLE_OF: Partial<Record<string, Key>> = {
   game_deaths: 'deaths',
   day_results: 'dayResults',
   board_posts: 'posts',
+  grimoire_tokens: 'tokens',
+  dm_log: 'log',
 };
 const KEYS = Object.keys(LOADERS) as Key[];
 
@@ -103,7 +113,9 @@ export function useGameData(gameId: string) {
       channel = channel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `game_id=eq.${gameId}` }, () => reload([key!]));
     }
     // Realtime can't filter deletes (their payload holds only the key), so listen to all post deletions.
-    channel = channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'board_posts' }, () => reload(['posts']));
+    for (const [table, key] of [['board_posts', 'posts'], ['grimoire_tokens', 'tokens'], ['dm_log', 'log']] as const) {
+      channel = channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table }, () => reload([key]));
+    }
     channel.subscribe((status) => {
       // (Re)subscribed, e.g. after the phone slept: catch up on everything.
       if (status === 'SUBSCRIBED') reload(KEYS);

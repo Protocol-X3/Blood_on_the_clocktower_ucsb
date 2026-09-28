@@ -1,98 +1,11 @@
-import { devices, type Browser, type Page } from '@playwright/test';
+import { devices, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../src/services/database.types.ts';
 import { admin, clientFor, type TestUser } from '../support/users.ts';
+import { closeAll, liveGame, rpc } from './support/game.ts';
 import { expect, otherBrowser, signIn, test } from './support/session.ts';
 
 // DM screens on the tablet profile; players on phone-sized browsers, or through the API.
 test.describe.configure({ mode: 'serial' });
-
-type Client = SupabaseClient<Database>;
-type Users = { make: (o?: object) => Promise<TestUser> };
-
-// Seat 3 is the Drunk, shown as the Empath.
-const FIVE = [{ role: 'washerwoman' }, { role: 'chef' }, { role: 'drunk', shown: 'empath' }, { role: 'poisoner' }, { role: 'imp' }];
-
-interface Live {
-  code: string;
-  roomId: string;
-  gameId: string;
-  dm: TestUser;
-  dmc: Client;
-  players: TestUser[];
-  clients: Client[];
-  phones: Page[];
-}
-
-/** A running 5-seat game (第1夜), started through the API; the first `phones` players watch on phones. */
-async function liveGame(users: Users, browser: Browser, phones = 1): Promise<Live> {
-  const dm = await users.make({ level: 'dm_eligible' });
-  const dmc = await clientFor(dm);
-  const { data: tb } = await admin.from('roles').select('id').eq('edition', 'tb');
-  const { data: scriptId } = await dmc.rpc('save_script', {
-    p_script: null as unknown as string,
-    p_name: `暗流涌动${Date.now() % 100000}`,
-    p_author: '',
-    p_roles: tb!.map((r) => r.id),
-  });
-  const { data: code } = await dmc.rpc('create_room', { p_seat_count: 5 });
-  const roomId = (await dmc.rpc('join_room', { p_code: code! })).data!;
-  const players: TestUser[] = [];
-  const clients: Client[] = [];
-  for (let seat = 1; seat <= 5; seat += 1) {
-    const p = await users.make();
-    const c = await clientFor(p);
-    await c.rpc('join_room', { p_code: code! });
-    expect((await c.rpc('take_seat', { p_room: roomId, p_seat: seat })).error).toBeNull();
-    players.push(p);
-    clients.push(c);
-  }
-  const { data: gameId } = await dmc.rpc('start_setup', {
-    p_room: roomId,
-    p_script: scriptId!,
-    p_mode: 'manual',
-  });
-  expect((await dmc.rpc('set_composition', { p_game: gameId!, p_roles: FIVE })).error).toBeNull();
-  for (const [i, r] of FIVE.entries())
-    expect(
-      (
-        await dmc.rpc('assign_seat', {
-          p_game: gameId!,
-          p_seat: i + 1,
-          p_role: r.role,
-        })
-      ).error,
-    ).toBeNull();
-  expect((await dmc.rpc('start_game', { p_game: gameId! })).error).toBeNull();
-  const pages: Page[] = [];
-  for (let i = 0; i < phones; i += 1) {
-    const page = await otherBrowser(browser, players[i]!, {
-      ...devices['Pixel 7'],
-    });
-    await page.goto(`/room/${code}`);
-    pages.push(page);
-  }
-  return {
-    code: code!,
-    roomId,
-    gameId: gameId!,
-    dm,
-    dmc,
-    players,
-    clients,
-    phones: pages,
-  };
-}
-
-async function closeAll(t: Live) {
-  for (const p of t.phones) await p.context().close();
-}
-
-const rpc = async (c: Client, fn: string, args: object) => {
-  const { error } = await (c.rpc as (f: string, a: object) => PromiseLike<{ error: { message: string } | null }>)(fn, args);
-  expect(error?.message ?? null).toBeNull();
-};
 
 test('M3.4 · PHASE-02 · DEATH-01 · DEATH-02 · NOM-04 · VOTE-01 · VOTE-13 · VOTE-14 · BOARD-01 · BOARD-02 · END-02 · END-03 · END-04: a full game, from the lobby to the summary', async ({
   page,
@@ -277,6 +190,8 @@ test('VOTE-05 · VOTE-06 · VOTE-12: the clock ticks on the DM’s screen; pausi
   browser,
   users,
 }) => {
+  // Deliberate waits (a paused hand, an offline DM) plus 3 s ticks: more than the default 30 s.
+  test.slow();
   const t = await liveGame(users, browser);
   const phone = t.phones[0]!;
   await rpc(t.dmc, 'advance_phase', { p_game: t.gameId });
@@ -374,7 +289,7 @@ test('DEATH-03 · VOTE-02 · VOTE-04: the dead are greyed with 亡 everywhere; a
   await page.goto(`/room/${t.code}`);
   for (const p of [page, p1]) {
     await expect(p.getByTestId('circle-seat-2')).toHaveAttribute('data-alive', 'false');
-    await expect(p.getByTestId('circle-seat-2').getByText('亡')).toBeVisible();
+    await expect(p.getByTestId('circle-seat-2').getByText('亡', { exact: true })).toBeVisible();
     await expect(p.getByTestId('circle-seat-2').locator(':scope > :first-child')).toHaveClass(/grayscale/);
   }
   const { data: nom } = await t.dmc.rpc('open_nomination', {
