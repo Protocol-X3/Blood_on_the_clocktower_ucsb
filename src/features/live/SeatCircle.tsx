@@ -27,6 +27,8 @@ export interface CircleSeat {
   token?: ReactNode;
   /** On the DM's screen: the actual role's team, for a parchment token with a team-coloured rim. */
   team?: Team;
+  /** On the grimoire: what to show under the token instead of the name (GRIM-02). */
+  detail?: ReactNode;
 }
 
 interface Props {
@@ -83,7 +85,7 @@ export function SeatCircle({ seats, size, tokenSize = 40, sweep, center, onSelec
   }
 
   return (
-    <div className="relative mx-auto" style={{ width: size, height: size, marginBottom: large ? 24 : 0 }} role="group" aria-label={label}>
+    <div className="relative mx-auto" style={{ width: size, height: size, marginBottom: large ? (seats.some((x) => x.detail) ? 76 : 24) : 0 }} role="group" aria-label={label}>
       <svg aria-hidden="true" width={size} height={size} className="absolute inset-0">
         <circle cx={c} cy={c} r={ring} fill="none" stroke="var(--color-line)" strokeWidth="1.5" strokeDasharray="3 5" />
         {arc ? <path d={arc} fill="none" stroke="var(--color-gold)" strokeWidth="3" strokeLinecap="round" opacity="0.8" /> : null}
@@ -145,7 +147,9 @@ export function SeatCircle({ seats, size, tokenSize = 40, sweep, center, onSelec
               >
                 {s.token ?? s.seat}
               </Tag>
-              {large ? (
+              {large && s.detail ? (
+                <div className="absolute top-full left-1/2 mt-1 flex w-32 -translate-x-1/2 flex-col items-center gap-0.5 text-center">{s.detail}</div>
+              ) : large ? (
                 <span
                   aria-hidden="true"
                   className={cn(

@@ -8,27 +8,24 @@ import { RoleToken } from '@/components/ui/RoleToken';
 import type { GameData, Nomination } from '@/features/game/useGameData';
 import { roleGlyph } from '@/lib/game/composition';
 import { nextPhase, phaseLabel, type PhaseKind } from '@/lib/game/phase';
-import { ALIGNMENT_LABEL, TEAM_LABEL } from '@/lib/game/teams';
+import { ALIGNMENT_LABEL } from '@/lib/game/teams';
 import { circleOrder, clampVoteSpeed, NOMINATION_WARNING_TEXT, nominationWarnings, VOTE_SPEED, voteThreshold } from '@/lib/game/vote';
 import { supabase, type Game } from '@/services/supabase';
 import { Board } from './Board';
 import {
   blockToday,
-  circleSeats,
   currentSeat,
-  DEATH_CAUSE_LABEL,
-  deathText,
   liveCount,
   openNomination,
   todays,
   votesOf,
-  type DeathCause,
 } from './model';
-import { SeatCircle } from './SeatCircle';
-import { useWidth } from './useWidth';
+import { Grimoire } from '@/features/grimoire/Grimoire';
+import { LogPanel } from '@/features/grimoire/Log';
+import { SeatDetail } from '@/features/grimoire/SeatDetail';
 
 type Act = (run: () => PromiseLike<{ error: unknown }>, after?: () => void) => Promise<void>;
-type Tab = 'nominate' | 'seat' | 'players' | 'board';
+type Tab = 'nominate' | 'seat' | 'players' | 'log' | 'board';
 
 /**
  * VOTE-05 / VOTE-12: the DM's screen drives the clock hand, one advance_vote per tick.
@@ -82,18 +79,10 @@ export function DmLive({
   const nom = openNomination(data);
   const votes = votesOf(data, nom);
   const living = data.seats.filter((s) => s.alive).length;
-  const roleById = new Map(data.roles.map((r) => [r.role_id, r]));
   const speed = clampVoteSpeed(game.vote_speed_ms ?? VOTE_SPEED.default);
   useVoteClock(nom, speed, reload);
 
-  const roles = new Map(
-    data.seatRoles.flatMap((sr) => {
-      const r = roleById.get(sr.actual_role_id);
-      return r ? [[sr.seat, { glyph: roleGlyph({ name: r.name, glyph: r.glyph }), team: r.team }] as const] : [];
-    }),
-  );
   const current = currentSeat(nom, data.seats.length);
-  const [circleRef, circleWidth] = useWidth<HTMLDivElement>(520);
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_26rem]">
@@ -112,25 +101,16 @@ export function DmLive({
           </div>
         </Panel>
 
-        <div ref={circleRef}>
-          <SeatCircle
-            label="魔典座位"
-            size={Math.min(520, circleWidth)}
-            tokenSize={circleWidth < 420 ? 40 : 52}
-            seats={circleSeats(data, names, { selected, roles })}
-            onSelect={(s) => {
-              setSelected(s);
-              setTab('seat');
-            }}
-            sweep={
-              nom && nom.status !== 'open'
-                ? {
-                    from: (nom.nominee_seat % data.seats.length) + 1,
-                    passed: nom.hand_index,
-                  }
-                : null
-            }
-            center={
+        <Grimoire
+          data={data}
+          names={names}
+          selected={selected}
+          onSelect={(s) => {
+            setSelected(s);
+            setTab('seat');
+          }}
+          sweep={nom && nom.status !== 'open' ? { from: (nom.nominee_seat % data.seats.length) + 1, passed: nom.hand_index } : null}
+          center={
               nom ? (
                 <div className="flex flex-col items-center gap-1" data-testid="dm-vote-center">
                   <span className={cn('text-xs font-bold tracking-[0.3em]', nom.status === 'voting' ? 'text-blood-text' : 'text-gold-strong')}>
@@ -155,9 +135,8 @@ export function DmLive({
                   <span className="mt-1 text-xs text-ink-faint">轻触座位查看详情</span>
                 </div>
               )
-            }
-          />
-        </div>
+          }
+        />
       </div>
 
       <aside className="flex flex-col gap-4">
@@ -167,6 +146,7 @@ export function DmLive({
               ['nominate', '提名'],
               ['seat', '座位'],
               ['players', '玩家'],
+              ['log', '日志'],
               ['board', '公告板'],
             ] as const
           ).map(([key, label]) => (
@@ -187,8 +167,9 @@ export function DmLive({
         </nav>
 
         {tab === 'nominate' ? <NominationPanel game={game} data={data} names={names} act={act} speed={speed} /> : null}
-        {tab === 'seat' ? <SeatPanel game={game} data={data} names={names} seat={selected} act={act} onPick={setSelected} /> : null}
+        {tab === 'seat' ? <SeatDetail game={game} data={data} names={names} seat={selected} act={act} onPick={setSelected} /> : null}
         {tab === 'players' ? <SeatRoleList data={data} names={names} /> : null}
+        {tab === 'log' ? <LogPanel gameId={game.id} data={data} names={names} act={act} /> : null}
         {tab === 'board' ? <Board posts={data.posts} names={names} me={me} isDm canPost act={act} gameId={game.id} /> : null}
       </aside>
 
@@ -495,140 +476,6 @@ function SeatSelect({
         ))}
       </select>
     </label>
-  );
-}
-
-/** DEATH-01 / DEATH-02 / DEATH-04 for one seat, with its roles. */
-function SeatPanel({
-  game,
-  data,
-  names,
-  seat,
-  act,
-  onPick,
-}: {
-  game: Game;
-  data: GameData;
-  names: Map<number, string>;
-  seat: number | null;
-  act: Act;
-  onPick: (n: number) => void;
-}) {
-  const [cause, setCause] = useState<DeathCause>('night');
-  const [note, setNote] = useState('');
-  const s = data.seats.find((x) => x.seat === seat);
-  const sr = data.seatRoles.find((x) => x.seat === seat);
-  const roleById = new Map(data.roles.map((r) => [r.role_id, r]));
-  if (!s) {
-    return (
-      <Panel className="flex flex-col gap-3">
-        <p className="text-sm text-ink-muted">在魔典中轻触一个座位，或从这里选择：</p>
-        <div className="flex flex-wrap gap-2">
-          {data.seats.map((x) => (
-            <Button key={x.seat} variant="outline" size="icon" onClick={() => onPick(x.seat)} aria-label={`${x.seat}号 ${names.get(x.seat)}`}>
-              {x.seat}
-            </Button>
-          ))}
-        </div>
-      </Panel>
-    );
-  }
-  const actual = sr ? roleById.get(sr.actual_role_id) : undefined;
-  const shown = sr && sr.shown_role_id !== sr.actual_role_id ? roleById.get(sr.shown_role_id) : undefined;
-
-  return (
-    <Panel className="flex flex-col gap-4" aria-label={`${s.seat}号座位`} data-testid="seat-panel">
-      <div className="flex items-center gap-3">
-        {actual ? <RoleToken glyph={roleGlyph(actual)} team={actual.team} label={actual.name} size="md" dead={!s.alive} /> : null}
-        <div className="min-w-0">
-          <p className="font-serif text-lg font-bold">
-            {s.seat}号 {names.get(s.seat)}
-          </p>
-          <p className="text-xs text-ink-muted">
-            {deathText(s.death_cause as DeathCause, s.death_note)} · {s.ghost_vote_used ? '幽灵票已用' : '幽灵票未用'}
-          </p>
-        </div>
-      </div>
-      {actual && sr ? (
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="rounded-xl bg-surface-2 px-3 py-2">
-            <p className="text-xs tracking-wider text-ink-faint">真实角色</p>
-            <p className="font-bold">
-              {actual.name} <Chip tone={actual.team}>{TEAM_LABEL[actual.team]}</Chip>
-            </p>
-          </div>
-          <div className="rounded-xl bg-surface-2 px-3 py-2">
-            <p className="text-xs tracking-wider text-ink-faint">{shown ? '展示角色' : '阵营'}</p>
-            <p className="font-bold">{shown ? shown.name : ALIGNMENT_LABEL[sr.alignment]}</p>
-          </div>
-        </div>
-      ) : null}
-
-      {s.alive ? (
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-sm text-ink-muted">死亡原因</legend>
-          <div className="flex gap-2">
-            {(Object.keys(DEATH_CAUSE_LABEL) as DeathCause[]).map((c) => (
-              <label
-                key={c}
-                className={cn(
-                  'flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-xl border text-sm',
-                  cause === c ? 'border-blood bg-blood/15 text-blood-text' : 'border-line',
-                )}
-              >
-                <input type="radio" name="cause" value={c} checked={cause === c} onChange={() => setCause(c)} className="sr-only" />
-                {DEATH_CAUSE_LABEL[c]}
-              </label>
-            ))}
-          </div>
-          {cause === 'other' ? (
-            <input
-              aria-label="说明（可选）"
-              placeholder="说明（可选）"
-              value={note}
-              maxLength={40}
-              onChange={(e) => setNote(e.target.value)}
-              className="min-h-11 rounded-xl border border-line bg-surface-2 px-3 text-ink"
-            />
-          ) : null}
-          <Button
-            variant="danger"
-            onClick={() =>
-              act(
-                () =>
-                  supabase.rpc('kill_seat', {
-                    p_game: game.id,
-                    p_seat: s.seat,
-                    p_cause: cause,
-                    p_note: cause === 'other' ? note : (null as unknown as string),
-                  }),
-                () => setNote(''),
-              )
-            }
-          >
-            标记死亡
-          </Button>
-        </fieldset>
-      ) : (
-        <Button variant="outline" onClick={() => act(() => supabase.rpc('revive_seat', { p_game: game.id, p_seat: s.seat }))}>
-          复活
-        </Button>
-      )}
-      <Button
-        variant="ghost"
-        onClick={() =>
-          act(() =>
-            supabase.rpc('set_ghost_vote', {
-              p_game: game.id,
-              p_seat: s.seat,
-              p_used: !s.ghost_vote_used,
-            }),
-          )
-        }
-      >
-        {s.ghost_vote_used ? '恢复幽灵票' : '标记幽灵票已用'}
-      </Button>
-    </Panel>
   );
 }
 

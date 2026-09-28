@@ -6,7 +6,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it } from 'vitest';
 import type { Database } from '../../src/services/database.types.ts';
-import { GameModel, type DeathCause, type ModelNomination, type Outcome } from '../support/gameModel.ts';
+import { GameModel, type DeathCause, type ModelNomination, type ModelRole, type Outcome } from '../support/gameModel.ts';
 import { admin, clientFor, poolUser } from '../support/users.ts';
 
 type Client = SupabaseClient<Database>;
@@ -41,6 +41,7 @@ interface Table {
   players: Client[];
   scriptId: string;
   roles: string[];
+  script: ModelRole[];
 }
 
 interface Sim {
@@ -52,6 +53,8 @@ interface Sim {
   model: GameModel;
   nominationIds: string[];
   postIds: string[];
+  tokenIds: string[];
+  logIds: string[];
   log: string[];
 }
 
@@ -98,9 +101,11 @@ async function newGame(table: Table, r: Rng): Promise<Sim> {
     gameId: gameId!,
     dm: table.dm,
     players,
-    model: new GameModel(n),
+    model: new GameModel(n, table.script.slice(0, n), table.script),
     nominationIds: [],
     postIds: [],
+    tokenIds: [],
+    logIds: [],
     log: [],
   };
 }
@@ -121,14 +126,18 @@ async function act(sim: Sim, label: string, expected: Outcome, call: PromiseLike
 
 /** The database state, in the model's shape, plus invariants that hold whatever the model says. */
 async function compare(sim: Sim) {
-  const [game, seats, noms, votes, results, posts] = await Promise.all([
+  const [game, seats, noms, votes, results, posts, roles, tokens, log] = await Promise.all([
     sim.dm.from('games').select('status, phase_kind, phase_number, winner, vote_speed_ms').eq('id', sim.gameId).single(),
     sim.dm.from('game_seats').select('seat, alive, ghost_vote_used, death_cause').eq('game_id', sim.gameId).order('seat'),
     sim.dm.from('nominations').select('*').eq('game_id', sim.gameId).order('created_at'),
     sim.dm.from('votes').select('*').eq('game_id', sim.gameId),
     sim.dm.from('day_results').select('day_number, executed_seat').eq('game_id', sim.gameId),
     sim.dm.from('board_posts').select('id').eq('game_id', sim.gameId),
+    sim.dm.from('seat_roles').select('seat, actual_role_id, shown_role_id, alignment').eq('game_id', sim.gameId).order('seat'),
+    sim.dm.from('grimoire_tokens').select('seat, label').eq('game_id', sim.gameId),
+    sim.dm.from('dm_log').select('seat, body, phase_kind, phase_number').eq('game_id', sim.gameId).order('created_at'),
   ]);
+  const byToken = (a: { seat: number; label: string }, b: { seat: number; label: string }) => a.seat - b.seat || a.label.localeCompare(b.label);
   const m = sim.model;
   const context = `after: ${sim.log.join(' → ')}`;
   expect(
@@ -162,6 +171,9 @@ async function compare(sim: Sim) {
       })),
       dayResults: Object.fromEntries(results.data!.map((d) => [d.day_number, d.executed_seat])),
       posts: posts.data!.length,
+      seatRoles: roles.data!.map((r) => ({ actual: r.actual_role_id, shown: r.shown_role_id, alignment: r.alignment })),
+      tokens: tokens.data!.map((t) => ({ seat: t.seat, label: t.label })).sort(byToken),
+      log: log.data!.map((e) => ({ seat: e.seat, body: e.body, phase: { kind: e.phase_kind, number: e.phase_number } })),
     },
     context,
   ).toEqual({
@@ -173,6 +185,9 @@ async function compare(sim: Sim) {
     nominations: m.nominations,
     dayResults: Object.fromEntries(m.dayResults),
     posts: m.posts.length,
+    seatRoles: m.seatRoles,
+    tokens: [...m.tokens].sort(byToken),
+    log: m.log,
   });
   // Invariants (M3.3): one open nomination at most; a spent ghost vote is a locked raised
   // hand; a count equals its locked raised hands; the hand never passes the table.
@@ -185,6 +200,9 @@ async function compare(sim: Sim) {
     }
   }
 }
+
+// M4 · the grimoire's actions, mixed into every phase.
+const GRIMOIRE = ['token', 'token', 'untoken', 'log', 'editLog', 'delLog', 'role', 'align'];
 
 const CAUSES: DeathCause[] = ['executed', 'night', 'other'];
 
@@ -265,10 +283,72 @@ async function other(sim: Sim, r: Rng, seat: () => number, open: ModelNomination
             'pause',
             'speed',
             'lateHand',
+            ...GRIMOIRE,
           ]
-      : ['phase', 'phase', 'phase', 'kill', 'kill', 'revive', 'ghost', 'post', 'delete', 'nominate', 'speed'],
+      : ['phase', 'phase', 'phase', 'kill', 'kill', 'revive', 'ghost', 'post', 'delete', 'nominate', 'speed', ...GRIMOIRE, ...GRIMOIRE],
   );
   switch (choice) {
+    case 'token': {
+      const s = seat();
+      const kind = r.pick(['poisoned', 'drunk', 'reminder', 'custom'] as const);
+      const text =
+        kind === 'reminder'
+          ? r.chance(0.9)
+            ? r.pick(m.script.flatMap((x) => x.reminders))
+            : '不存在的提示'
+          : kind === 'custom'
+            ? r.pick(['红鲱鱼', '守护', '八个字的自定义标', '九个字的自定义标记', '  '])
+            : null;
+      const expected = m.addToken(s, kind, text);
+      const { data } = await act(sim, `token(${s},${kind})`, expected, dm.rpc('add_token', { p_game: g, p_seat: s, p_kind: kind, p_text: text as string }));
+      if (expected.ok) sim.tokenIds.push(data as string);
+      return;
+    }
+    case 'untoken': {
+      if (m.tokens.length === 0) return;
+      const i = r.int(0, m.tokens.length - 1);
+      const expected = m.removeToken(i);
+      await act(sim, `untoken(${i})`, expected, dm.rpc('remove_token', { p_token: sim.tokenIds[i]! }));
+      if (expected.ok) sim.tokenIds.splice(i, 1);
+      return;
+    }
+    case 'log': {
+      const s = r.chance(0.3) ? null : seat();
+      const body = r.chance(0.05) ? r.pick(['   ', '记'.repeat(501)]) : `日志${sim.log.length}`;
+      const expected = m.addLog(s, body);
+      const { data } = await act(sim, `log(${s ?? '整局'})`, expected, dm.rpc('add_log', { p_game: g, p_seat: s as number, p_body: body }));
+      if (expected.ok) sim.logIds.push(data as string);
+      return;
+    }
+    case 'editLog': {
+      if (m.log.length === 0) return;
+      const i = r.int(0, m.log.length - 1);
+      const body = r.chance(0.1) ? '' : `改${sim.log.length}`;
+      await act(sim, `editLog(${i})`, m.editLog(i, body), dm.rpc('edit_log', { p_entry: sim.logIds[i]!, p_body: body }));
+      return;
+    }
+    case 'delLog': {
+      if (m.log.length === 0) return;
+      const i = r.int(0, m.log.length - 1);
+      const expected = m.deleteLog(i);
+      await act(sim, `delLog(${i})`, expected, dm.rpc('delete_log', { p_entry: sim.logIds[i]! }));
+      if (expected.ok) sim.logIds.splice(i, 1);
+      return;
+    }
+    case 'role': {
+      const s = seat();
+      const ids = m.script.map((x) => x.id);
+      const actual = r.chance(0.05) ? 'vortox' : r.pick(ids);
+      const shown = r.chance(0.5) ? actual : r.pick(ids);
+      await act(sim, `role(${s},${actual}/${shown})`, m.setRole(s, actual, shown), dm.rpc('set_seat_role', { p_game: g, p_seat: s, p_actual: actual, p_shown: shown }));
+      return;
+    }
+    case 'align': {
+      const s = seat();
+      const a = r.pick(['good', 'evil'] as const);
+      await act(sim, `align(${s},${a})`, m.setAlignment(s, a), dm.rpc('set_alignment', { p_game: g, p_seat: s, p_alignment: a }));
+      return;
+    }
     case 'nominate': {
       const [a, b] = [seat(), seat()];
       const expected = m.openNominationFor(a, b);
@@ -395,7 +475,7 @@ describe('M3 simulation', () => {
     const playerUsers = await Promise.all(Array.from({ length: MAX_PLAYERS }, (_, i) => poolUser(`sim-${i}`)));
     const dm = await clientFor(dmUser);
     const players = await Promise.all(playerUsers.map((u) => clientFor(u)));
-    const { data: tb } = await admin.from('roles').select('id').eq('edition', 'tb').order('id');
+    const { data: tb } = await admin.from('roles').select('id, team, reminders').eq('edition', 'tb').order('id');
     const { data: scriptId } = await dm.rpc('save_script', {
       p_script: null as unknown as string,
       p_name: '模拟剧本',
@@ -407,6 +487,7 @@ describe('M3 simulation', () => {
       players,
       scriptId: scriptId!,
       roles: tb!.map((x) => x.id),
+      script: tb!.map((x) => ({ id: x.id, team: x.team, reminders: x.reminders })),
     };
 
     let next = 0;

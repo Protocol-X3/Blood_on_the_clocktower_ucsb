@@ -39,6 +39,19 @@ export interface ModelPost {
   seat: number | null;
 }
 
+/** A script role, as the grimoire needs it (M4). */
+export interface ModelRole {
+  id: string;
+  team: 'townsfolk' | 'outsider' | 'minion' | 'demon';
+  reminders: string[];
+}
+
+export interface ModelSeatRole {
+  actual: string;
+  shown: string;
+  alignment: 'good' | 'evil';
+}
+
 export type Outcome = { ok: true; value?: unknown } | { ok: false; code: string };
 
 const ok = (value?: unknown): Outcome => ({ ok: true, value });
@@ -54,11 +67,19 @@ export class GameModel {
   dayResults = new Map<number, number | null>();
   posts: ModelPost[] = [];
   speed = 1500;
+  // M4 · the grimoire
+  seatRoles: ModelSeatRole[];
+  tokens: { seat: number; label: string }[] = [];
+  log: { seat: number | null; body: string; phase: Phase }[] = [];
 
   readonly seatCount: number;
+  readonly script: ModelRole[];
 
-  constructor(seatCount: number) {
+  /** `roles`: the roles dealt to seats 1…n (shown as themselves); `script`: every role of the game's script. */
+  constructor(seatCount: number, roles: ModelRole[] = [], script: ModelRole[] = roles) {
     this.seatCount = seatCount;
+    this.script = script;
+    this.seatRoles = roles.slice(0, seatCount).map((r) => ({ actual: r.id, shown: r.id, alignment: r.team === 'townsfolk' || r.team === 'outsider' ? 'good' : 'evil' }));
     this.seats = Array.from({ length: seatCount }, () => ({
       alive: true,
       ghostVoteUsed: false,
@@ -309,6 +330,79 @@ export class GameModel {
     const refused = this.running();
     if (refused) return refused;
     this.posts.splice(index, 1);
+    return ok();
+  }
+
+  // TOKEN-01
+  addToken(seat: number, kind: 'poisoned' | 'drunk' | 'reminder' | 'custom', text: string | null): Outcome {
+    const refused = this.running();
+    if (refused) return refused;
+    if (!this.seat(seat)) return fail('SEAT_INVALID');
+    const t = (text ?? '').trim();
+    let label: string;
+    if (kind === 'poisoned') label = '中毒';
+    else if (kind === 'drunk') label = '醉酒';
+    else if (kind === 'reminder') {
+      if (!this.script.some((r) => r.reminders.includes(t))) return fail('TOKEN_NOT_IN_SCRIPT');
+      label = t;
+    } else {
+      const n = [...t].length;
+      if (n < 1 || n > 8) return fail('TOKEN_TEXT_LENGTH');
+      label = t;
+    }
+    this.tokens.push({ seat, label });
+    return ok();
+  }
+
+  removeToken(index: number): Outcome {
+    const refused = this.running();
+    if (refused) return refused;
+    this.tokens.splice(index, 1);
+    return ok();
+  }
+
+  // LOG-01
+  addLog(seat: number | null, body: string): Outcome {
+    const refused = this.running();
+    if (refused) return refused;
+    if (seat !== null && !this.seat(seat)) return fail('SEAT_INVALID');
+    const n = [...body.trim()].length;
+    if (n < 1 || n > 500) return fail('LOG_LENGTH');
+    this.log.push({ seat, body: body.trim(), phase: { ...this.phase } });
+    return ok();
+  }
+
+  editLog(index: number, body: string): Outcome {
+    const refused = this.running();
+    if (refused) return refused;
+    const n = [...body.trim()].length;
+    if (n < 1 || n > 500) return fail('LOG_LENGTH');
+    this.log[index]!.body = body.trim();
+    return ok();
+  }
+
+  deleteLog(index: number): Outcome {
+    const refused = this.running();
+    if (refused) return refused;
+    this.log.splice(index, 1);
+    return ok();
+  }
+
+  // GRIM-03
+  setRole(seat: number, actual: string, shown: string): Outcome {
+    const refused = this.running();
+    if (refused) return refused;
+    if (!this.seat(seat)) return fail('SEAT_INVALID');
+    if (!this.script.some((r) => r.id === actual) || !this.script.some((r) => r.id === shown)) return fail('ROLE_NOT_IN_SCRIPT');
+    Object.assign(this.seatRoles[seat - 1]!, { actual, shown });
+    return ok();
+  }
+
+  setAlignment(seat: number, alignment: 'good' | 'evil'): Outcome {
+    const refused = this.running();
+    if (refused) return refused;
+    if (!this.seat(seat)) return fail('SEAT_INVALID');
+    this.seatRoles[seat - 1]!.alignment = alignment;
     return ok();
   }
 

@@ -49,6 +49,25 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"dm_log": {
+                  Row: {
+                    "body": string,"created_at": string,"game_id": string,"id": string,"phase_kind": string,"phase_number": number,"seat": number | null,"updated_at": string | null
+                  }
+                  Insert: {
+                    "body": string,"created_at"?: string,"game_id": string,"id"?: string,"phase_kind": string,"phase_number": number,"seat"?: number | null,"updated_at"?: string | null
+                  }
+                  Update: {
+                    "body"?: string,"created_at"?: string,"game_id"?: string,"id"?: string,"phase_kind"?: string,"phase_number"?: number,"seat"?: number | null,"updated_at"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "dm_log_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"draw_cards": {
                   Row: {
                     "card_no": number,"game_id": string,"role_id": string,"shown_role_id": string
@@ -212,6 +231,25 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"grimoire_tokens": {
+                  Row: {
+                    "created_at": string,"game_id": string,"id": string,"kind": Database["public"]['Enums']["token_kind"],"label": string,"seat": number
+                  }
+                  Insert: {
+                    "created_at"?: string,"game_id": string,"id"?: string,"kind": Database["public"]['Enums']["token_kind"],"label": string,"seat": number
+                  }
+                  Update: {
+                    "created_at"?: string,"game_id"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["token_kind"],"label"?: string,"seat"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "grimoire_tokens_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"nominations": {
                   Row: {
                     "closed_at": string | null,"created_at": string,"day_number": number,"game_id": string,"hand_index": number,"id": string,"nominator_seat": number,"nominee_seat": number,"paused": boolean,"status": Database["public"]['Enums']["nomination_status"],"threshold": number | null,"vote_count": number | null
@@ -371,7 +409,7 @@ isOneToOne: false
                     {
       foreignKeyName: "seat_roles_game_id_actual_role_id_fkey"
       columns: ["game_id","actual_role_id"]
-isOneToOne: true
+isOneToOne: false
       referencedRelation: "game_roles"
       referencedColumns: ["game_id","role_id"]
     },{
@@ -450,7 +488,13 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "admin_assign_dm":
+            "add_log":
+{ Args: { "p_body": string,"p_game": string,"p_seat": number }; Returns: string
+                           },
+"add_token":
+{ Args: { "p_game": string,"p_kind": Database["public"]['Enums']["token_kind"],"p_seat": number,"p_text"?: string }; Returns: string
+                           },
+"admin_assign_dm":
 { Args: { "p_room": string,"p_user": string }; Returns: undefined
                            },
 "advance_phase":
@@ -486,6 +530,9 @@ isOneToOne: false
 "create_room":
 { Args: { "p_seat_count"?: number }; Returns: string
                            },
+"delete_log":
+{ Args: { "p_entry": string }; Returns: undefined
+                           },
 "delete_post":
 { Args: { "p_post": string }; Returns: undefined
                            },
@@ -516,6 +563,9 @@ isOneToOne: false
 "draw_card":
 { Args: { "p_card": number,"p_game": string }; Returns: undefined
                            },
+"edit_log":
+{ Args: { "p_body": string,"p_entry": string }; Returns: undefined
+                           },
 "end_game":
 { Args: { "p_game": string,"p_winner": Database["public"]['Enums']["alignment"] }; Returns: undefined
                            },
@@ -540,11 +590,17 @@ isOneToOne: false
 "post_board":
 { Args: { "p_body": string,"p_game": string }; Returns: string
                            },
+"remove_token":
+{ Args: { "p_token": string }; Returns: undefined
+                           },
 "revive_seat":
 { Args: { "p_game": string,"p_seat": number }; Returns: undefined
                            },
 "save_script":
 { Args: { "p_author": string,"p_name": string,"p_roles": (string)[],"p_script": string }; Returns: string
+                           },
+"set_alignment":
+{ Args: { "p_alignment": Database["public"]['Enums']["alignment"],"p_game": string,"p_seat": number }; Returns: undefined
                            },
 "set_composition":
 { Args: { "p_game": string,"p_roles": Json }; Returns: undefined
@@ -563,6 +619,9 @@ isOneToOne: false
                            },
 "set_seat_count":
 { Args: { "p_count": number,"p_room": string }; Returns: undefined
+                           },
+"set_seat_role":
+{ Args: { "p_actual": string,"p_game": string,"p_seat": number,"p_shown": string }; Returns: undefined
                            },
 "set_vote_paused":
 { Args: { "p_nomination": string,"p_paused": boolean }; Returns: undefined
@@ -593,7 +652,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "alignment": "good"|"evil","assignment_mode": "manual"|"draw","death_cause": "executed"|"night"|"other","game_status": "setup"|"in_progress"|"ended","nomination_status": "open"|"voting"|"counted"|"closed"|"cancelled","permission_level": "player"|"dm_eligible"|"admin","team": "townsfolk"|"outsider"|"minion"|"demon"
+            "alignment": "good"|"evil","assignment_mode": "manual"|"draw","death_cause": "executed"|"night"|"other","game_status": "setup"|"in_progress"|"ended","nomination_status": "open"|"voting"|"counted"|"closed"|"cancelled","permission_level": "player"|"dm_eligible"|"admin","team": "townsfolk"|"outsider"|"minion"|"demon","token_kind": "poisoned"|"drunk"|"reminder"|"custom"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -709,7 +768,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "alignment": ["good", "evil"],"assignment_mode": ["manual", "draw"],"death_cause": ["executed", "night", "other"],"game_status": ["setup", "in_progress", "ended"],"nomination_status": ["open", "voting", "counted", "closed", "cancelled"],"permission_level": ["player", "dm_eligible", "admin"],"team": ["townsfolk", "outsider", "minion", "demon"]
+            "alignment": ["good", "evil"],"assignment_mode": ["manual", "draw"],"death_cause": ["executed", "night", "other"],"game_status": ["setup", "in_progress", "ended"],"nomination_status": ["open", "voting", "counted", "closed", "cancelled"],"permission_level": ["player", "dm_eligible", "admin"],"team": ["townsfolk", "outsider", "minion", "demon"],"token_kind": ["poisoned", "drunk", "reminder", "custom"]
           }
         }
 } as const
