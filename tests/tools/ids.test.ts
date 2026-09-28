@@ -41,7 +41,7 @@ describe('rule checker', () => {
   });
 
   it('QA-05: rules become required phase by phase', () => {
-    expect(currentMilestone('- **Current milestone: M2 · Setup**')).toBe(2);
+    expect(currentMilestone('- **Rules in force through: M2.**')).toBe(2);
     expect(currentMilestone('no marker')).toBeNull();
     expect(inScope('docs/rules/m1-accounts-rooms.md', 2)).toBe(true);
     expect(inScope('docs/rules/m3-live-game.md', 2)).toBe(false);

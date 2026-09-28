@@ -8,7 +8,8 @@
 - **UI mockup:** approved (2026-09-25). See [design.md](design.md).
 - **Autonomy run STARTED 2026-09-27** (the owner's start signal). Claude is building M0 → M5 without stopping between milestones, per the Run rules.
 - **M0 · Foundation: DONE** (certified 2026-09-27, tag `m0-done`, [report](../reports/M0.md)).
-- **Current milestone: M1 · Accounts & rooms, in progress.** `npm run check:rules` reads this line: the rules of this milestone and all earlier ones must have tests.
+- **Current milestone: M1 · Accounts & rooms, in progress.**
+- **Rules in force through: M0.** `npm run check:rules` reads this line: every rule of these phases must have a test. Each milestone's PR bumps it along with that milestone's tests.
 
 ## Phase gate
 
