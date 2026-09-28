@@ -225,6 +225,7 @@ None right now.
 
 Newest first. Each entry records what was decided and why.
 
+- **2026-09-28:** The 72 base-edition roles (暗流涌动, 黯月初升, 梦殒春宵) now use the official Chinese wiki's text: 70 abilities reworded to the wiki's exact wording (several paraphrases had dropped rules detail, e.g. 调查员's "or no Minion in play", 主谋's extra night, 侍臣's "if in play"), 32 roles' reminder tokens aligned (e.g. 红鲱鱼→干扰项), and 圣女→贞洁者, 杀手→猎手. *Why:* the owner checked the library against the wiki and chose to match it exactly, like the 115 roles added earlier.
 - **2026-09-28:** Owner-requested changes to setup and the player's screen (rules SETUP-06, SETUP-10, SETUP-11, DRAW-04, SECRET-05, SECRET-06, DEATH-03):
   - Setup opens only once every seat has a player; the server refuses too. *Why:* owner request; seats can't change during setup, so it can't start half-empty.
   - Each wizard step has one 返回 that goes back a step (replacing 返回基础设置 / 修改角色配置 / 取消修改). Going back keeps the choices: switching the mode keeps the composition, and only switching the script clears it. *Why:* owner request; a mode change shouldn't cost the DM their composition.
