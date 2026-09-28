@@ -96,7 +96,7 @@ The DM picks the winning team. Everyone sees the **summary page**: actual and sh
 - Direct messages.
 - Role-specific interfaces or ability automation. Abilities and info are handled in person. Role assignment is the only role-aware feature.
 - Rules enforcement. The app is a smart record-keeper, and the DM applies the rules.
-- **Travellers and Fabled.**
+- **Travellers, Fabled and Lorics (奇遇).**
 - **Night order.** Night-order fields in imported scripts are ignored.
 
 ## Accounts and history
@@ -120,7 +120,7 @@ Internal script format: compatible with the standard BotC script JSON.
 - Official roles as ID strings.
 - Custom roles as full objects: `id`, `name`, `team`, `ability`, and optionally `reminders`.
 
-The **role library** holds the official roles (with Chinese names and abilities) plus custom roles saved from imported scripts, so they're reusable.
+The **role library** holds the official roles (with Chinese names and abilities: the three base editions, 实验性角色 and 华灯初上) plus custom roles saved from imported scripts, so they're reusable.
 - The LLM prompt includes the library's role list, so it maps recognized roles to library IDs and only outputs full objects for unknown or homebrew roles.
 - **Seeding the library:** generate the official roles' Chinese names and abilities once with an LLM script, and have the owner review them. Reviewed photo imports then add to the library over time.
 

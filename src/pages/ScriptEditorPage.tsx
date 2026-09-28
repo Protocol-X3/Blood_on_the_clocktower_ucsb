@@ -23,6 +23,8 @@ const FILTERS = [
   { key: 'tb', label: EDITION_LABEL.tb },
   { key: 'bmr', label: EDITION_LABEL.bmr },
   { key: 'snv', label: EDITION_LABEL.snv },
+  { key: 'exp', label: EDITION_LABEL.exp },
+  { key: 'hdcs', label: EDITION_LABEL.hdcs },
   { key: 'custom', label: '自定义' },
 ] as const;
 

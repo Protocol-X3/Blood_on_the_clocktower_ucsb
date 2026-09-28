@@ -211,7 +211,7 @@ Done:
 ## Before launch
 
 Do this before the group's first real game night. Claude reminds the owner at the end of the autonomy run.
-- [ ] **Launch cleanup:** wipe all test users, rooms and games. Rebuild the database from the migrations, containing only the role library and the admin account.
+- [x] **Launch cleanup:** wipe all test users, rooms and games. Rebuild the database from the migrations, containing only the role library and the admin account. *(Done 2026-09-28 by targeted deletes rather than a reset, so the admin account survived: 229 test accounts, 3278 rooms with their games, 1030 scripts and 29 custom roles removed; 72 official roles and the admin remain. Any local E2E or integration run against the cloud project refills it with test data, so repeat this after the last one.)*
 - [ ] **Turn off the bot sandbox:** set `private.app_config.bot_sandbox` to `off` and delete the bot accounts (profiles with `is_bot`). Its buttons are already absent from the production site (BOT-01).
 - [ ] **Rotate the service-role key.** It sat in `.env.local` during development.
 - [ ] **Decide the post-launch dev setup:** either create a separate dev project, or rely on CI's Docker database plus careful migrations. After launch, the cloud project holds real data and must never be reset.
@@ -225,6 +225,7 @@ None right now.
 
 Newest first. Each entry records what was decided and why.
 
+- **2026-09-28:** The role library grows from 72 to 187 roles: all 66 实验性角色 and 49 华灯初上 roles (47 from 华灯初上 and 山雨欲来, plus 戏子（改） and 禁卫军（改） next to their originals), with ability text and reminders from the official Chinese wiki (clocktower-wiki.gstonegames.com). The TB Recluse is renamed 隐士 → 陌客 (the current translation; 隐士 is now the experimental Hermit). Travellers, Fabled and Lorics stay out for now (19 roles). *Why:* owner request; supporting the other role types is a feature of its own.
 - **2026-09-28:** **M5 certified** (`m5-done` on `4cea352`). All M5.1–M5.5 and G1–G11 passed. **The M0–M5 autonomy run is complete**, and Claude has stopped per M5.5. [Final report](../reports/RUN.md).
 - **2026-09-28:** `[autonomy]` M5 judgment calls: an ended game is readable only by its participants and the admin (onlookers lose access at the end); anyone sees a profile's stats, but the game list shows only the games the viewer may open; history rows show the starting role; the admin can't delete their own account or one sitting in a running game. Details in [the M5 report](../reports/M5.md).
 - **2026-09-28:** **M4 certified** (`m4-done` on `d11acb0`). All M4.1–M4.4 and G1–G11 passed. M5 entry requirements are met.
