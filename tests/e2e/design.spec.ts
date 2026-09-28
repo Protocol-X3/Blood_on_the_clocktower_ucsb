@@ -13,8 +13,9 @@ test('UI-04 · M0.2: every design-system component renders in all three themes',
     // Role tokens for all four teams, plus dead and selected variants.
     await expect(scope.getByRole('img')).toHaveCount(7);
     await expect(scope.getByRole('img', { name: '送葬者（已死亡）' })).toBeVisible();
-    // Team chips, buttons (one disabled) and the gilded role card.
-    for (const label of ['镇民', '外来者', '爪牙', '恶魔']) await expect(scope.getByText(label, { exact: true })).toBeVisible();
+    // Team chips, buttons (one disabled) and the gilded role card (which shows 镇民 too).
+    for (const label of ['镇民', '外来者', '爪牙', '恶魔']) await expect(scope.getByText(label, { exact: true }).first()).toBeVisible();
+    await expect(scope.getByTestId('role-type')).toHaveText('镇民');
     await expect(scope.getByRole('button', { name: '举手' })).toBeEnabled();
     await expect(scope.getByRole('button', { name: '已锁定' })).toBeDisabled();
     await expect(scope.getByRole('heading', { name: '共情者' })).toBeVisible();

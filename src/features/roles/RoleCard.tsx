@@ -20,7 +20,7 @@ export function RoleCard({ role, className }: { role: RoleInfo; className?: stri
     <Panel variant="gilded" padding="lg" className={cn('mx-auto flex w-full max-w-80 flex-col items-center text-center', className)} data-testid="role-card">
       <RoleToken glyph={roleGlyph(role)} team={role.team} label={role.name} size="xl" />
       <h2 className="mt-5 font-serif text-3xl font-black tracking-[0.2em]">{role.name}</h2>
-      <span className="mt-2 rounded-full border border-[#2f62a8]/30 bg-[#fbf6ea] px-3 py-0.5 text-xs font-medium text-[#3f3325]">
+      <span data-testid="role-type" className="mt-2 rounded-full border border-[#2f62a8]/30 bg-[#fbf6ea] px-3 py-0.5 text-xs font-medium text-[#3f3325]">
         {TEAM_LABEL[role.team]}
       </span>
       <Ornament className="mt-4" />

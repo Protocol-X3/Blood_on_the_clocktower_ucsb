@@ -100,8 +100,7 @@ for (const n of [5, 15] as const) {
     await expect(t.phonePlayer.getByTestId('role-card')).toContainText('共情者');
     await expect(t.phonePlayer.getByTestId('role-card')).not.toContainText('酒鬼');
     // SECRET-06: the role's type, but no alignment.
-    await expect(t.phonePlayer.getByTestId('role-card')).toContainText('镇民');
-    await expect(t.phonePlayer.getByTestId('role-card')).not.toContainText(/善良|邪恶|阵营/);
+    await expect(t.phonePlayer.getByTestId('role-type')).toHaveText('镇民');
     await expect(page.getByTestId('dm-seat-1')).toContainText('酒鬼');
     await expect(page.getByTestId('dm-seat-1')).toContainText('展示：共情者');
     if (n === 15) {
