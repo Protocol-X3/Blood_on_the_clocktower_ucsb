@@ -39,7 +39,7 @@ export const EDITION_IDS: Record<Edition, Record<Team, string[]>> = {
     demon: ['fanggu', 'vigormortis', 'nodashii', 'vortox'],
   },
   exp: {
-    townsfolk: ['lycanthrope', 'banshee', 'choirboy', 'preacher', 'villageidiot', 'engineer', 'princess', 'noble', 'king', 'general', 'alchemist', 'magician', 'farmer', 'highpriestess', 'balloonist', 'knight', 'bountyhunter', 'amnesiac', 'cannibal', 'steward', 'nightwatchman', 'atheist', 'alsaahir', 'pixie', 'shugenja', 'huntsman', 'cultleader', 'poppygrower', 'fisherman', 'acrobat'],
+    townsfolk: ['lycanthrope', 'banshee', 'choirboy', 'preacher', 'villageidiot', 'engineer', 'princess', 'noble', 'king', 'general', 'alchemist', 'magician', 'farmer', 'highpriestess', 'balloonist', 'balloonist_old', 'knight', 'bountyhunter', 'amnesiac', 'cannibal', 'steward', 'nightwatchman', 'atheist', 'alsaahir', 'pixie', 'shugenja', 'huntsman', 'cultleader', 'poppygrower', 'fisherman', 'acrobat'],
     outsider: ['snitch', 'puzzlemaster', 'zealot', 'damsel', 'hatter', 'golem', 'ogre', 'plaguedoctor', 'heretic', 'hermit', 'politician'],
     minion: ['goblin', 'widow', 'organgrinder', 'psychopath', 'boffin', 'fearmonger', 'mezepheles', 'marionette', 'wraith', 'vizier', 'wizard', 'xaan', 'harpy', 'boomdandy', 'summoner'],
     demon: ['ojo', 'riot', 'lordoftyphon', 'alhadikhia', 'legion', 'kazali', 'leviathan', 'lleech', 'lilmonsta', 'yaggababble'],

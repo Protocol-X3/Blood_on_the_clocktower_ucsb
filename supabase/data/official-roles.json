@@ -89,6 +89,7 @@
   { "id": "farmer", "edition": "exp", "team": "townsfolk", "name": "农夫", "glyph": "农", "ability": "当你在夜晚死亡时，一名存活的善良玩家会变成农夫。", "reminders": [] },
   { "id": "highpriestess", "edition": "exp", "team": "townsfolk", "name": "女祭司", "glyph": "祭", "ability": "每个夜晚，你会得知一名说书人认为你最应该与其交流的玩家。", "reminders": [] },
   { "id": "balloonist", "edition": "exp", "team": "townsfolk", "name": "气球驾驶员", "glyph": "球", "ability": "每个夜晚，你会得知一名与上个夜晚得知的玩家角色类型不同的玩家。[+0~1外来者]", "reminders": ["得知"] },
+  { "id": "balloonist_old", "edition": "exp", "team": "townsfolk", "name": "气球驾驶员（旧版）", "glyph": "球", "ability": "每个夜晚，你会得知一名不同角色类型的玩家，直到场上所有的角色类型你都得知过一次。[+1外来者]", "reminders": ["得知"] },
   { "id": "knight", "edition": "exp", "team": "townsfolk", "name": "骑士", "glyph": "骑", "ability": "在你的首个夜晚，你会得知两名非恶魔玩家。", "reminders": ["得知"] },
   { "id": "bountyhunter", "edition": "exp", "team": "townsfolk", "name": "赏金猎人", "glyph": "赏", "ability": "在你的首个夜晚，你会得知一名邪恶玩家。每当你得知的玩家死亡，你会在当晚得知另一名邪恶玩家。[会有一名镇民转变为邪恶阵营]", "reminders": ["得知"] },
   { "id": "amnesiac", "edition": "exp", "team": "townsfolk", "name": "失忆者", "glyph": "忆", "ability": "你不知道你的能力是什么。每个白天你可以找说书人猜测一次，你会得知你的猜测有多准确。", "reminders": ["？"] },

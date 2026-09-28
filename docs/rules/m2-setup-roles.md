@@ -4,7 +4,7 @@ Status: **Approved** by the owner, 2026-09-27.
 
 ## LIB · Role library
 
-- **LIB-01** The library contains every character of Trouble Brewing, Bad Moon Rising and Sects & Violets, the Experimental characters (实验性角色) and 华灯初上 (with its second season 山雨欲来, including both versions of the revised （改） roles), excluding Travellers, Fabled and Lorics. Each one has a stable ID (the standard English script-tool ID, or pinyin for 华灯初上), a Chinese name, a team and a Chinese ability description. Names, abilities and reminder tokens follow the official Chinese wiki (clocktower-wiki.gstonegames.com). *Changed (2026-09-28): the base editions' paraphrased wording was replaced with the wiki's.* · *Script (a completeness check against the list of IDs)*
+- **LIB-01** The library contains every character of Trouble Brewing, Bad Moon Rising and Sects & Violets, the Experimental characters (实验性角色) and 华灯初上 (with its second season 山雨欲来, including both versions of the revised （改） roles), plus the original version of 气球驾驶员 as 气球驾驶员（旧版）, excluding Travellers, Fabled and Lorics. Each one has a stable ID (the standard English script-tool ID, or pinyin for 华灯初上), a Chinese name, a team and a Chinese ability description. Names, abilities and reminder tokens follow the official Chinese wiki (clocktower-wiki.gstonegames.com). *Changed (2026-09-28): the base editions' paraphrased wording was replaced with the wiki's.* · *Script (a completeness check against the list of IDs)*
 - **LIB-02** Official library roles can't be edited or deleted through the app. · *pgTAP*
 - **LIB-03** Each role shows a one-character token glyph (e.g. 占 for 占卜师). A role may override its glyph. · *Unit*
 

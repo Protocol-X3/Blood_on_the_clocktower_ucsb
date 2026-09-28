@@ -8,11 +8,11 @@ select tests.create_user('dora', 'dm_eligible') as dm,
 grant select on u to authenticated, anon;
 
 -- LIB-01 · M2.2: the base editions, the Experimental characters and 华灯初上 are complete.
-select is((select count(*)::int from roles where is_official), 187, 'LIB-01 · M2.2: the library has all 187 characters');
+select is((select count(*)::int from roles where is_official), 188, 'LIB-01 · M2.2: the library has all 188 characters');
 select is((select count(*)::int from roles where edition = 'tb'), 22, 'LIB-01 · M2.2: Trouble Brewing: 22 characters');
 select is((select count(*)::int from roles where edition = 'bmr'), 25, 'LIB-01 · M2.2: Bad Moon Rising: 25 characters');
 select is((select count(*)::int from roles where edition = 'snv'), 25, 'LIB-01 · M2.2: Sects & Violets: 25 characters');
-select is((select count(*)::int from roles where edition = 'exp'), 66, 'LIB-01: Experimental characters (实验性角色): 66 characters');
+select is((select count(*)::int from roles where edition = 'exp'), 67, 'LIB-01: Experimental characters (实验性角色): 67 characters, including the original 气球驾驶员');
 select is((select count(*)::int from roles where edition = 'hdcs'), 49, 'LIB-01: 华灯初上 and 山雨欲来: 49 characters');
 select is((select name from roles where id = 'recluse'), '陌客', 'LIB-01: the Recluse is called 陌客, and 隐士 is the Hermit');
 select results_eq($$ select id from roles where name like '%（改）' order by id $$, $$ values ('jinweijun_gai'), ('xizi_gai') $$,
