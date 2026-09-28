@@ -9,7 +9,8 @@
 - **Autonomy run STARTED 2026-09-27** (the owner's start signal). Claude is building M0 → M5 without stopping between milestones, per the Run rules.
 - **M0 · Foundation: DONE** (certified 2026-09-27, tag `m0-done`, [report](../reports/M0.md)).
 - **M1 · Accounts & rooms: DONE** (certified 2026-09-27, tag `m1-done`, [report](../reports/M1.md)).
-- **Current milestone: M2 · Setup & roles, in progress.**
+- **M2 · Setup & roles: DONE** (certified 2026-09-27, tag `m2-done`, [report](../reports/M2.md)).
+- **Current milestone: M3 · Live game, in progress.**
 - **Rules in force through: M2.** `npm run check:rules` reads this line: every rule of these phases must have a test. Each milestone's PR bumps it along with that milestone's tests.
 
 ## Phase gate
@@ -220,6 +221,8 @@ None right now.
 
 Newest first. Each entry records what was decided and why.
 
+- **2026-09-27:** **M2 certified** (`m2-done` on `966ab19`). All M2.1–M2.7 and G1–G11 passed. M3 entry requirements are met.
+- **2026-09-27:** `[autonomy]` M2 judgment calls: one shared script library that any DM-eligible user can edit (games keep their own copy of the roles); default alignment follows the team; the shown role comes from the same script; going back to the basics step discards the setup; clearing a seat's role is manual-mode only (draw mode reshuffles); the 15-seat E2E tests get a longer time limit. Details in [the M2 report](../reports/M2.md).
 - **2026-09-27:** **M1 certified** (`m1-done` on `c7e85ad`). All M1.1–M1.8 and G1–G11 passed, including the Google redirect against the live site. M2 entry requirements are met.
 - **2026-09-27:** `[autonomy]` M1 judgment calls: public 404 and design gallery; taking the DM seat gives up the player seat; seated players and the DM can't leave mid-game; a pg_cron job closes idle rooms; sign-out is per device; a test-account pool with cached sessions stays under Supabase's sign-in limits, and admin tests borrow the admin role with guaranteed restore. Details in [the M1 report](../reports/M1.md).
 - **2026-09-27:** **M0 certified** (`m0-done` on `c8b4ffb`). All M0.1–M0.9 criteria and gates G1–G11 passed. M1 entry requirements verified by `npm run preflight`. `[autonomy]` Day-theme colors were darkened slightly for WCAG AA, and the secret scanner ignores placeholder passwords.
