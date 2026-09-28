@@ -18,11 +18,11 @@ describe('recommendedTeamCounts', () => {
     15: [9, 2, 3, 1],
   };
 
-  it.each(Object.entries(OFFICIAL))('SETUP-01: %s players → official counts', (players, [t, o, m, d]) => {
+  it.each(Object.entries(OFFICIAL))('SETUP-01 · M2.7: %s players → official counts', (players, [t, o, m, d]) => {
     expect(recommendedTeamCounts(Number(players))).toEqual({ townsfolk: t, outsider: o, minion: m, demon: d });
   });
 
-  it('SETUP-02: counts always sum to the player count, with exactly one demon', () => {
+  it('SETUP-02 · M2.7: counts always sum to the player count, with exactly one demon', () => {
     fc.assert(
       fc.property(fc.integer({ min: MIN_PLAYERS, max: MAX_PLAYERS }), (players) => {
         const c = recommendedTeamCounts(players)!;

@@ -1,8 +1,9 @@
 // Database chores against SUPABASE_DB_URL (from the environment or .env.local):
 //   node tools/db.ts push        apply pending migrations (supabase db push)
+//   node tools/db.ts types       regenerate src/services/database.types.ts
 //   node tools/db.ts set-admin   store ADMIN_EMAIL in private.app_config and grant admin (PERM-02)
 // Secret values are never printed.
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import pg from 'pg';
 import { parseEnvFile, ROOT } from './lib/files.ts';
@@ -22,6 +23,14 @@ if (command === 'push') {
   const r = supabaseCli(['db', 'push', '--db-url', dbUrl, '--yes']);
   console.log(redact(`${r.stdout}${r.stderr}`));
   process.exitCode = r.status ?? 1;
+} else if (command === 'types') {
+  const r = supabaseCli(['gen', 'types', 'typescript', '--db-url', dbUrl, '--schema', 'public']);
+  if (r.status !== 0) {
+    console.error(redact(r.stderr));
+    process.exit(1);
+  }
+  writeFileSync(join(ROOT, 'src', 'services', 'database.types.ts'), r.stdout);
+  console.log('✓ wrote src/services/database.types.ts');
 } else if (command === 'set-admin') {
   if (!env.ADMIN_EMAIL) {
     console.error('✗ ADMIN_EMAIL is not set');
@@ -43,6 +52,6 @@ if (command === 'push') {
     await client.end();
   }
 } else {
-  console.error('usage: node tools/db.ts push | set-admin');
+  console.error('usage: node tools/db.ts push | types | set-admin');
   process.exitCode = 2;
 }

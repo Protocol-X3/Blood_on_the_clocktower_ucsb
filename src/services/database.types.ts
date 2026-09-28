@@ -5,15 +5,128 @@ export type Database = {
   
   "public": {
           Tables: {
-            "games": {
+            "draw_cards": {
                   Row: {
-                    "created_at": string,"dm_id": string | null,"ended_at": string | null,"id": string,"room_id": string,"status": Database["public"]['Enums']["game_status"]
+                    "card_no": number,"game_id": string,"role_id": string,"shown_role_id": string
                   }
                   Insert: {
-                    "created_at"?: string,"dm_id"?: string | null,"ended_at"?: string | null,"id"?: string,"room_id": string,"status"?: Database["public"]['Enums']["game_status"]
+                    "card_no": number,"game_id": string,"role_id": string,"shown_role_id": string
                   }
                   Update: {
-                    "created_at"?: string,"dm_id"?: string | null,"ended_at"?: string | null,"id"?: string,"room_id"?: string,"status"?: Database["public"]['Enums']["game_status"]
+                    "card_no"?: number,"game_id"?: string,"role_id"?: string,"shown_role_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "draw_cards_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"draw_slots": {
+                  Row: {
+                    "card_no": number,"game_id": string,"taken_by_seat": number | null
+                  }
+                  Insert: {
+                    "card_no": number,"game_id": string,"taken_by_seat"?: number | null
+                  }
+                  Update: {
+                    "card_no"?: number,"game_id"?: string,"taken_by_seat"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "draw_slots_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"game_composition": {
+                  Row: {
+                    "game_id": string,"role_id": string,"shown_role_id": string
+                  }
+                  Insert: {
+                    "game_id": string,"role_id": string,"shown_role_id": string
+                  }
+                  Update: {
+                    "game_id"?: string,"role_id"?: string,"shown_role_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "game_composition_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "game_composition_game_id_role_id_fkey"
+      columns: ["game_id","role_id"]
+isOneToOne: true
+      referencedRelation: "game_roles"
+      referencedColumns: ["game_id","role_id"]
+    },{
+      foreignKeyName: "game_composition_game_id_shown_role_id_fkey"
+      columns: ["game_id","shown_role_id"]
+isOneToOne: false
+      referencedRelation: "game_roles"
+      referencedColumns: ["game_id","role_id"]
+    }
+                  ]
+                },"game_roles": {
+                  Row: {
+                    "ability": string,"game_id": string,"glyph": string,"name": string,"reminders": (string)[],"role_id": string,"team": Database["public"]['Enums']["team"]
+                  }
+                  Insert: {
+                    "ability": string,"game_id": string,"glyph": string,"name": string,"reminders"?: (string)[],"role_id": string,"team": Database["public"]['Enums']["team"]
+                  }
+                  Update: {
+                    "ability"?: string,"game_id"?: string,"glyph"?: string,"name"?: string,"reminders"?: (string)[],"role_id"?: string,"team"?: Database["public"]['Enums']["team"]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "game_roles_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"game_seats": {
+                  Row: {
+                    "alive": boolean,"game_id": string,"seat": number,"user_id": string | null
+                  }
+                  Insert: {
+                    "alive"?: boolean,"game_id": string,"seat": number,"user_id"?: string | null
+                  }
+                  Update: {
+                    "alive"?: boolean,"game_id"?: string,"seat"?: number,"user_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "game_seats_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "game_seats_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"games": {
+                  Row: {
+                    "assignment_mode": Database["public"]['Enums']["assignment_mode"] | null,"created_at": string,"dm_id": string | null,"ended_at": string | null,"id": string,"phase_kind": string | null,"phase_number": number | null,"room_id": string,"script_id": string | null,"seat_count": number | null,"started_at": string | null,"status": Database["public"]['Enums']["game_status"]
+                  }
+                  Insert: {
+                    "assignment_mode"?: Database["public"]['Enums']["assignment_mode"] | null,"created_at"?: string,"dm_id"?: string | null,"ended_at"?: string | null,"id"?: string,"phase_kind"?: string | null,"phase_number"?: number | null,"room_id": string,"script_id"?: string | null,"seat_count"?: number | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["game_status"]
+                  }
+                  Update: {
+                    "assignment_mode"?: Database["public"]['Enums']["assignment_mode"] | null,"created_at"?: string,"dm_id"?: string | null,"ended_at"?: string | null,"id"?: string,"phase_kind"?: string | null,"phase_number"?: number | null,"room_id"?: string,"script_id"?: string | null,"seat_count"?: number | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["game_status"]
                   }
                   Relationships: [
                     {
@@ -27,6 +140,12 @@ isOneToOne: false
       columns: ["room_id"]
 isOneToOne: false
       referencedRelation: "rooms"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "games_script_id_fkey"
+      columns: ["script_id"]
+isOneToOne: false
+      referencedRelation: "scripts"
       referencedColumns: ["id"]
     }
                   ]
@@ -42,6 +161,25 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"roles": {
+                  Row: {
+                    "ability": string,"created_at": string,"created_by": string | null,"edition": string | null,"glyph": string | null,"id": string,"is_official": boolean,"name": string,"reminders": (string)[],"team": Database["public"]['Enums']["team"]
+                  }
+                  Insert: {
+                    "ability": string,"created_at"?: string,"created_by"?: string | null,"edition"?: string | null,"glyph"?: string | null,"id": string,"is_official"?: boolean,"name": string,"reminders"?: (string)[],"team": Database["public"]['Enums']["team"]
+                  }
+                  Update: {
+                    "ability"?: string,"created_at"?: string,"created_by"?: string | null,"edition"?: string | null,"glyph"?: string | null,"id"?: string,"is_official"?: boolean,"name"?: string,"reminders"?: (string)[],"team"?: Database["public"]['Enums']["team"]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "roles_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"room_members": {
                   Row: {
@@ -93,6 +231,112 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"script_roles": {
+                  Row: {
+                    "position": number,"role_id": string,"script_id": string
+                  }
+                  Insert: {
+                    "position": number,"role_id": string,"script_id": string
+                  }
+                  Update: {
+                    "position"?: number,"role_id"?: string,"script_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "script_roles_role_id_fkey"
+      columns: ["role_id"]
+isOneToOne: false
+      referencedRelation: "roles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "script_roles_script_id_fkey"
+      columns: ["script_id"]
+isOneToOne: false
+      referencedRelation: "scripts"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"scripts": {
+                  Row: {
+                    "author": string | null,"created_at": string,"created_by": string | null,"id": string,"name": string,"updated_at": string
+                  }
+                  Insert: {
+                    "author"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"name": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "author"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"name"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "scripts_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"seat_roles": {
+                  Row: {
+                    "actual_role_id": string,"alignment": Database["public"]['Enums']["alignment"],"game_id": string,"seat": number,"shown_role_id": string
+                  }
+                  Insert: {
+                    "actual_role_id": string,"alignment": Database["public"]['Enums']["alignment"],"game_id": string,"seat": number,"shown_role_id": string
+                  }
+                  Update: {
+                    "actual_role_id"?: string,"alignment"?: Database["public"]['Enums']["alignment"],"game_id"?: string,"seat"?: number,"shown_role_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "seat_roles_game_id_actual_role_id_fkey"
+      columns: ["game_id","actual_role_id"]
+isOneToOne: true
+      referencedRelation: "game_roles"
+      referencedColumns: ["game_id","role_id"]
+    },{
+      foreignKeyName: "seat_roles_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "seat_roles_game_id_shown_role_id_fkey"
+      columns: ["game_id","shown_role_id"]
+isOneToOne: false
+      referencedRelation: "game_roles"
+      referencedColumns: ["game_id","role_id"]
+    }
+                  ]
+                },"seat_shown_roles": {
+                  Row: {
+                    "game_id": string,"seat": number,"shown_role_id": string,"user_id": string
+                  }
+                  Insert: {
+                    "game_id": string,"seat": number,"shown_role_id": string,"user_id": string
+                  }
+                  Update: {
+                    "game_id"?: string,"seat"?: number,"shown_role_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "seat_shown_roles_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "seat_shown_roles_game_id_shown_role_id_fkey"
+      columns: ["game_id","shown_role_id"]
+isOneToOne: false
+      referencedRelation: "game_roles"
+      referencedColumns: ["game_id","role_id"]
+    },{
+      foreignKeyName: "seat_shown_roles_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -102,8 +346,17 @@ isOneToOne: false
             "admin_assign_dm":
 { Args: { "p_room": string,"p_user": string }; Returns: undefined
                            },
+"assign_seat":
+{ Args: { "p_game": string,"p_role": string,"p_seat": number }; Returns: undefined
+                           },
+"cancel_setup":
+{ Args: { "p_game": string }; Returns: undefined
+                           },
 "close_room":
 { Args: { "p_room": string }; Returns: undefined
+                           },
+"create_custom_role":
+{ Args: { "p_ability": string,"p_glyph"?: string,"p_name": string,"p_reminders"?: (string)[],"p_team": Database["public"]['Enums']["team"] }; Returns: string
                            },
 "create_room":
 { Args: { "p_seat_count"?: number }; Returns: string
@@ -117,6 +370,9 @@ isOneToOne: false
 "dm_unseat":
 { Args: { "p_room": string,"p_user": string }; Returns: undefined
                            },
+"draw_card":
+{ Args: { "p_card": number,"p_game": string }; Returns: undefined
+                           },
 "join_room":
 { Args: { "p_code": string }; Returns: string
                            },
@@ -129,6 +385,12 @@ isOneToOne: false
 "leave_seat":
 { Args: { "p_room": string }; Returns: undefined
                            },
+"save_script":
+{ Args: { "p_author": string,"p_name": string,"p_roles": (string)[],"p_script": string }; Returns: string
+                           },
+"set_composition":
+{ Args: { "p_game": string,"p_roles": Json }; Returns: undefined
+                           },
 "set_nickname":
 { Args: { "p_nickname": string }; Returns: undefined
                            },
@@ -138,15 +400,27 @@ isOneToOne: false
 "set_seat_count":
 { Args: { "p_count": number,"p_room": string }; Returns: undefined
                            },
+"shuffle_cards":
+{ Args: { "p_game": string }; Returns: undefined
+                           },
+"start_game":
+{ Args: { "p_game": string }; Returns: undefined
+                           },
+"start_setup":
+{ Args: { "p_mode": Database["public"]['Enums']["assignment_mode"],"p_room": string,"p_script": string }; Returns: string
+                           },
 "take_dm_seat":
 { Args: { "p_room": string }; Returns: undefined
                            },
 "take_seat":
 { Args: { "p_room": string,"p_seat": number }; Returns: undefined
+                           },
+"unassign_seat":
+{ Args: { "p_game": string,"p_seat": number }; Returns: undefined
                            }
           }
           Enums: {
-            "game_status": "setup"|"in_progress"|"ended","permission_level": "player"|"dm_eligible"|"admin"
+            "alignment": "good"|"evil","assignment_mode": "manual"|"draw","game_status": "setup"|"in_progress"|"ended","permission_level": "player"|"dm_eligible"|"admin","team": "townsfolk"|"outsider"|"minion"|"demon"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -262,7 +536,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "game_status": ["setup", "in_progress", "ended"],"permission_level": ["player", "dm_eligible", "admin"]
+            "alignment": ["good", "evil"],"assignment_mode": ["manual", "draw"],"game_status": ["setup", "in_progress", "ended"],"permission_level": ["player", "dm_eligible", "admin"],"team": ["townsfolk", "outsider", "minion", "demon"]
           }
         }
 } as const

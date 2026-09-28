@@ -88,10 +88,17 @@ async function sessionFor(email: string): Promise<Session> {
   const cached = readCache(email);
   if (cached?.session?.expires_at && cached.session.expires_at * 1000 > Date.now() + 15 * 60_000) return cached.session;
   const client = createClient<Database>(url, publishable, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data, error } = await client.auth.signInWithPassword({ email, password: passwordFor(email) });
-  if (error || !data.session) throw error ?? new Error(`sign-in failed for ${email}`);
-  writeCache(email, { id: data.user.id, session: data.session });
-  return data.session;
+  // Supabase allows about 30 sign-ins per 5 minutes per IP: on the first run of the hour,
+  // wait out the limit rather than fail (later runs reuse the cached sessions).
+  for (let attempt = 0; ; attempt += 1) {
+    const { data, error } = await client.auth.signInWithPassword({ email, password: passwordFor(email) });
+    if (data.session) {
+      writeCache(email, { id: data.user.id, session: data.session });
+      return data.session;
+    }
+    if (!error || !/rate limit/i.test(error.message) || attempt >= 10) throw error ?? new Error(`sign-in failed for ${email}`);
+    await new Promise((resolve) => setTimeout(resolve, 30_000));
+  }
 }
 
 /**

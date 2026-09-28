@@ -4,21 +4,33 @@ import { clientFor, type TestUser } from '../support/users.ts';
 import { expect, signIn, test } from './support/session.ts';
 
 // Player-facing pages available so far. Later milestones add to this list.
-const PAGES: { name: string; signedIn: boolean; path: (code: string) => string }[] = [
+interface Ctx {
+  code: string;
+  scriptId: string;
+}
+const PAGES: { name: string; signedIn: boolean; path: (ctx: Ctx) => string }[] = [
   { name: 'login', signedIn: false, path: () => '/login' },
   { name: 'not found', signedIn: false, path: () => '/no-such-page' },
   { name: 'home', signedIn: true, path: () => '/' },
-  { name: 'room lobby', signedIn: true, path: (code) => `/room/${code}` },
+  { name: 'room lobby', signedIn: true, path: (c) => `/room/${c.code}` },
+  { name: 'script library', signedIn: true, path: () => '/scripts' },
+  { name: 'script detail', signedIn: true, path: (c) => `/scripts/${c.scriptId}` },
 ];
 
 async function open(page: Page, p: (typeof PAGES)[number], make: () => Promise<TestUser>, makeDm: () => Promise<TestUser>) {
-  let code = '';
+  const ctx: Ctx = { code: '', scriptId: '' };
   if (p.signedIn) {
-    const dm = await makeDm();
-    code = (await (await clientFor(dm)).rpc('create_room', { p_seat_count: 10 })).data!;
+    const dmc = await clientFor(await makeDm());
+    ctx.code = (await dmc.rpc('create_room', { p_seat_count: 10 })).data!;
+    ctx.scriptId = (await dmc.rpc('save_script', {
+      p_script: null as unknown as string,
+      p_name: '界面测试剧本',
+      p_author: '',
+      p_roles: ['washerwoman', 'fortuneteller', 'drunk', 'poisoner', 'imp'],
+    })).data!;
     await signIn(page, await make());
   }
-  await page.goto(p.path(code));
+  await page.goto(p.path(ctx));
   await expect(page.locator('#root h1')).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
 }

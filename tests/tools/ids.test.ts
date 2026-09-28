@@ -60,7 +60,7 @@ describe('rule checker', () => {
     expect(findIds(`x ${A1} y ${A1}`, RULE_ID)).toEqual(new Set([A1]));
   });
 
-  it('QA-05 · M0.6 · M1.1: every rule of the phases so far has a test in the real repository', () => {
+  it('QA-05 · M0.6 · M1.1 · M2.1: every rule of the phases so far has a test in the real repository', () => {
     const current = currentMilestone(readFileSync(join(ROOT, 'docs', 'plan', 'roadmap.md'), 'utf8'));
     const catalog = parseRules(readRuleFiles());
     const report = ruleCoverage(catalog, readTestFiles(), (f) => inScope(f, current));

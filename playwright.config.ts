@@ -29,7 +29,7 @@ export default defineConfig({
   // Players are phone-first; the DM is laptop/iPad-first (design.md, Device targets).
   projects: [
     // Admin screens are laptop/tablet screens, and only one admin can exist at a time: tablet only.
-    { name: 'phone', use: { ...devices['Pixel 7'], channel }, testIgnore: /admin\.spec\.ts/ },
+    { name: 'phone', use: { ...devices['Pixel 7'], channel }, testIgnore: /(admin|setup)\.spec\.ts/ },
     // Guest sign-in uses Supabase's anonymous sign-in, which is rate-limited per IP; run it on one profile.
     { name: 'tablet', use: { ...devices['iPad Pro 11 landscape'], browserName: 'chromium', channel }, testIgnore: /guest\.spec\.ts/ },
   ],
