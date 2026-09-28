@@ -13,7 +13,11 @@ import { useAuth } from '@/features/auth/useAuth';
 import { UserMenu } from '@/features/auth/UserMenu';
 import { useRoom, type Member } from '@/features/room/useRoom';
 import { errorMessage } from '@/services/errors';
-import { supabase, type Room } from '@/services/supabase';
+import { supabase, type Game, type Room } from '@/services/supabase';
+import { GameStarted } from '@/features/game/GameStarted';
+import { DmSetup } from '@/features/setup/DmSetup';
+import { PlayerSetup } from '@/features/setup/PlayerSetup';
+import { StartSetup } from '@/features/setup/StartSetup';
 import { MessagePage } from './ComingSoon';
 
 export function RoomPage() {
@@ -25,7 +29,64 @@ export function RoomPage() {
   if (state.status === 'not_found') return <MessagePage title="房间不存在" message={`没有找到房间 ${code.toUpperCase()}，它可能已经关闭。`} />;
   if (state.status === 'removed') return <MessagePage title="你已离开房间" message="你不在这个房间中了。" />;
   if (state.status === 'error') return <MessagePage title="出错了" message={state.message} />;
+  if (state.game?.status === 'setup' || state.game?.status === 'in_progress') {
+    return <GameStage room={state.room} members={state.members} game={state.game} reload={reload} />;
+  }
   return <Lobby room={state.room} members={state.members} gameActive={state.game !== null} reload={reload} />;
+}
+
+/** Setup (SETUP-06) and the started game (SETUP-10): the DM gets the grimoire theme, players the night. */
+function GameStage({ room, members, game, reload }: { room: Room; members: Member[]; game: Game; reload: () => Promise<void> }) {
+  const { profile } = useAuth();
+  const me = profile!;
+  const isDm = room.dm_id === me.id;
+  const mySeat = members.find((m) => m.user_id === me.id)?.seat ?? null;
+  const seatNames = new Map(members.filter((m) => m.seat).map((m) => [m.seat!, m.profile?.nickname ?? '']));
+  const [notice, setNotice] = useState<string | null>(null);
+
+  async function act(run: () => PromiseLike<{ error: unknown }>, after?: () => void) {
+    setNotice(null);
+    const { error } = await run();
+    if (error) setNotice(errorMessage(error));
+    else {
+      after?.();
+      await reload();
+    }
+  }
+
+  const setup = game.status === 'setup';
+  return (
+    <ThemeScope theme={isDm ? 'grimoire' : 'night'} className="relative min-h-dvh overflow-hidden">
+      {isDm ? null : <StarField count={36} seed={5} />}
+      <div className={cn('relative mx-auto flex min-h-dvh flex-col pb-10', isDm ? 'max-w-6xl' : 'max-w-md')}>
+        <PageHeader>
+          <UserMenu />
+        </PageHeader>
+        <header className="px-5 pt-1 text-center">
+          <p className="text-xs tracking-[0.4em] text-ink-faint" data-testid="room-code">{room.code}</p>
+          <h1 className="mt-1 font-serif text-3xl font-black tracking-[0.2em] text-gold">
+            {setup ? '对局配置' : `第${game.phase_number ?? 1}${game.phase_kind === 'day' ? '天' : '夜'}`}
+          </h1>
+        </header>
+        <main className="mt-6 flex flex-col gap-5 px-4">
+          {setup ? (
+            isDm ? (
+              <DmSetup game={game} members={members} act={act} />
+            ) : (
+              <PlayerSetup game={game} mySeat={mySeat} seatNames={seatNames} />
+            )
+          ) : (
+            <GameStarted game={game} isDm={isDm} seatNames={seatNames} />
+          )}
+          {notice ? (
+            <p role="alert" className="rounded-xl border border-blood/50 bg-blood/10 px-4 py-3 text-sm text-blood-text">
+              {notice}
+            </p>
+          ) : null}
+        </main>
+      </div>
+    </ThemeScope>
+  );
 }
 
 function Lobby({ room, members, gameActive, reload }: { room: Room; members: Member[]; gameActive: boolean; reload: () => Promise<void> }) {
@@ -96,7 +157,7 @@ function Lobby({ room, members, gameActive, reload }: { room: Room; members: Mem
           </p>
         </section>
 
-        <div className="mt-6 grid gap-5 px-4 md:grid-cols-[minmax(0,1fr)_18rem] md:px-6">
+        <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-5 px-4 md:grid-cols-[minmax(0,1fr)_18rem] md:px-6">
           <div className="flex flex-col gap-5">
             {/* The DM seat (ROOM-09 / ROOM-10) */}
             <Panel className="flex items-center gap-4" data-testid="dm-seat">
@@ -184,6 +245,7 @@ function Lobby({ room, members, gameActive, reload }: { room: Room; members: Mem
             {isDm && !gameActive && !closed ? (
               <Panel className="flex flex-col gap-4" aria-label="说书人工具">
                 <h2 className="font-serif text-base font-bold tracking-wider text-gold-strong">说书人工具</h2>
+                <StartSetup room={room} act={act} seated={seated} />
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-ink-muted">座位数</span>
                   <div className="flex items-center gap-2">

@@ -27,7 +27,8 @@
     "preflight": "node tools/preflight.ts",
     "check:milestone": "node tools/check-milestone.ts",
     "db:push": "node tools/db.ts push",
-    "db:set-admin": "node tools/db.ts set-admin"
+    "db:set-admin": "node tools/db.ts set-admin",
+    "db:types": "node tools/db.ts types"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",

@@ -7,6 +7,9 @@ import { DesignGallery } from '@/pages/DesignGallery';
 import { HomePage } from '@/pages/HomePage';
 import { LoginPage } from '@/pages/LoginPage';
 import { RoomPage } from '@/pages/RoomPage';
+import { ScriptDetailPage } from '@/pages/ScriptDetailPage';
+import { ScriptEditorPage } from '@/pages/ScriptEditorPage';
+import { ScriptsPage } from '@/pages/ScriptsPage';
 import { WelcomePage } from '@/pages/WelcomePage';
 
 const auth = (page: ReactNode) => <RequireAuth>{page}</RequireAuth>;
@@ -19,8 +22,10 @@ export const router = createBrowserRouter([
   { path: '/room/:code/summary', element: auth(<ComingSoon title="对局结算" milestone="M3" />) },
   { path: '/profile/:id', element: auth(<ComingSoon title="个人主页" milestone="M5" theme="day" />) },
   { path: '/games/:id', element: auth(<ComingSoon title="历史对局" milestone="M5" theme="day" />) },
-  { path: '/scripts', element: auth(<ComingSoon title="剧本库" milestone="M2" theme="day" />) },
-  { path: '/scripts/:id', element: auth(<ComingSoon title="剧本详情" milestone="M2" theme="day" />) },
+  { path: '/scripts', element: auth(<ScriptsPage />) },
+  { path: '/scripts/new', element: auth(<ScriptEditorPage />) },
+  { path: '/scripts/:id', element: auth(<ScriptDetailPage />) },
+  { path: '/scripts/:id/edit', element: auth(<ScriptEditorPage />) },
   { path: '/admin', element: auth(<AdminPage />) },
   // Public: no user data. The gallery is for visual review; unknown addresses get a friendly page.
   { path: '/dev/design', element: <DesignGallery /> },

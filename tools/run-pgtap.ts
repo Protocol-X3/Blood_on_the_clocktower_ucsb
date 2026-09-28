@@ -58,6 +58,12 @@ try {
       if (t.status !== 'passed') {
         failed = true;
         console.log(`✗ ${basename(file)} › ${t.title}`);
+        // pgTAP's diagnostics (got/expected) follow the failing line as "# …" lines.
+        const at = lines.findIndex((l) => l.includes(`- ${t.title}`) && l.trim().startsWith('not ok'));
+        for (const diag of at >= 0 ? lines.slice(at + 1) : []) {
+          if (!diag.trim().startsWith('#')) break;
+          console.log(`    ${diag.trim()}`);
+        }
       }
     }
     const passed = tap.filter((t) => t.status === 'passed').length;

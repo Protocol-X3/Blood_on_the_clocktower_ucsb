@@ -10,7 +10,7 @@
 - **M0 · Foundation: DONE** (certified 2026-09-27, tag `m0-done`, [report](../reports/M0.md)).
 - **M1 · Accounts & rooms: DONE** (certified 2026-09-27, tag `m1-done`, [report](../reports/M1.md)).
 - **Current milestone: M2 · Setup & roles, in progress.**
-- **Rules in force through: M1.** `npm run check:rules` reads this line: every rule of these phases must have a test. Each milestone's PR bumps it along with that milestone's tests.
+- **Rules in force through: M2.** `npm run check:rules` reads this line: every rule of these phases must have a test. Each milestone's PR bumps it along with that milestone's tests.
 
 ## Phase gate
 
