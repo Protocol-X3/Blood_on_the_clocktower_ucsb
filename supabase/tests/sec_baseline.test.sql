@@ -1,7 +1,3 @@
-begin;
-create extension if not exists pgtap with schema extensions;
-set local search_path = public, extensions;
-
 select plan(1);
 
 select is_empty(
@@ -10,4 +6,3 @@ select is_empty(
 );
 
 select * from finish();
-rollback;

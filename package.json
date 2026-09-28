@@ -25,9 +25,12 @@
     "verify": "npm run typecheck && npm run lint && npm run check:rules && npm run ledger:check && npm run test:unit && npm run test:integration && npm run test:db && npm run test:e2e && npm run secrets:dist && npm run secrets:repo",
     "mutate": "stryker run",
     "preflight": "node tools/preflight.ts",
-    "check:milestone": "node tools/check-milestone.ts"
+    "check:milestone": "node tools/check-milestone.ts",
+    "db:push": "node tools/db.ts push",
+    "db:set-admin": "node tools/db.ts set-admin"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.23",
     "@radix-ui/react-slot": "^1.3.3",
     "@supabase/supabase-js": "^2.117.2",
     "class-variance-authority": "^0.7.1",

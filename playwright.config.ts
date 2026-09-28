@@ -1,4 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
+import { loadEnv } from 'vite';
+
+// Test helpers (tests/support/users.ts) need the Supabase keys: from .env.local
+// locally, from the environment in CI. Existing environment variables win.
+Object.assign(process.env, { ...loadEnv('production', process.cwd(), ''), ...process.env });
 
 const PORT = 4173;
 // BASE_URL points the tests at a deployed site (smoke runs); otherwise a local
@@ -22,8 +27,10 @@ export default defineConfig({
   use: { baseURL: remote ?? `http://localhost:${PORT}`, trace: 'retain-on-failure' },
   // Players are phone-first; the DM is laptop/iPad-first (design.md, Device targets).
   projects: [
-    { name: 'phone', use: { ...devices['Pixel 7'], channel } },
-    { name: 'tablet', use: { ...devices['iPad Pro 11 landscape'], browserName: 'chromium', channel } },
+    // Admin screens are laptop/tablet screens, and only one admin can exist at a time: tablet only.
+    { name: 'phone', use: { ...devices['Pixel 7'], channel }, testIgnore: /admin\.spec\.ts/ },
+    // Guest sign-in uses Supabase's anonymous sign-in, which is rate-limited per IP; run it on one profile.
+    { name: 'tablet', use: { ...devices['iPad Pro 11 landscape'], browserName: 'chromium', channel }, testIgnore: /guest\.spec\.ts/ },
   ],
   webServer: remote
     ? undefined

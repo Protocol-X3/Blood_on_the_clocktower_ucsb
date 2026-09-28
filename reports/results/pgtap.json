@@ -1,7 +1,0 @@
-[
-  {
-    "title": "SEC-01: every table in the public schema has row level security enabled",
-    "status": "passed",
-    "file": "sec_baseline.test.sql"
-  }
-]

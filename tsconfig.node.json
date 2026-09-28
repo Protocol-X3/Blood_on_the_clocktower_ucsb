@@ -31,6 +31,7 @@
     "tools",
     "tests/e2e",
     "tests/tools",
-    "tests/integration"
+    "tests/integration",
+    "tests/support"
   ]
 }
