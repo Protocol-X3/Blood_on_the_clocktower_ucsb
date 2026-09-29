@@ -14,7 +14,7 @@
 - **M4 · Grimoire: DONE** (certified 2026-09-28, tag `m4-done`, [report](../reports/M4.md)).
 - **M5 · Stats & history: DONE** (certified 2026-09-28, tag `m5-done`, [report](../reports/M5.md)).
 - **Autonomy run COMPLETE (2026-09-28).** See [the final report](../reports/RUN.md). **M6 opened by the owner (2026-09-28), redefined:** scripts from photos are made by Claude in a Claude Code session, not by an in-app feature. **M6 DONE (2026-09-28):** after a guided walkthrough of three scripts, the workflow lives in the project skill [`.claude/skills/script-from-photo`](../../.claude/skills/script-from-photo/SKILL.md). All milestones M0–M6 are complete.
-- **DM log table: built 2026-09-28** (the owner's go-ahead the same day): the DM log is a spreadsheet with colour marks and note rows ([log-spreadsheet.md](log-spreadsheet.md); rules LOG-01 … LOG-06 and GRIM-03 revised). Done once every test passes in CI.
+- **DM log table: DONE 2026-09-28** (the owner's go-ahead the same day; PR #21 merged with every CI check green; migration `20260928000800_log_sheet.sql` applied to the live database): the DM log is a spreadsheet with colour marks and note rows ([log-spreadsheet.md](log-spreadsheet.md); rules LOG-01 … LOG-06 and GRIM-03 revised).
 - **Rules in force through: M5.** `npm run check:rules` reads this line: every rule of these phases must have a test. Each milestone's PR bumps it along with that milestone's tests.
 
 ## Phase gate

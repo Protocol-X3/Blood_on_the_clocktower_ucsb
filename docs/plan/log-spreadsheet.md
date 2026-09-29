@@ -1,6 +1,6 @@
 # The DM log as a spreadsheet (planned)
 
-Status: **built 2026-09-28** (the owner's go-ahead the same day). The rules below now live in [m4-grimoire.md](../rules/m4-grimoire.md), which is the source of truth; this file is the record of the plan and its decisions.
+Status: **done 2026-09-28** (the owner's go-ahead the same day; PR #21, all CI green; migration applied). The rules below now live in [m4-grimoire.md](../rules/m4-grimoire.md), which is the source of truth; this file is the record of the plan and its decisions.
 
 ## What changes
 
