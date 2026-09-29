@@ -216,20 +216,20 @@ export function LogSheet({
               return (
                 <tr key={s.seat} data-testid={`log-sheet-seat-${s.seat}`}>
                   {td(row, columns[0]!, 'log-pin-seat bg-surface py-[9px] text-center font-serif text-[17px] font-black text-gold-strong tabular-nums', s.seat)}
-                  {td(row, columns[1]!, 'log-pin-name bg-surface px-2 py-2.5', s.name)}
+                  {td(row, columns[1]!, 'log-pin-name bg-surface px-2 py-2.5', <span title={s.name}>{s.name}</span>)}
                   {td(
                     row,
                     columns[2]!,
                     'log-pin-role bg-surface px-2 py-[7px]',
                     s.role ? (
-                      <span className="flex items-center gap-1.5 whitespace-nowrap">
+                      <span className="flex min-w-0 items-center gap-1.5 whitespace-nowrap" title={s.role.name}>
                         <span
                           aria-hidden="true"
                           className={cn('grid size-[26px] shrink-0 place-items-center rounded-full border-2 bg-parchment font-serif text-xs font-black text-parchment-ink max-sm:hidden', RING[s.role.team])}
                         >
                           {s.role.glyph}
                         </span>
-                        <span className={cn('log-role text-[13px]', TEAM_TEXT[s.role.team])}>{s.role.name}</span>
+                        <span className={cn('log-role min-w-0 truncate text-[13px]', TEAM_TEXT[s.role.team])}>{s.role.name}</span>
                       </span>
                     ) : null,
                   )}
@@ -299,7 +299,7 @@ function NoteRow({
       {td(
         row,
         columns[0]!,
-        'sticky left-0 z-[1] w-[128px] min-w-[128px] bg-surface-2 p-[5px] max-sm:w-[100px] max-sm:min-w-[100px]',
+        'sticky left-0 z-[1] w-[128px] min-w-[128px] bg-surface-2 p-[5px] max-w-[128px] max-sm:w-[100px] max-sm:min-w-[100px] max-sm:max-w-[100px]',
         edit ? (
           <>
             <div className="flex items-center gap-0.5">

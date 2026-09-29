@@ -245,27 +245,34 @@
 .log-cell[data-mark='dead'] textarea::placeholder {
   text-shadow: var(--log-halo);
 }
-/* 座位 · 玩家 · 初始角色 stay pinned while the phases scroll. */
+/* 座位 · 玩家 · 初始角色 stay pinned while the phases scroll. Their widths are fixed (long
+   names are cut short with …), so each sticks exactly where it already sits. */
 .log-sheet .log-pin-seat,
 .log-sheet .log-pin-name,
 .log-sheet .log-pin-role {
   position: sticky;
   z-index: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .log-sheet .log-pin-seat {
   left: 0;
   width: 44px;
   min-width: 44px;
+  max-width: 44px;
 }
 .log-sheet .log-pin-name {
   left: 44px;
   width: 84px;
   min-width: 84px;
+  max-width: 84px;
 }
 .log-sheet .log-pin-role {
   left: 128px;
   width: 96px;
   min-width: 96px;
+  max-width: 96px;
   box-shadow: 6px 0 8px -6px rgb(0 0 0 / 0.6);
 }
 .log-sheet thead :is(.log-pin-seat, .log-pin-name, .log-pin-role) {
@@ -275,16 +282,19 @@
   .log-sheet .log-pin-seat {
     width: 36px;
     min-width: 36px;
+    max-width: 36px;
   }
   .log-sheet .log-pin-name {
     left: 36px;
     width: 64px;
     min-width: 64px;
+    max-width: 64px;
   }
   .log-sheet .log-pin-role {
     left: 100px;
     width: 80px;
     min-width: 80px;
+    max-width: 80px;
   }
 }
 /* Paint mode: the cells become one canvas to drag across. */
