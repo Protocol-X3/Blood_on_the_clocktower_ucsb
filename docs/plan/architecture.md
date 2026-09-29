@@ -78,7 +78,13 @@ The owner's PC can't run Docker, because Riot Vanguard (the anti-cheat for Riot 
 **At launch** (see roadmap.md, Before launch):
 - The project is cleaned: test data is wiped and the service-role key is rotated.
 - From then on it's production, and it's **never reset again**.
-- Post-launch development uses either a new separate dev project or CI's Docker database, whichever the owner decides.
+
+**After launch** (the owner's decision, 2026-09-29): one database, no separate dev project.
+- **CI is the only place the full suite runs**, on its throwaway Docker database, for every push.
+- **Locally**, only the database tests (pgTAP) run against the cloud project. Each file runs in a transaction that is rolled back, so they leave no trace. A new migration can be tried the same way before it's merged: prepend it to the test run inside the same rolled-back transaction.
+- **Integration and E2E tests refuse to run against the cloud project** (QA-12) unless `ALLOW_LIVE_TEST_DATA=1` is set on purpose. Smoke tests against the deployed site (`BASE_URL=… --grep @smoke`) create no data and still run.
+- **Migrations** are applied with `node tools/db.ts push` only after the PR is merged, from a checkout of `main`, because the push applies every migration in the working tree.
+- **The owner tests on the live site**, with the bot sandbox switched on under 管理 when needed, and discards test games (放弃本局, END-05) so they never reach stats or history.
 
 Other notes:
 - Secrets (database passwords, service-role keys, API keys) are never committed or pasted into chat. They go in `.env.local` (gitignored) or in the CI and Vercel secret settings.

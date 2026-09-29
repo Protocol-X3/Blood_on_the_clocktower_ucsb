@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { describe, expect, it } from 'vitest';
 import { supabaseCli } from '../../tools/lib/supabaseCli.ts';
+import { assertTestDatabase } from '../support/liveGuard.ts';
 
 const url = process.env.VITE_SUPABASE_URL!;
 const publishable = process.env.VITE_SUPABASE_PUBLISHABLE_KEY!;
@@ -8,6 +9,7 @@ const secret = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 describe('Supabase project', () => {
   it('M0.4: a guest can sign in anonymously and sign out', async () => {
+    assertTestDatabase();
     const client = createClient(url, publishable, { auth: { persistSession: false } });
     const { data, error } = await client.auth.signInAnonymously();
     expect(error).toBeNull();
