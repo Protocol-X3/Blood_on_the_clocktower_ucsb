@@ -65,11 +65,11 @@ The DM has a dedicated step-by-step setup wizard. It opens only once every seat 
 
 ### 3. In progress
 
-- **Phases:** 第1夜 → 第1天 → 第2夜 … The DM advances the phase with one button. Log entries and board posts are tagged with the phase.
+- **Phases:** 第1夜 → 第1天 → 第2夜 … The DM advances the phase with one button. Board posts are tagged with the phase; the DM log has a column per phase.
 - **The DM can at any time:**
   - mark a player dead with a public **cause** (e.g. 处决 executed, 夜间死亡 died at night), or revive them;
   - manage reminder tokens (中毒, 醉酒, custom);
-  - write DM log entries per seat;
+  - keep the **DM log table** (说书人日志): a row per seat plus note rows, and columns 座位 / 玩家 / 初始角色 / 角色设置 / 第1夜 / 第1天 … (min(5, ⌊players / 2⌋) nights and days to start). The 日志 tab shows one phase at a time; the full table sits at the bottom of the DM's page with the first three columns pinned. The DM colours cells (red evil or wrong, yellow outsider, violet drunk or poisoned, green correct, grey dead) by painting single cells or dragged rectangles; evil and outsider rows start red and yellow. See [log-spreadsheet.md](log-spreadsheet.md);
   - change a seat's shown role, actual role or alignment.
 - **Mid-game role changes:** the DM updates the shown and/or actual role. The player's screen just shows the new shown role, with no notification. The DM tells them in person.
 - **Nominations and voting (days only):**
@@ -89,7 +89,7 @@ The DM has a dedicated step-by-step setup wizard. It opens only once every seat 
 
 ### 4. Ended
 
-The DM picks the winning team. Everyone sees the **summary page**: actual and shown roles, alignments, deaths and the DM log. Stats are recorded, with guests excluded.
+The DM picks the winning team. Everyone sees the **summary page**: actual and shown roles, alignments, deaths and the DM log table (read-only). Stats are recorded, with guests excluded.
 
 **Reconnecting:** all state lives in the database, so a player who refreshes or re-opens the page rejoins where they were.
 

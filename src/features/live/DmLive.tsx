@@ -22,6 +22,8 @@ import {
 } from './model';
 import { Grimoire } from '@/features/grimoire/Grimoire';
 import { LogPanel } from '@/features/grimoire/Log';
+import { logIndex, logRows } from '@/features/grimoire/logData';
+import { LogSheet } from '@/features/grimoire/LogSheet';
 import { SeatDetail } from '@/features/grimoire/SeatDetail';
 
 type Act = (run: () => PromiseLike<{ error: unknown }>, after?: () => void) => Promise<void>;
@@ -169,9 +171,14 @@ export function DmLive({
         {tab === 'nominate' ? <NominationPanel game={game} data={data} names={names} act={act} speed={speed} /> : null}
         {tab === 'seat' ? <SeatDetail game={game} data={data} names={names} seat={selected} act={act} onPick={setSelected} /> : null}
         {tab === 'players' ? <SeatRoleList data={data} names={names} /> : null}
-        {tab === 'log' ? <LogPanel gameId={game.id} data={data} names={names} act={act} /> : null}
+        {tab === 'log' ? <LogPanel key={phaseLabel(phase)} gameId={game.id} data={data} names={names} phase={phase} act={act} /> : null}
         {tab === 'board' ? <Board posts={data.posts} names={names} me={me} isDm canPost act={act} gameId={game.id} /> : null}
       </aside>
+
+      {/* LOG-04: the full log table, below everything, full width. */}
+      <div className="mt-3 min-w-0 lg:col-span-2">
+        <LogSheet {...logRows(data, names)} index={logIndex(data)} phase={phase} edit={{ gameId: game.id, act }} />
+      </div>
 
       {ending ? <EndGameDialog gameId={game.id} act={act} onClose={() => setEnding(false)} /> : null}
     </div>

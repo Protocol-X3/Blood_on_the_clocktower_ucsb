@@ -1,8 +1,7 @@
 // What the grimoire shows for each seat (GRIM-02).
-import type { GameData, GameRole, GrimoireToken, LogEntry } from '@/features/game/useGameData';
+import type { GameData, GameRole, GrimoireToken } from '@/features/game/useGameData';
 import { deathText, type DeathCause } from '@/features/live/model';
 import { roleGlyph } from '@/lib/game/composition';
-import { phaseLabel, type PhaseKind } from '@/lib/game/phase';
 import { ALIGNMENT_LABEL, defaultAlignment, type Alignment } from '@/lib/game/teams';
 
 export interface GrimoireSeat {
@@ -47,8 +46,4 @@ export function grimoireSeats(data: GameData, names: Map<number, string>): Grimo
 /** Every reminder text the script's roles offer, for TOKEN-01. */
 export function scriptReminders(data: GameData): { role: string; text: string }[] {
   return data.roles.flatMap((r) => r.reminders.map((text) => ({ role: r.name, text })));
-}
-
-export function entryPhase(e: LogEntry): string {
-  return phaseLabel({ kind: e.phase_kind as PhaseKind, number: e.phase_number });
 }

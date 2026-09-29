@@ -49,24 +49,69 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"dm_log": {
+                },"dm_log_cells": {
                   Row: {
-                    "body": string,"created_at": string,"game_id": string,"id": string,"phase_kind": string,"phase_number": number,"seat": number | null,"updated_at": string | null
+                    "body": string | null,"column_kind": string,"game_id": string,"id": string,"mark": Database["public"]['Enums']["log_mark"] | null,"note_id": string | null,"phase_number": number | null,"seat": number | null,"updated_at": string
                   }
                   Insert: {
-                    "body": string,"created_at"?: string,"game_id": string,"id"?: string,"phase_kind": string,"phase_number": number,"seat"?: number | null,"updated_at"?: string | null
+                    "body"?: string | null,"column_kind": string,"game_id": string,"id"?: string,"mark"?: Database["public"]['Enums']["log_mark"] | null,"note_id"?: string | null,"phase_number"?: number | null,"seat"?: number | null,"updated_at"?: string
                   }
                   Update: {
-                    "body"?: string,"created_at"?: string,"game_id"?: string,"id"?: string,"phase_kind"?: string,"phase_number"?: number,"seat"?: number | null,"updated_at"?: string | null
+                    "body"?: string | null,"column_kind"?: string,"game_id"?: string,"id"?: string,"mark"?: Database["public"]['Enums']["log_mark"] | null,"note_id"?: string | null,"phase_number"?: number | null,"seat"?: number | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
-      foreignKeyName: "dm_log_game_id_fkey"
+      foreignKeyName: "dm_log_cells_game_id_fkey"
       columns: ["game_id"]
 isOneToOne: false
       referencedRelation: "games"
       referencedColumns: ["id"]
-    }
+    },
+                    {
+      foreignKeyName: "dm_log_cells_note_id_fkey"
+      columns: ["note_id"]
+isOneToOne: false
+      referencedRelation: "dm_log_notes"
+      referencedColumns: ["id"]
+    },
+                  ]
+                },"dm_log_notes": {
+                  Row: {
+                    "created_at": string,"game_id": string,"id": string,"label": string,"position": number
+                  }
+                  Insert: {
+                    "created_at"?: string,"game_id": string,"id"?: string,"label"?: string,"position": number
+                  }
+                  Update: {
+                    "created_at"?: string,"game_id"?: string,"id"?: string,"label"?: string,"position"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "dm_log_notes_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    },
+                  ]
+                },"dm_log_row_marks": {
+                  Row: {
+                    "game_id": string,"mark": Database["public"]['Enums']["log_mark"],"seat": number
+                  }
+                  Insert: {
+                    "game_id": string,"mark": Database["public"]['Enums']["log_mark"],"seat": number
+                  }
+                  Update: {
+                    "game_id"?: string,"mark"?: Database["public"]['Enums']["log_mark"],"seat"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "dm_log_row_marks_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    },
                   ]
                 },"draw_cards": {
                   Row: {
@@ -488,8 +533,8 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "add_log":
-{ Args: { "p_body": string,"p_game": string,"p_seat": number }; Returns: string
+            "add_log_note":
+{ Args: { "p_game": string,"p_label": string }; Returns: string
                            },
 "add_token":
 { Args: { "p_game": string,"p_kind": Database["public"]['Enums']["token_kind"],"p_seat": number,"p_text"?: string }; Returns: string
@@ -513,7 +558,7 @@ isOneToOne: false
 { Args: { "p_nomination": string }; Returns: undefined
                            },
 "bot_sandbox_enabled":
-{ Args: never; Returns: boolean
+{ Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "cancel_setup":
 { Args: { "p_game": string }; Returns: undefined
@@ -536,8 +581,8 @@ isOneToOne: false
 "create_room":
 { Args: { "p_seat_count"?: number }; Returns: string
                            },
-"delete_log":
-{ Args: { "p_entry": string }; Returns: undefined
+"delete_log_note":
+{ Args: { "p_note": string }; Returns: undefined
                            },
 "delete_post":
 { Args: { "p_post": string }; Returns: undefined
@@ -569,8 +614,14 @@ isOneToOne: false
 "draw_card":
 { Args: { "p_card": number,"p_game": string }; Returns: undefined
                            },
-"edit_log":
-{ Args: { "p_body": string,"p_entry": string }; Returns: undefined
+"mark_log_cells":
+{ Args: { "p_cells": Json,"p_game": string,"p_mark": string }; Returns: undefined
+                           },
+"rename_log_note":
+{ Args: { "p_label": string,"p_note": string }; Returns: undefined
+                           },
+"set_log_cell":
+{ Args: { "p_body": string,"p_column": string,"p_game": string,"p_note": string,"p_phase": number,"p_seat": number }; Returns: undefined
                            },
 "end_game":
 { Args: { "p_game": string,"p_winner": Database["public"]['Enums']["alignment"] }; Returns: undefined
@@ -674,7 +725,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "alignment": "good"|"evil","assignment_mode": "manual"|"draw","death_cause": "executed"|"night"|"other","game_status": "setup"|"in_progress"|"ended","nomination_status": "open"|"voting"|"counted"|"closed"|"cancelled","permission_level": "player"|"dm_eligible"|"admin","team": "townsfolk"|"outsider"|"minion"|"demon","token_kind": "poisoned"|"drunk"|"reminder"|"custom"
+            "alignment": "good"|"evil","assignment_mode": "manual"|"draw","death_cause": "executed"|"night"|"other","log_mark": "red"|"yellow"|"violet"|"green"|"dead"|"none","game_status": "setup"|"in_progress"|"ended","nomination_status": "open"|"voting"|"counted"|"closed"|"cancelled","permission_level": "player"|"dm_eligible"|"admin","team": "townsfolk"|"outsider"|"minion"|"demon","token_kind": "poisoned"|"drunk"|"reminder"|"custom"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -790,7 +841,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "alignment": ["good", "evil"],"assignment_mode": ["manual", "draw"],"death_cause": ["executed", "night", "other"],"game_status": ["setup", "in_progress", "ended"],"nomination_status": ["open", "voting", "counted", "closed", "cancelled"],"permission_level": ["player", "dm_eligible", "admin"],"team": ["townsfolk", "outsider", "minion", "demon"],"token_kind": ["poisoned", "drunk", "reminder", "custom"]
+            "alignment": ["good", "evil"],"assignment_mode": ["manual", "draw"],"death_cause": ["executed", "night", "other"],"log_mark": ["red", "yellow", "violet", "green", "dead", "none"],"game_status": ["setup", "in_progress", "ended"],"nomination_status": ["open", "voting", "counted", "closed", "cancelled"],"permission_level": ["player", "dm_eligible", "admin"],"team": ["townsfolk", "outsider", "minion", "demon"],"token_kind": ["poisoned", "drunk", "reminder", "custom"]
           }
         }
 } as const

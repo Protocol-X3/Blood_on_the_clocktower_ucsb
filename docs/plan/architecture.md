@@ -40,7 +40,7 @@ Notes:
 - `games`: room, script, DM, assignment mode, status, phase, winner
 - `game_seats`: seat, player, actual role, shown role, alignment, alive, death cause, ghost vote used. Access to roles is restricted.
 - `grimoire_tokens`: DM only
-- `dm_log`: DM only
+- `dm_log_cells`, `dm_log_notes`, `dm_log_row_marks`: the DM log table (one text and/or colour per cell, note rows, row colours set at the start). DM only until the game ends ([log-spreadsheet.md](log-spreadsheet.md))
 - `nominations`: nominator, nominee, phase, vote-circle state, final count
 - `votes`: live hand state per seat, locked flag
 - `board_posts`
