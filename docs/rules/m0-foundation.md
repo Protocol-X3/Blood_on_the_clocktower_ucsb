@@ -32,6 +32,7 @@ These rules make sure the base is sound before any feature exists. They stay in 
 - **QA-08** A committed test ledger records how many tests name each rule ID and exit-criterion ID. CI fails if any count goes down; counts may only grow, and the ledger is updated in the same commit. *(Safeguard D.)* · *Script, CI*
 - **QA-09** Each exit criterion (e.g. `M1.3`) is named in the test that proves it. `npm run check:milestone M<n>` runs the gates plus every tagged test, and exits 0 only if every criterion of M<n> has a passing test. *(Safeguard A.)* · *Script (with its own tests)*
 - **QA-10** `main` is protected on GitHub: merging requires both CI jobs to pass. *(Safeguard B.)* · *Script (checks the branch protection via `gh api`)*
+- **QA-12** Integration and E2E tests create accounts and games only on a local (Docker) Supabase, as in CI. Against the cloud project they refuse to start unless `ALLOW_LIVE_TEST_DATA=1` is set. Database tests (pgTAP) may run against it, since each file runs in a transaction that is rolled back. · *Unit*
 - **QA-11** Every finished milestone has a saved report, `docs/reports/M<n>.md`, with the evidence for each criterion, and a git tag `m<n>-done` on the certified commit. *(Safeguard E.)* · *Script*
 
 ## DEP · Deployment

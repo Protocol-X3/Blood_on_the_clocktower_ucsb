@@ -11,6 +11,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../../src/services/database.types.ts';
+import { assertTestDatabase } from './liveGuard.ts';
 
 export const url = process.env.VITE_SUPABASE_URL!;
 const publishable = process.env.VITE_SUPABASE_PUBLISHABLE_KEY!;
@@ -106,6 +107,7 @@ async function sessionFor(email: string): Promise<Session> {
  * memberships) and returns it. Callers must never use one slot in two places at once.
  */
 export async function poolUser(slot: string, opts: UserOptions = {}): Promise<TestUser> {
+  assertTestDatabase();
   const email = `e2e-pool-${slot}@test.botc`;
   const id = await ensureAccount(email);
   const level = opts.level ?? 'player';
