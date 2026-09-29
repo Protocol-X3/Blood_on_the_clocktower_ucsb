@@ -374,7 +374,7 @@ async function other(sim: Sim, r: Rng, seat: () => number, open: ModelNomination
       const label = r.chance(0.05) ? '十三个字的备注行名称太长了' : r.pick(['', '整局', '恶魔伪装']);
       const expected = m.addLogNote(label);
       const { data } = await act(sim, `note(${label})`, expected, dm.rpc('add_log_note', { p_game: g, p_label: label }));
-      if (expected.ok) sim.noteIds.set(expected.value as number, data as string);
+      if (expected.ok) sim.noteIds.set(m.logNotes.at(-1)!.id, data as string);
       return;
     }
     case 'renameNote': {

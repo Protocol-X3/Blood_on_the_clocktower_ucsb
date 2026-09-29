@@ -448,9 +448,9 @@ export class GameModel {
     const text = label.trim();
     if ([...text].length > 12) return fail('LOG_LABEL_LENGTH');
     if (this.logNotes.length >= 20) return fail('LOG_NOTE_LIMIT');
-    const id = this.nextNote++;
-    this.logNotes.push({ id, label: text });
-    return ok(id);
+    // The database answers with its own id; the simulation pairs it with the newest note.
+    this.logNotes.push({ id: this.nextNote++, label: text });
+    return ok();
   }
 
   renameLogNote(index: number, label: string): Outcome {
