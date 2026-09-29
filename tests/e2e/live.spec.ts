@@ -313,6 +313,13 @@ test('END-05: the DM discards the game: everyone is back in the lobby, and it ne
   const t = await liveGame(users, browser, 1);
   const phone = t.phones[0]!;
   await rpc(t.dmc, 'kill_seat', { p_game: t.gameId, p_seat: 2, p_cause: 'night' });
+  // Test players are reused across runs, so compare with what they had before this game.
+  const counts = async () => {
+    const c = t.clients[0]!;
+    const [stats, history] = await Promise.all([c.rpc('profile_stat_rows', { p_user: t.players[0]!.id }), c.rpc('profile_history', { p_user: t.players[0]!.id })]);
+    return { games: stats.data!.filter((g) => !g.as_dm).length, history: history.data!.length };
+  };
+  const before = await counts();
   await signIn(page, t.dm);
   await page.goto(`/room/${t.code}`);
   await page.getByRole('button', { name: '结束游戏' }).click();
@@ -332,8 +339,9 @@ test('END-05: the DM discards the game: everyone is back in the lobby, and it ne
   await expect(page.getByText('大厅 · 5/5 人入座')).toBeVisible();
 
   // Nothing reached the player's stats or history.
+  expect(await counts()).toEqual(before);
   await phone.goto(`/profile/${t.players[0]!.id}`);
-  await expect(phone.getByTestId('stat-games')).toContainText('0');
-  await expect(phone.getByTestId('history-row')).toHaveCount(0);
+  await expect(phone.getByTestId('stat-games')).toHaveText(`场次${before.games}`);
+  await expect(phone.getByTestId('history-row')).toHaveCount(before.history);
   await closeAll(t);
 });
