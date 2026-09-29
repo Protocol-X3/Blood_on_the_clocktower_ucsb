@@ -58,7 +58,7 @@ A new migration replaces `dm_log`. The live database has no log entries (checked
 - The RPCs, all DM-only while the game is running:
   - `set_log_cell(game, seat, note, column, phase, body)`: upsert; an empty body deletes the cell unless it has a mark. Fails `LOG_LENGTH` over 500 characters.
   - `mark_log_cells(game, cells, mark)`: colours or clears many cells in one call (one paint stroke).
-  - `start_game` sets the automatic row marks (evil → red, outsider → yellow) in `dm_log_rows_marks (game_id, seat, mark)`. A cell's own mark, including an explicit `none` for 清除, overrides the row's.
+  - `start_game` sets the automatic row marks (evil → red, outsider → yellow) in `dm_log_row_marks (game_id, seat, mark)`. A cell's own mark, including an explicit `none` for 清除, overrides the row's.
   - `add_log_note(game, label)`, `rename_log_note(note, label)`, `delete_log_note(note)`.
 - `add_log`, `edit_log` and `delete_log` are dropped.
 
