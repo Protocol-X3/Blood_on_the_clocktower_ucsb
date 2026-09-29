@@ -487,7 +487,23 @@ function SeatSelect({
 }
 
 /** END-01: the DM names the winning team. */
+/** END-01: pick the winner; or END-05: discard the game, after a second confirmation. */
 function EndGameDialog({ gameId, act, onClose }: { gameId: string; act: Act; onClose: () => void }) {
+  const [discarding, setDiscarding] = useState(false);
+  if (discarding) {
+    return (
+      <Dialog open onOpenChange={(o) => !o && onClose()} title="放弃本局" description="本局会被删除，不计入任何人的战绩和历史，也不会有结算。所有人回到大厅，座位保留。此操作无法撤销。">
+        <div className="flex flex-col gap-3">
+          <Button variant="danger" onClick={() => act(() => supabase.rpc('discard_game', { p_game: gameId }), onClose)}>
+            确认放弃本局
+          </Button>
+          <Button variant="ghost" onClick={() => setDiscarding(false)}>
+            返回
+          </Button>
+        </div>
+      </Dialog>
+    );
+  }
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()} title="结束游戏" description="选择获胜的阵营。结束后所有人会看到本局结算。">
       <div className="flex flex-col gap-3">
@@ -503,6 +519,12 @@ function EndGameDialog({ gameId, act, onClose }: { gameId: string; act: Act; onC
         <Button variant="ghost" onClick={onClose}>
           取消
         </Button>
+        <div className="mt-1 flex flex-col gap-2 border-t border-line pt-4">
+          <p className="text-xs text-ink-faint">不想记录这局？放弃后本局不计入战绩和历史。</p>
+          <Button variant="danger" onClick={() => setDiscarding(true)}>
+            放弃本局
+          </Button>
+        </div>
       </div>
     </Dialog>
   );

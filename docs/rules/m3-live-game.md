@@ -56,6 +56,7 @@ Status: **Approved** by the owner, 2026-09-27.
 - **END-02** Ending the game records every seat's final actual role, shown role and alignment, and takes everyone to the summary page. · *pgTAP, E2E*
 - **END-03** The summary shows every seat's actual and shown role, alignment, deaths with their causes, and the winning team. · *E2E*
 - **END-04** After a game ends, the room goes back to the lobby for the next game, with seats kept. · *pgTAP, E2E*
+- **END-05** Instead of ending the game, the DM can discard it, after a second confirmation. The game is deleted with everything recorded in it, never counts in anyone's stats or history, and has no summary. Everyone goes back to the lobby with seats kept and sees that the game was discarded. · *pgTAP, E2E*
 
 ## RECON · Reconnecting
 

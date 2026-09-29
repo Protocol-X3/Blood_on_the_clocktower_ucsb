@@ -29,7 +29,9 @@ export function RoomPage() {
   const { state, reload } = useRoom(code.toUpperCase(), profile!.id);
 
   // END-02: when the running game ends, its players and DM go to its summary.
+  // END-05: if the DM discarded it instead, it is gone: stay in the lobby and say so.
   const running = useRef<string | null>(null);
+  const [discarded, setDiscarded] = useState(false);
   const game = state.status === 'ready' ? state.game : undefined;
   // Only the game's players and DM can read its summary (HIST-02); onlookers stay in the lobby.
   const participant =
@@ -38,8 +40,14 @@ export function RoomPage() {
     if (game === undefined) return;
     if (game?.status === 'in_progress' && participant) running.current = game.id;
     else if (!game && running.current) {
+      const id = running.current;
       running.current = null;
-      navigate(`/room/${code.toUpperCase()}/summary`);
+      void supabase
+        .from('games')
+        .select('id')
+        .eq('id', id)
+        .maybeSingle()
+        .then(({ data }) => (data ? navigate(`/room/${code.toUpperCase()}/summary`) : setDiscarded(true)));
     }
   }, [game, participant, code, navigate]);
 
@@ -50,7 +58,7 @@ export function RoomPage() {
   if (state.game?.status === 'setup' || state.game?.status === 'in_progress') {
     return <GameStage room={state.room} members={state.members} game={state.game} reload={reload} />;
   }
-  return <Lobby room={state.room} members={state.members} gameActive={state.game !== null} reload={reload} />;
+  return <Lobby room={state.room} members={state.members} gameActive={state.game !== null} discarded={discarded} reload={reload} />;
 }
 
 /** Setup (SETUP-06) and the started game (SETUP-10): the DM gets the grimoire theme, players the night. */
@@ -116,7 +124,19 @@ function GameStage({ room, members, game, reload }: { room: Room; members: Membe
   );
 }
 
-function Lobby({ room, members, gameActive, reload }: { room: Room; members: Member[]; gameActive: boolean; reload: () => Promise<void> }) {
+function Lobby({
+  room,
+  members,
+  gameActive,
+  discarded,
+  reload,
+}: {
+  room: Room;
+  members: Member[];
+  gameActive: boolean;
+  discarded: boolean;
+  reload: () => Promise<void>;
+}) {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const me = profile!;
@@ -183,6 +203,11 @@ function Lobby({ room, members, gameActive, reload }: { room: Room; members: Mem
           <p className="mt-2 text-sm text-ink-muted" aria-live="polite">
             {copied ? '已复制房间码' : closed ? '房间已关闭' : gameActive ? '对局进行中' : `大厅 · ${seated}/${room.seat_count} 人入座`}
           </p>
+          {discarded ? (
+            <p role="status" data-testid="game-discarded" className="mx-auto mt-3 w-fit rounded-full border border-line bg-surface/80 px-4 py-1.5 text-sm text-ink-muted">
+              说书人放弃了上一局，本局不计入战绩和历史
+            </p>
+          ) : null}
         </section>
 
         <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-5 px-4 md:grid-cols-[minmax(0,1fr)_18rem] md:px-6">

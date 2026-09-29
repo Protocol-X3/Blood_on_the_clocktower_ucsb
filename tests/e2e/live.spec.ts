@@ -308,3 +308,32 @@ test('DEATH-03 · VOTE-02 · VOTE-04: the dead are greyed with 亡 everywhere; a
   await expect(p1.getByRole('button', { name: '举手' })).toHaveCount(0);
   await closeAll(t);
 });
+
+test('END-05: the DM discards the game: everyone is back in the lobby, and it never reaches stats or history', async ({ page, browser, users }) => {
+  const t = await liveGame(users, browser, 1);
+  const phone = t.phones[0]!;
+  await rpc(t.dmc, 'kill_seat', { p_game: t.gameId, p_seat: 2, p_cause: 'night' });
+  await signIn(page, t.dm);
+  await page.goto(`/room/${t.code}`);
+  await page.getByRole('button', { name: '结束游戏' }).click();
+  // A second confirmation first; 返回 goes back to picking a winner.
+  await page.getByRole('dialog').getByRole('button', { name: '放弃本局' }).click();
+  await expect(page.getByRole('dialog')).toContainText('不计入任何人的战绩和历史');
+  await page.getByRole('button', { name: '返回' }).click();
+  await expect(page.getByRole('button', { name: '善良阵营获胜' })).toBeVisible();
+  await page.getByRole('dialog').getByRole('button', { name: '放弃本局' }).click();
+  await page.getByRole('button', { name: '确认放弃本局' }).click();
+
+  // Everyone is back in the lobby, seats kept, with no summary.
+  await expect(page.getByTestId('game-discarded')).toBeVisible();
+  await expect(phone.getByTestId('game-discarded')).toBeVisible();
+  await expect(phone).toHaveURL(new RegExp(`/room/${t.code}$`));
+  await expect(phone.getByTestId('room-code')).toHaveText(t.code);
+  await expect(page.getByText('大厅 · 5/5 人入座')).toBeVisible();
+
+  // Nothing reached the player's stats or history.
+  await phone.goto(`/profile/${t.players[0]!.id}`);
+  await expect(phone.getByTestId('stat-games')).toContainText('0');
+  await expect(phone.getByTestId('history-row')).toHaveCount(0);
+  await closeAll(t);
+});

@@ -91,6 +91,8 @@ The DM has a dedicated step-by-step setup wizard. It opens only once every seat 
 
 The DM picks the winning team. Everyone sees the **summary page**: actual and shown roles, alignments, deaths and the DM log table (read-only). Stats are recorded, with guests excluded.
 
+**Discarding a game (END-05):** instead of picking a winner, the DM can discard the game (放弃本局, after a second confirmation). It is deleted with everything recorded in it, has no summary, and never counts in stats or history. Everyone goes back to the lobby with seats kept.
+
 **Reconnecting:** all state lives in the database, so a player who refreshes or re-opens the page rejoins where they were.
 
 ## Out of scope (for now)
