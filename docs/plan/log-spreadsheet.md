@@ -1,6 +1,6 @@
 # The DM log as a spreadsheet (planned)
 
-Status: **planned 2026-09-28, waiting for the owner's go-ahead to build.** When it is built, this plan's rules replace LOG-01 to LOG-03 in [m4-grimoire.md](../rules/m4-grimoire.md), and this file becomes a record.
+Status: **built 2026-09-28** (the owner's go-ahead the same day). The rules below now live in [m4-grimoire.md](../rules/m4-grimoire.md), which is the source of truth; this file is the record of the plan and its decisions.
 
 ## What changes
 

@@ -15,7 +15,9 @@ export type Death = T['game_deaths']['Row'];
 export type DayResult = T['day_results']['Row'];
 export type BoardPost = T['board_posts']['Row'];
 export type GrimoireToken = T['grimoire_tokens']['Row'];
-export type LogEntry = T['dm_log']['Row'];
+export type LogCell = T['dm_log_cells']['Row'];
+export type LogNote = T['dm_log_notes']['Row'];
+export type LogRowMark = T['dm_log_row_marks']['Row'];
 
 export interface GameData {
   roles: GameRole[];
@@ -34,8 +36,10 @@ export interface GameData {
   posts: BoardPost[];
   /** DM only, until the game ends (TOKEN-02). */
   tokens: GrimoireToken[];
-  /** DM only, until the game ends (LOG-02). */
-  log: LogEntry[];
+  /** The log table: DM only, until the game ends (LOG-02). */
+  logCells: LogCell[];
+  logNotes: LogNote[];
+  logRowMarks: LogRowMark[];
 }
 
 // Each table is reloaded on its own when it changes, so a vote tick doesn't refetch the roles.
@@ -52,7 +56,9 @@ const LOADERS = {
   dayResults: (g: string) => supabase.from('day_results').select('*').eq('game_id', g).order('day_number'),
   posts: (g: string) => supabase.from('board_posts').select('*').eq('game_id', g).order('created_at', { ascending: false }),
   tokens: (g: string) => supabase.from('grimoire_tokens').select('*').eq('game_id', g).order('created_at'),
-  log: (g: string) => supabase.from('dm_log').select('*').eq('game_id', g).order('created_at'),
+  logCells: (g: string) => supabase.from('dm_log_cells').select('*').eq('game_id', g),
+  logNotes: (g: string) => supabase.from('dm_log_notes').select('*').eq('game_id', g).order('position'),
+  logRowMarks: (g: string) => supabase.from('dm_log_row_marks').select('*').eq('game_id', g),
 } satisfies Record<keyof GameData, (g: string) => PromiseLike<{ data: unknown[] | null }>>;
 
 type Key = keyof GameData;
@@ -68,7 +74,9 @@ const TABLE_OF: Partial<Record<string, Key>> = {
   day_results: 'dayResults',
   board_posts: 'posts',
   grimoire_tokens: 'tokens',
-  dm_log: 'log',
+  dm_log_cells: 'logCells',
+  dm_log_notes: 'logNotes',
+  dm_log_row_marks: 'logRowMarks',
 };
 const KEYS = Object.keys(LOADERS) as Key[];
 
@@ -113,7 +121,7 @@ export function useGameData(gameId: string) {
       channel = channel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `game_id=eq.${gameId}` }, () => reload([key!]));
     }
     // Realtime can't filter deletes (their payload holds only the key), so listen to all post deletions.
-    for (const [table, key] of [['board_posts', 'posts'], ['grimoire_tokens', 'tokens'], ['dm_log', 'log']] as const) {
+    for (const [table, key] of [['board_posts', 'posts'], ['grimoire_tokens', 'tokens'], ['dm_log_cells', 'logCells'], ['dm_log_notes', 'logNotes']] as const) {
       channel = channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table }, () => reload([key]));
     }
     channel.subscribe((status) => {

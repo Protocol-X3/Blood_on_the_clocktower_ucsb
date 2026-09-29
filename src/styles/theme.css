@@ -189,3 +189,114 @@
     inset 0 0 0 7px #b8923f,
     0 30px 70px -20px rgb(0 0 0 / 0.6);
 }
+
+/*
+ * The DM log table (LOG-01 … LOG-06, docs/plan/log-spreadsheet.md). It only ever sits on a
+ * dark theme (the grimoire, or the night summary). Colour marks are tints laid over each
+ * cell's own solid base, so pinned cells never show the scrolled columns through them.
+ */
+.log-sheet {
+  --log-red: rgb(214 52 72 / 0.42);
+  --log-yellow: rgb(222 178 44 / 0.36);
+  --log-violet: rgb(150 92 226 / 0.42);
+  --log-green: rgb(58 172 104 / 0.38);
+  --log-dead: rgb(128 134 152 / 0.46);
+  --log-dead-hatch: repeating-linear-gradient(135deg, rgb(226 230 240 / 0.2) 0 1.5px, transparent 1.5px 9px);
+  --log-halo: 0 0 2px rgb(6 8 16 / 0.95), 0 0 5px rgb(6 8 16 / 0.85), 0 1px 1px rgb(6 8 16 / 0.9);
+  --log-divider: #cfd2d9;
+}
+.log-cell {
+  --cell-base: var(--surface);
+}
+.log-note .log-cell,
+.log-box {
+  --cell-base: var(--surface-2);
+}
+/* Note rows are a shade lighter all the way across. */
+.log-note td {
+  background-color: var(--surface-2);
+}
+.log-cell[data-mark='red'] {
+  background: linear-gradient(var(--log-red), var(--log-red)), var(--cell-base);
+}
+.log-cell[data-mark='yellow'] {
+  background: linear-gradient(var(--log-yellow), var(--log-yellow)), var(--cell-base);
+}
+.log-cell[data-mark='violet'] {
+  background: linear-gradient(var(--log-violet), var(--log-violet)), var(--cell-base);
+}
+.log-cell[data-mark='green'] {
+  background: linear-gradient(var(--log-green), var(--log-green)), var(--cell-base);
+}
+/* Dead: an ash tint with a shroud of fine diagonal strokes. */
+.log-cell[data-mark='dead'] {
+  background: var(--log-dead-hatch), linear-gradient(var(--log-dead), var(--log-dead)), var(--cell-base);
+}
+/* Text on the shroud keeps full ink and a dark halo, so the strokes never cut through it. */
+.log-cell[data-mark='dead'],
+.log-cell[data-mark='dead'] :is(textarea, .log-role) {
+  color: var(--ink);
+  text-shadow: var(--log-halo);
+}
+.log-cell[data-mark] textarea::placeholder {
+  color: var(--ink-muted);
+  opacity: 1;
+}
+.log-cell[data-mark='dead'] textarea::placeholder {
+  text-shadow: var(--log-halo);
+}
+/* 座位 · 玩家 · 初始角色 stay pinned while the phases scroll. */
+.log-sheet .log-pin-seat,
+.log-sheet .log-pin-name,
+.log-sheet .log-pin-role {
+  position: sticky;
+  z-index: 1;
+}
+.log-sheet .log-pin-seat {
+  left: 0;
+  width: 44px;
+  min-width: 44px;
+}
+.log-sheet .log-pin-name {
+  left: 44px;
+  width: 84px;
+  min-width: 84px;
+}
+.log-sheet .log-pin-role {
+  left: 128px;
+  width: 96px;
+  min-width: 96px;
+  box-shadow: 6px 0 8px -6px rgb(0 0 0 / 0.6);
+}
+.log-sheet thead :is(.log-pin-seat, .log-pin-name, .log-pin-role) {
+  z-index: 3;
+}
+@media (max-width: 640px) {
+  .log-sheet .log-pin-seat {
+    width: 36px;
+    min-width: 36px;
+  }
+  .log-sheet .log-pin-name {
+    left: 36px;
+    width: 64px;
+    min-width: 64px;
+  }
+  .log-sheet .log-pin-role {
+    left: 100px;
+    width: 80px;
+    min-width: 80px;
+  }
+}
+/* Paint mode: the cells become one canvas to drag across. */
+.log-painting table {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: crosshair;
+}
+.log-painting table :is(textarea, input, button) {
+  pointer-events: none;
+}
+.log-sheet td.log-in-range {
+  box-shadow: inset 0 0 0 2px var(--gold-strong);
+}

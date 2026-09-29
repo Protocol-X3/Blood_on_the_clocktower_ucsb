@@ -5,9 +5,10 @@ import { Panel } from '@/components/ui/Panel';
 import { RoleToken } from '@/components/ui/RoleToken';
 import type { GameData } from '@/features/game/useGameData';
 import { DEATH_CAUSE_LABEL, type DeathCause } from '@/features/live/model';
+import type { PhaseKind } from '@/lib/game/phase';
 import { ALIGNMENT_LABEL, TEAM_LABEL, type Alignment } from '@/lib/game/teams';
 import { supabase, type Game } from '@/services/supabase';
-import { LogEntries, LogComposer } from './Log';
+import { SeatLog } from './Log';
 import { grimoireSeats, scriptReminders } from './seats';
 
 type Act = (run: () => PromiseLike<{ error: unknown }>, after?: () => void) => Promise<void>;
@@ -237,11 +238,10 @@ function SeatForms({ game, data, names, seatNo, act }: { game: Game; data: GameD
         </div>
       </section>
 
-      {/* LOG-01 for this seat */}
+      {/* GRIM-03 · LOG-01: this seat's row of the log table */}
       <section className="flex flex-col gap-2" aria-label="本座位日志">
         <h3 className="font-serif font-bold tracking-wider text-gold-strong">日志</h3>
-        <LogComposer gameId={game.id} seat={s.seat} act={act} />
-        <LogEntries entries={data.log.filter((e) => e.seat === s.seat)} names={names} act={act} />
+        <SeatLog gameId={game.id} data={data} seat={s.seat} phase={{ kind: (game.phase_kind ?? 'night') as PhaseKind, number: game.phase_number ?? 1 }} act={act} />
       </section>
     </Panel>
   );

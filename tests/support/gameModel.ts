@@ -46,6 +46,20 @@ export interface ModelRole {
   reminders: string[];
 }
 
+/** A cell of the log table (LOG-01 / LOG-06). */
+export interface ModelLogCell {
+  body: string | null;
+  mark: string | null;
+}
+
+/** Names a log cell: a seat or a note row (by its model id), and a column. */
+export interface ModelCellRef {
+  seat: number | null;
+  note: number | null;
+  column: string;
+  phase: number | null;
+}
+
 export interface ModelSeatRole {
   actual: string;
   shown: string;
@@ -70,7 +84,12 @@ export class GameModel {
   // M4 · the grimoire
   seatRoles: ModelSeatRole[];
   tokens: { seat: number; label: string }[] = [];
-  log: { seat: number | null; body: string; phase: Phase }[] = [];
+  /** The log table: `${row}|${column}` → cell, where row is 's<seat>' or 'n<note id>'. */
+  logCells = new Map<string, ModelLogCell>();
+  logNotes: { id: number; label: string }[] = [];
+  /** LOG-06: seat → the row colour set at the start. */
+  logRowMarks = new Map<number, 'red' | 'yellow'>();
+  private nextNote = 1;
 
   readonly seatCount: number;
   readonly script: ModelRole[];
@@ -80,6 +99,10 @@ export class GameModel {
     this.seatCount = seatCount;
     this.script = script;
     this.seatRoles = roles.slice(0, seatCount).map((r) => ({ actual: r.id, shown: r.id, alignment: r.team === 'townsfolk' || r.team === 'outsider' ? 'good' : 'evil' }));
+    roles.slice(0, seatCount).forEach((r, i) => {
+      if (r.team === 'minion' || r.team === 'demon') this.logRowMarks.set(i + 1, 'red');
+      else if (r.team === 'outsider') this.logRowMarks.set(i + 1, 'yellow');
+    });
     this.seats = Array.from({ length: seatCount }, () => ({
       alive: true,
       ghostVoteUsed: false,
@@ -361,30 +384,89 @@ export class GameModel {
     return ok();
   }
 
-  // LOG-01
-  addLog(seat: number | null, body: string): Outcome {
-    const refused = this.running();
+  // LOG-01: the table shows min(5, ⌊players / 2⌋) nights and days, more once the game goes past them.
+  get logRounds(): number {
+    return Math.max(Math.min(5, Math.floor(this.seatCount / 2)), this.phase.number);
+  }
+
+  private static cellKey(c: ModelCellRef): string {
+    const row = c.seat !== null ? `s${c.seat}` : `n${c.note}`;
+    return `${row}|${c.column}${c.phase ?? ''}`;
+  }
+
+  private checkCell(c: ModelCellRef): Outcome | null {
+    if ((c.seat === null) === (c.note === null)) return fail('LOG_ROW_INVALID');
+    if (c.seat !== null && !this.seat(c.seat)) return fail('SEAT_INVALID');
+    if (c.note !== null && !this.logNotes.some((n) => n.id === c.note)) return fail('LOG_NOTE_NOT_FOUND');
+    if (!['seat', 'name', 'role', 'setup', 'night', 'day'].includes(c.column)) return fail('LOG_COLUMN_INVALID');
+    const phased = c.column === 'night' || c.column === 'day';
+    if (phased && (c.phase === null || c.phase < 1 || c.phase > this.logRounds)) return fail('LOG_COLUMN_INVALID');
+    if (!phased && c.phase !== null) return fail('LOG_COLUMN_INVALID');
+    return null;
+  }
+
+  private putCell(key: string, cell: ModelLogCell) {
+    if (cell.body === null && cell.mark === null) this.logCells.delete(key);
+    else this.logCells.set(key, cell);
+  }
+
+  // LOG-01 / LOG-03
+  setLogCell(c: ModelCellRef, body: string): Outcome {
+    const refused = this.running() ?? this.checkCell(c);
     if (refused) return refused;
-    if (seat !== null && !this.seat(seat)) return fail('SEAT_INVALID');
-    const n = [...body.trim()].length;
-    if (n < 1 || n > 500) return fail('LOG_LENGTH');
-    this.log.push({ seat, body: body.trim(), phase: { ...this.phase } });
+    if (!['setup', 'night', 'day'].includes(c.column)) return fail('LOG_COLUMN_INVALID');
+    const text = body.trim();
+    if ([...text].length > 500) return fail('LOG_LENGTH');
+    const key = GameModel.cellKey(c);
+    this.putCell(key, { body: text || null, mark: this.logCells.get(key)?.mark ?? null });
     return ok();
   }
 
-  editLog(index: number, body: string): Outcome {
+  // LOG-06
+  markLogCells(cells: ModelCellRef[], mark: string): Outcome {
     const refused = this.running();
     if (refused) return refused;
-    const n = [...body.trim()].length;
-    if (n < 1 || n > 500) return fail('LOG_LENGTH');
-    this.log[index]!.body = body.trim();
+    if (!['red', 'yellow', 'violet', 'green', 'dead', 'clear', 'unset'].includes(mark)) return fail('LOG_MARK_INVALID');
+    if (cells.length < 1 || cells.length > 500) return fail('LOG_CELLS_INVALID');
+    for (const c of cells) {
+      const bad = this.checkCell(c);
+      if (bad) return bad;
+    }
+    for (const c of cells) {
+      const key = GameModel.cellKey(c);
+      const own =
+        mark === 'unset' ? null : mark === 'clear' ? (c.seat !== null && this.logRowMarks.has(c.seat) ? 'none' : null) : mark;
+      this.putCell(key, { body: this.logCells.get(key)?.body ?? null, mark: own });
+    }
     return ok();
   }
 
-  deleteLog(index: number): Outcome {
+  // LOG-05
+  addLogNote(label: string): Outcome {
     const refused = this.running();
     if (refused) return refused;
-    this.log.splice(index, 1);
+    const text = label.trim();
+    if ([...text].length > 12) return fail('LOG_LABEL_LENGTH');
+    if (this.logNotes.length >= 20) return fail('LOG_NOTE_LIMIT');
+    const id = this.nextNote++;
+    this.logNotes.push({ id, label: text });
+    return ok(id);
+  }
+
+  renameLogNote(index: number, label: string): Outcome {
+    const refused = this.running();
+    if (refused) return refused;
+    const text = label.trim();
+    if ([...text].length > 12) return fail('LOG_LABEL_LENGTH');
+    this.logNotes[index]!.label = text;
+    return ok();
+  }
+
+  deleteLogNote(index: number): Outcome {
+    const refused = this.running();
+    if (refused) return refused;
+    const [note] = this.logNotes.splice(index, 1);
+    for (const key of [...this.logCells.keys()]) if (key.startsWith(`n${note!.id}|`)) this.logCells.delete(key);
     return ok();
   }
 

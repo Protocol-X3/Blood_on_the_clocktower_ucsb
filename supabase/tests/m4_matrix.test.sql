@@ -1,6 +1,6 @@
 -- M4 permission matrix: every grimoire action × every kind of user × running / ended.
 -- Each call runs as that user and is rolled back, so they don't affect each other.
-select plan(98);
+select plan(126);
 
 create temp table u as
 select tests.create_user('admin') as admin,
@@ -25,11 +25,11 @@ select (select id from r), x.uid, x.seat from (values
   ((select admin from u), null::int), ((select dme from u), null), ((select player from u), 1), ((select guest from u), 2),
   ((select f3 from u), 3), ((select f4 from u), 4), ((select f5 from u), 5)) as x(uid, seat);
 
-create temp table state (game uuid, token uuid, entry uuid);
+create temp table state (game uuid, token uuid, note uuid);
 insert into state values (null, null, null);
 grant all on state to authenticated, anon;
 
--- A running game with one token and one log entry.
+-- A running game with one token and one log note row.
 select tests.login((select dm from u));
 update state set game = start_setup((select id from r), '00000000-0000-0000-0000-00000000007b', 'manual');
 select set_composition((select game from state), '[{"role":"washerwoman"},{"role":"chef"},{"role":"drunk","shown":"empath"},{"role":"poisoner"},{"role":"imp"}]');
@@ -40,7 +40,7 @@ select assign_seat((select game from state), 4, 'poisoner');
 select assign_seat((select game from state), 5, 'imp');
 select start_game((select game from state));
 update state set token = add_token((select game from state), 2, 'poisoned');
-update state set entry = add_log((select game from state), 1, '第一夜的信息');
+update state set note = add_log_note((select game from state), '整局');
 select tests.logout();
 
 create temp table actors (ord int, name text, uid uuid);
@@ -49,16 +49,18 @@ insert into actors values
   (4, 'player', (select player from u)), (5, 'guest', (select guest from u)), (6, 'outsider', (select outsider from u)),
   (7, 'signed-out', null);
 
--- %g = the game, %t = a token, %l = a log entry.
+-- %g = the game, %t = a token, %n = a log note row.
 create temp table calls (ord int, name text, stmt text, running text[], ended text[]);
 insert into calls values
   (1, 'add_token', $$select add_token(%g, 1, 'drunk')$$, '{dm}', '{}'),
   (2, 'remove_token', 'select remove_token(%t)', '{dm}', '{}'),
-  (3, 'add_log', $$select add_log(%g, 2, '说明')$$, '{dm}', '{}'),
-  (4, 'edit_log', $$select edit_log(%l, '改')$$, '{dm}', '{}'),
-  (5, 'delete_log', 'select delete_log(%l)', '{dm}', '{}'),
-  (6, 'set_seat_role', $$select set_seat_role(%g, 1, 'chef', 'chef')$$, '{dm}', '{}'),
-  (7, 'set_alignment', $$select set_alignment(%g, 1, 'evil')$$, '{dm}', '{}');
+  (3, 'set_log_cell', $$select set_log_cell(%g, 2, null, 'setup', null, '说明')$$, '{dm}', '{}'),
+  (4, 'mark_log_cells', $$select mark_log_cells(%g, '[{"seat":2,"column":"setup"}]', 'red')$$, '{dm}', '{}'),
+  (5, 'add_log_note', $$select add_log_note(%g, '备注')$$, '{dm}', '{}'),
+  (6, 'rename_log_note', $$select rename_log_note(%n, '改')$$, '{dm}', '{}'),
+  (7, 'delete_log_note', 'select delete_log_note(%n)', '{dm}', '{}'),
+  (8, 'set_seat_role', $$select set_seat_role(%g, 1, 'chef', 'chef')$$, '{dm}', '{}'),
+  (9, 'set_alignment', $$select set_alignment(%g, 1, 'evil')$$, '{dm}', '{}');
 
 create temp table outcomes (state text, state_ord int, call_ord int, actor_ord int, call text, actor text, expected text, actual text);
 
@@ -66,7 +68,7 @@ create function pg_temp.bind(p_stmt text) returns text language sql as $$
   select replace(replace(replace(p_stmt,
     '%g', quote_literal((select game from state))),
     '%t', quote_literal((select token from state))),
-    '%l', quote_literal((select entry from state)));
+    '%n', quote_literal((select note from state)));
 $$;
 
 create function pg_temp.record(p_state text, p_ord int) returns void language sql as $$
@@ -87,7 +89,7 @@ select pg_temp.record('ended', 2);
 select is(
   case when actual = 'allow' then 'allow' else 'deny' end,
   expected,
-  format('M4.2 · TOKEN-01 · LOG-01 · M4 permission matrix: %s by %s (%s) → %s%s', call, actor, state, expected,
+  format('M4.2 · TOKEN-01 · LOG-01 · LOG-05 · LOG-06 · M4 permission matrix: %s by %s (%s) → %s%s', call, actor, state, expected,
          case when actual <> 'allow' and expected = 'deny' then ' [' || actual || ']' else '' end)
 )
 from outcomes

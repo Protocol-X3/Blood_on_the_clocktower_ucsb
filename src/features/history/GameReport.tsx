@@ -8,7 +8,8 @@ import { RoleToken } from '@/components/ui/RoleToken';
 import { StarField } from '@/components/ui/StarField';
 import { ThemeScope } from '@/components/ui/ThemeScope';
 import { UserMenu } from '@/features/auth/UserMenu';
-import { entryPhase } from '@/features/grimoire/seats';
+import { logIndex } from '@/features/grimoire/logData';
+import { LogSheet } from '@/features/grimoire/LogSheet';
 import { DEATH_CAUSE_LABEL, postPhase, timeOf, type DeathCause } from '@/features/live/model';
 import { roleGlyph } from '@/lib/game/composition';
 import { phaseLabel, type PhaseKind } from '@/lib/game/phase';
@@ -24,7 +25,7 @@ export const DELETED_USER = '已删除用户';
  * their counts and the board (HIST-03).
  */
 export function GameReport({ record, eyebrow, full, footer }: { record: GameRecord; eyebrow: string; full: boolean; footer?: ReactNode }) {
-  const { game, seats, roles, library, deaths, log, nominations, dayResults, posts, names } = record;
+  const { game, seats, roles, library, deaths, logCells, logNotes, logRowMarks, nominations, dayResults, posts, names } = record;
   const roleById = new Map(library.map((r) => [r.role_id, r]));
   const roleOf = new Map(roles.map((r) => [r.seat, r]));
   const nameOf = (seat: number | null) => {
@@ -121,20 +122,19 @@ export function GameReport({ record, eyebrow, full, footer }: { record: GameReco
             </Panel>
           ) : null}
 
-          {log.length ? (
-            <Panel className="flex flex-col gap-3" aria-label="说书人日志">
-              <h2 className="font-serif text-lg font-bold tracking-wider text-gold-strong">说书人日志</h2>
-              <ol className="flex flex-col gap-2">
-                {log.map((e) => (
-                  <li key={e.id} data-testid="summary-log" className="flex gap-3 text-sm">
-                    <span className="w-12 shrink-0 text-xs text-ink-faint">{entryPhase(e)}</span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-xs text-ink-faint">{e.seat ? `${e.seat}号 ${nameOf(e.seat)}` : '整局'}</span>
-                      <span className="break-words whitespace-pre-wrap">{e.body}</span>
-                    </span>
-                  </li>
-                ))}
-              </ol>
+          {/* LOG-02: the full log table, read-only. */}
+          {logCells.length || logNotes.length || logRowMarks.length ? (
+            <Panel className="min-w-0" data-testid="summary-log">
+              <LogSheet
+                seats={seats.map((s) => {
+                  const start = roleOf.get(s.seat)?.starting_role_id;
+                  const role = start ? roleById.get(start) : undefined;
+                  return { seat: s.seat, name: nameOf(s.seat), role: role ? { name: role.name, team: role.team, glyph: role.glyph } : undefined };
+                })}
+                notes={logNotes}
+                index={logIndex(record)}
+                phase={{ kind: (game.phase_kind ?? 'night') as PhaseKind, number: game.phase_number ?? 1 }}
+              />
             </Panel>
           ) : null}
 

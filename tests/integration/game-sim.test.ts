@@ -6,7 +6,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it } from 'vitest';
 import type { Database } from '../../src/services/database.types.ts';
-import { GameModel, type DeathCause, type ModelNomination, type ModelRole, type Outcome } from '../support/gameModel.ts';
+import { GameModel, type DeathCause, type ModelCellRef, type ModelNomination, type ModelRole, type Outcome } from '../support/gameModel.ts';
 import { admin, clientFor, poolUser } from '../support/users.ts';
 
 type Client = SupabaseClient<Database>;
@@ -54,7 +54,8 @@ interface Sim {
   nominationIds: string[];
   postIds: string[];
   tokenIds: string[];
-  logIds: string[];
+  /** Model note id → database note id (LOG-05). */
+  noteIds: Map<number, string>;
   log: string[];
 }
 
@@ -105,7 +106,7 @@ async function newGame(table: Table, r: Rng): Promise<Sim> {
     nominationIds: [],
     postIds: [],
     tokenIds: [],
-    logIds: [],
+    noteIds: new Map(),
     log: [],
   };
 }
@@ -126,7 +127,7 @@ async function act(sim: Sim, label: string, expected: Outcome, call: PromiseLike
 
 /** The database state, in the model's shape, plus invariants that hold whatever the model says. */
 async function compare(sim: Sim) {
-  const [game, seats, noms, votes, results, posts, roles, tokens, log] = await Promise.all([
+  const [game, seats, noms, votes, results, posts, roles, tokens, cells, notes, rowMarks] = await Promise.all([
     sim.dm.from('games').select('status, phase_kind, phase_number, winner, vote_speed_ms').eq('id', sim.gameId).single(),
     sim.dm.from('game_seats').select('seat, alive, ghost_vote_used, death_cause').eq('game_id', sim.gameId).order('seat'),
     sim.dm.from('nominations').select('*').eq('game_id', sim.gameId).order('created_at'),
@@ -135,11 +136,14 @@ async function compare(sim: Sim) {
     sim.dm.from('board_posts').select('id').eq('game_id', sim.gameId),
     sim.dm.from('seat_roles').select('seat, actual_role_id, shown_role_id, alignment').eq('game_id', sim.gameId).order('seat'),
     sim.dm.from('grimoire_tokens').select('seat, label').eq('game_id', sim.gameId),
-    sim.dm.from('dm_log').select('seat, body, phase_kind, phase_number').eq('game_id', sim.gameId).order('created_at'),
+    sim.dm.from('dm_log_cells').select('seat, note_id, column_kind, phase_number, body, mark').eq('game_id', sim.gameId),
+    sim.dm.from('dm_log_notes').select('id, label').eq('game_id', sim.gameId).order('position'),
+    sim.dm.from('dm_log_row_marks').select('seat, mark').eq('game_id', sim.gameId).order('seat'),
   ]);
   const byToken = (a: { seat: number; label: string }, b: { seat: number; label: string }) => a.seat - b.seat || a.label.localeCompare(b.label);
   const m = sim.model;
   const context = `after: ${sim.log.join(' → ')}`;
+  const noteOf = (id: string) => [...sim.noteIds].find(([, v]) => v === id)?.[0] ?? -1;
   expect(
     {
       status: game.data!.status,
@@ -173,7 +177,11 @@ async function compare(sim: Sim) {
       posts: posts.data!.length,
       seatRoles: roles.data!.map((r) => ({ actual: r.actual_role_id, shown: r.shown_role_id, alignment: r.alignment })),
       tokens: tokens.data!.map((t) => ({ seat: t.seat, label: t.label })).sort(byToken),
-      log: log.data!.map((e) => ({ seat: e.seat, body: e.body, phase: { kind: e.phase_kind, number: e.phase_number } })),
+      logCells: Object.fromEntries(
+        cells.data!.map((c) => [`${c.seat !== null ? `s${c.seat}` : `n${noteOf(c.note_id!)}`}|${c.column_kind}${c.phase_number ?? ''}`, { body: c.body, mark: c.mark }]),
+      ),
+      logNotes: notes.data!.map((n) => ({ id: noteOf(n.id), label: n.label })),
+      logRowMarks: Object.fromEntries(rowMarks.data!.map((x) => [x.seat, x.mark])),
     },
     context,
   ).toEqual({
@@ -187,7 +195,9 @@ async function compare(sim: Sim) {
     posts: m.posts.length,
     seatRoles: m.seatRoles,
     tokens: [...m.tokens].sort(byToken),
-    log: m.log,
+    logCells: Object.fromEntries(m.logCells),
+    logNotes: m.logNotes,
+    logRowMarks: Object.fromEntries(m.logRowMarks),
   });
   // Invariants (M3.3): one open nomination at most; a spent ghost vote is a locked raised
   // hand; a count equals its locked raised hands; the hand never passes the table.
@@ -202,7 +212,7 @@ async function compare(sim: Sim) {
 }
 
 // M4 · the grimoire's actions, mixed into every phase.
-const GRIMOIRE = ['token', 'token', 'untoken', 'log', 'editLog', 'delLog', 'role', 'align'];
+const GRIMOIRE = ['token', 'token', 'untoken', 'cell', 'cell', 'mark', 'note', 'renameNote', 'delNote', 'role', 'align'];
 
 const CAUSES: DeathCause[] = ['executed', 'night', 'other'];
 
@@ -259,6 +269,31 @@ async function step(sim: Sim, r: Rng, i: number): Promise<void> {
   }
 }
 
+/** A random log cell: mostly a real one, now and then a bad seat or a phase past the table. */
+function randomCell(sim: Sim, r: Rng, seat: () => number, textOnly: boolean): ModelCellRef {
+  const m = sim.model;
+  const note = m.logNotes.length > 0 && r.chance(0.25) ? r.pick(m.logNotes).id : null;
+  const column = r.pick(textOnly ? ['setup', 'night', 'day', 'night', 'day'] : ['seat', 'name', 'role', 'setup', 'night', 'day', 'night', 'day']);
+  const phased = column === 'night' || column === 'day';
+  return {
+    seat: note === null ? seat() : null,
+    note,
+    column,
+    phase: phased ? r.int(1, m.logRounds + (r.chance(0.1) ? 1 : 0)) : null,
+  };
+}
+
+function cellRpc(sim: Sim, c: ModelCellRef, extra: { p_body: string }) {
+  return {
+    p_game: sim.gameId,
+    p_seat: c.seat as number,
+    p_note: (c.note === null ? null : sim.noteIds.get(c.note)!) as string,
+    p_column: c.column,
+    p_phase: c.phase as number,
+    ...extra,
+  };
+}
+
 async function other(sim: Sim, r: Rng, seat: () => number, open: ModelNomination | undefined, openId: string | undefined) {
   const m = sim.model;
   const dm = sim.dm;
@@ -312,27 +347,48 @@ async function other(sim: Sim, r: Rng, seat: () => number, open: ModelNomination
       if (expected.ok) sim.tokenIds.splice(i, 1);
       return;
     }
-    case 'log': {
-      const s = r.chance(0.3) ? null : seat();
-      const body = r.chance(0.05) ? r.pick(['   ', '记'.repeat(501)]) : `日志${sim.log.length}`;
-      const expected = m.addLog(s, body);
-      const { data } = await act(sim, `log(${s ?? '整局'})`, expected, dm.rpc('add_log', { p_game: g, p_seat: s as number, p_body: body }));
-      if (expected.ok) sim.logIds.push(data as string);
+    case 'cell': {
+      // LOG-01 / LOG-03: any text column, now and then one the table doesn't show, too long, or cleared.
+      const c = randomCell(sim, r, seat, true);
+      const body = r.chance(0.05) ? '记'.repeat(501) : r.chance(0.15) ? '  ' : `记${sim.log.length}`;
+      await act(sim, `cell(${JSON.stringify(c)})`, m.setLogCell(c, body), dm.rpc('set_log_cell', cellRpc(sim, c, { p_body: body })));
       return;
     }
-    case 'editLog': {
-      if (m.log.length === 0) return;
-      const i = r.int(0, m.log.length - 1);
-      const body = r.chance(0.1) ? '' : `改${sim.log.length}`;
-      await act(sim, `editLog(${i})`, m.editLog(i, body), dm.rpc('edit_log', { p_entry: sim.logIds[i]!, p_body: body }));
+    case 'mark': {
+      // LOG-06: a stroke over a few cells, with any colour, 清除, or 撤销's 'unset'.
+      const cells = Array.from({ length: r.int(1, 4) }, () => randomCell(sim, r, seat, false));
+      const mark = r.chance(0.03) ? 'none' : r.pick(['red', 'yellow', 'violet', 'green', 'dead', 'clear', 'unset']);
+      await act(
+        sim,
+        `mark(${mark}, ${JSON.stringify(cells)})`,
+        m.markLogCells(cells, mark),
+        dm.rpc('mark_log_cells', {
+          p_game: g,
+          p_cells: cells.map((c) => ({ seat: c.seat, note: c.note === null ? null : (sim.noteIds.get(c.note) ?? null), column: c.column, phase: c.phase })),
+          p_mark: mark,
+        }),
+      );
       return;
     }
-    case 'delLog': {
-      if (m.log.length === 0) return;
-      const i = r.int(0, m.log.length - 1);
-      const expected = m.deleteLog(i);
-      await act(sim, `delLog(${i})`, expected, dm.rpc('delete_log', { p_entry: sim.logIds[i]! }));
-      if (expected.ok) sim.logIds.splice(i, 1);
+    case 'note': {
+      const label = r.chance(0.05) ? '十三个字的备注行名称太长了' : r.pick(['', '整局', '恶魔伪装']);
+      const expected = m.addLogNote(label);
+      const { data } = await act(sim, `note(${label})`, expected, dm.rpc('add_log_note', { p_game: g, p_label: label }));
+      if (expected.ok) sim.noteIds.set(expected.value as number, data as string);
+      return;
+    }
+    case 'renameNote': {
+      if (m.logNotes.length === 0) return;
+      const i = r.int(0, m.logNotes.length - 1);
+      const label = r.chance(0.1) ? '十三个字的备注行名称太长了' : `改${sim.log.length}`;
+      await act(sim, `renameNote(${i})`, m.renameLogNote(i, label), dm.rpc('rename_log_note', { p_note: sim.noteIds.get(m.logNotes[i]!.id)!, p_label: label }));
+      return;
+    }
+    case 'delNote': {
+      if (m.logNotes.length === 0) return;
+      const i = r.int(0, m.logNotes.length - 1);
+      const id = m.logNotes[i]!.id;
+      await act(sim, `delNote(${i})`, m.deleteLogNote(i), dm.rpc('delete_log_note', { p_note: sim.noteIds.get(id)! }));
       return;
     }
     case 'role': {
