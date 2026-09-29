@@ -20,7 +20,9 @@ export function LogComposer({ gameId, seat, act }: { gameId: string; seat: numbe
       className="flex flex-col gap-2"
       onSubmit={(e) => {
         e.preventDefault();
-        void act(() => supabase.rpc('add_log', { p_game: gameId, p_seat: seat as number, p_body: body }), () => setBody(''));
+        const sent = body;
+        // Clear only what was sent: the DM may already be typing the next entry.
+        void act(() => supabase.rpc('add_log', { p_game: gameId, p_seat: seat as number, p_body: sent }), () => setBody((b) => (b === sent ? '' : b)));
       }}
     >
       <textarea

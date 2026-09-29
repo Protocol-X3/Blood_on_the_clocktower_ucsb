@@ -220,7 +220,7 @@ Done:
 
 Do this before the group's first real game night. Claude reminds the owner at the end of the autonomy run.
 - [x] **Launch cleanup:** wipe all test users, rooms and games. Rebuild the database from the migrations, containing only the role library and the admin account. *(Done 2026-09-28 by targeted deletes rather than a reset, so the admin account survived: 229 test accounts, 3278 rooms with their games, 1030 scripts and 29 custom roles removed; 72 official roles and the admin remain. Any local E2E or integration run against the cloud project refills it with test data, so repeat this after the last one.)*
-- [ ] **Turn off the bot sandbox:** set `private.app_config.bot_sandbox` to `off` and delete the bot accounts (profiles with `is_bot`). Its buttons are already absent from the production site (BOT-01).
+- [ ] **Bot sandbox off for real games:** make sure the 机器人沙盒 switch under 管理 is off (it starts off, BOT-01), and remove leftover bots (the lobby's 移除机器人 while it's on, or delete profiles with `is_bot`).
 - [ ] **Rotate the service-role key.** It sat in `.env.local` during development.
 - [ ] **Decide the post-launch dev setup:** either create a separate dev project, or rely on CI's Docker database plus careful migrations. After launch, the cloud project holds real data and must never be reset.
 - [ ] Dress rehearsal with 2–3 friends (see architecture.md, Testing strategy).
@@ -233,6 +233,7 @@ None right now.
 
 Newest first. Each entry records what was decided and why.
 
+- **2026-09-28:** **Bot sandbox on the live site (BOT-01, BOT-02).** It now ships with the app instead of development builds only, switched by the admin under 管理 (机器人沙盒), and starts off. While on, any room's DM can fill empty seats with bots; while off, nobody sees the tools and the database refuses every bot action. The production-build scan is retired, and E2E runs against the real production build. *Why:* owner request, to test with bots on the deployed site; the owner chose every DM (not only the admin's rooms) and off by default.
 - **2026-09-28:** **AUTH-09:** users (Google or guest) can rename themselves on their 个人主页 at any time, under AUTH-03's rules; the new name shows everywhere at once, since nothing stores a copy of a nickname. Renaming isn't blocked during a game. *Why:* owner request; a mid-game rename just updates the name others see.
 - **2026-09-28:** **M6 done.** The owner checked the three walkthrough scripts, and Claude wrote the `script-from-photo` skill with two tools: `compare-script` (matches a transcription against the live library, 自制角色 included, with a character diff and other versions) and `save-script` (creates 自制角色 and saves the script as the owner, with a dry run). Edge-case rules from the owner: Travellers are left out like Fabled; a homebrew name clash gets 名字（改）/（改2）/… after asking; an existing script name → ask (replace / new name / stop); new 自制角色 get reminder tokens only if the sheet shows them.
 - **2026-09-28:** The original 气球驾驶员 joins 实验性角色 as **气球驾驶员（旧版）** (`balloonist_old`, the ability text from the 夜半狂欢 sheet): 188 official roles. When a role has more than one version in the library, Claude asks the owner which one a new script uses. *Why:* both versions are official roles from different times, and older sheets still use the original.

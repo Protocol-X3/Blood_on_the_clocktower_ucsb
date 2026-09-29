@@ -63,5 +63,5 @@ Status: **Approved** by the owner, 2026-09-27.
 
 ## BOT · Bot sandbox (development only)
 
-- **BOT-01** The bot sandbox exists only in development builds, never on the production site. · *Script (scans the production build), E2E*
-- **BOT-02** In development, the DM can fill empty seats with bots. Bots draw cards, raise hands at random and post at random, so one person can run a full game. · *E2E*
+- **BOT-01** The bot sandbox ships with the live site but is **off** unless the admin switches it on under 管理 (it starts off). Only the admin can flip it. While it's off, nobody sees the bot tools and the database refuses every bot action. *Changed (2026-09-28): replaces "development builds only".* · *pgTAP, E2E*
+- **BOT-02** While the sandbox is on, any room's DM can fill empty seats with bots. Bots draw cards, raise hands at random and post at random, so one person can run a full game. · *E2E*

@@ -38,9 +38,11 @@ export function Board({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
+    const sent = body;
+    // Clear only what was sent: the player may already be typing the next post.
     await act(
-      () => supabase.rpc('post_board', { p_game: gameId, p_body: body }),
-      () => setBody(''),
+      () => supabase.rpc('post_board', { p_game: gameId, p_body: sent }),
+      () => setBody((current) => (current === sent ? '' : current)),
     );
     setBusy(false);
   }

@@ -230,7 +230,10 @@ function SeatForms({ game, data, names, seatNo, act }: { game: Game; data: GameD
           <Button
             variant="outline"
             disabled={[...custom.trim()].length < 1 || [...custom.trim()].length > TOKEN_MAX}
-            onClick={() => act(() => rpc('add_token', { p_game: game.id, p_seat: s.seat, p_kind: 'custom', p_text: custom }), () => setCustom(''))}
+            onClick={() => {
+              const sent = custom;
+              void act(() => rpc('add_token', { p_game: game.id, p_seat: s.seat, p_kind: 'custom', p_text: sent }), () => setCustom((c) => (c === sent ? '' : c)));
+            }}
           >
             添加
           </Button>
