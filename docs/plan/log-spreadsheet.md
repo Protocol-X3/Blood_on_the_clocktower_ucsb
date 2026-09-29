@@ -19,13 +19,16 @@ The DM log (说书人日志) stops being a list of entries and becomes a table. 
 | Where the full table lives | **At the bottom of the DM's page**, below the whole console, full width and always shown (no toggle). The round table stays where it is. |
 | What a cell holds | **One text per cell**, like a spreadsheet. Several notes for one player in one phase are lines in the same cell. |
 | 角色设置 column | **Free text only**, written by the DM (e.g. 红鲱鱼, 酒鬼以为自己是洗衣妇). Nothing is filled in automatically. |
-| Editing earlier phases | **Allowed for any phase up to the current one.** Future phases are not shown and can't be written. |
+| Editing earlier phases | **Allowed for any phase up to the current one.** |
+| Columns shown (after the first preview) | The table starts with **min(5, ⌈players / 2⌉) nights and days** (e.g. 7 players → 第1夜 … 第4天) and adds columns if the game goes longer. Phase columns are narrow and grow with their text. |
+| Pinned columns | **座位, 玩家 and 初始角色** stay in place while the phases scroll. |
+| Deaths | **Not shown in the log automatically.** A dead player's row looks like everyone else's. The DM marks deaths by colour if they want. |
+| Cell colours | The DM can colour any cell: **red** (evil, or wrong info), **yellow** (outsider), **violet** (drunk or poisoned), **green** (correct), **black** (dead) or clear. Colours are manual, except that at the start of the game the 初始角色 cell of every evil player turns red and of every outsider turns yellow. |
+| Colouring many cells | A **paint mode**: pick a colour above the table, then tap a cell or drag across a rectangle of cells to colour them all at once, with 撤销 for the last stroke and 完成 to go back to typing. |
 
 ## Defaults Claude chose (open to change)
 
-- **Columns:**
-  - 初始角色 is the role each seat had when the game started (`seat_roles.starting_role_id`). It is read-only.
-  - The phase columns run from 第1夜 to the current phase.
+- **Columns:** 初始角色 is the role each seat had when the game started (`seat_roles.starting_role_id`). It is read-only.
 - **The 日志 tab** becomes the per-phase view. The DM picks a night or day (the current one by default) and gets one cell for every player and note row in that phase. The seat and phase filters (old LOG-03) go away.
 - **The seat panel** (GRIM-03) shows that seat's row as a vertical list: 角色设置, then each phase. It replaces today's per-seat composer and entries.
 - **Note rows:**
@@ -38,7 +41,6 @@ The DM log (说书人日志) stops being a list of entries and becomes a table. 
 - **Limits:** up to 500 characters per cell, the same as today's entries.
 - **Layout:**
   - The table scrolls sideways inside its own box, and the seat and name columns stay pinned. The page itself never scrolls sideways.
-  - Dead players get the same X as on the seat circle.
 - **After the game:** the summary and history page show the full table, read-only (LOG-02 is unchanged apart from that).
 - **Secrecy:** unchanged. Only the DM can read the table during the game, and the game's participants can read it after it ends, enforced by RLS.
 
@@ -47,24 +49,27 @@ The DM log (说书人日志) stops being a list of entries and becomes a table. 
 A new migration replaces `dm_log`. The live database has no log entries (checked 2026-09-28: 4 ended games, 0 entries), so nothing needs moving. The migration still converts any rows it finds, to be safe.
 
 - `dm_log_notes (id, game_id, label, position, created_at)`: the note rows.
-- `dm_log_cells (id, game_id, seat | note_id, column_kind 'setup' | 'night' | 'day', phase_number, body, updated_at)`:
+- `dm_log_cells (id, game_id, seat | note_id, column_kind 'seat' | 'name' | 'role' | 'setup' | 'night' | 'day', phase_number, body, mark, updated_at)`:
   - Exactly one of seat or note_id is set.
-  - Setup cells have no phase number.
+  - Only the setup, night and day columns have a phase number (night and day only) or a body. The seat, name and role columns carry only a mark.
+  - `mark` is one of red, yellow, violet, green or dead, or empty. A cell with neither text nor mark is deleted.
   - There is one cell per row and column (`unique nulls not distinct`).
 - Both tables use the same `can_see_secrets` read policy as today. They are added to realtime.
 - The RPCs, all DM-only while the game is running:
-  - `set_log_cell(game, seat, note, column, phase, body)`: upsert; an empty body deletes the cell. Fails `LOG_FUTURE_PHASE` beyond the current phase and `LOG_LENGTH` over 500 characters.
+  - `set_log_cell(game, seat, note, column, phase, body)`: upsert; an empty body deletes the cell unless it has a mark. Fails `LOG_LENGTH` over 500 characters.
+  - `mark_log_cells(game, cells, mark)`: colours or clears many cells in one call (one paint stroke).
+  - `start_game` adds the automatic marks (evil → red, outsider → yellow, on 初始角色).
   - `add_log_note(game, label)`, `rename_log_note(note, label)`, `delete_log_note(note)`.
 - `add_log`, `edit_log` and `delete_log` are dropped.
 
 ## Proposed rules (replace LOG-01 to LOG-03)
 
-- **LOG-01** The DM's log is a table with a row for every seat. It has the columns 座位, 玩家, 初始角色, 角色设置, and one column per phase from 第1夜 to the current one. Each cell holds one text of up to 500 characters that the DM can write, change or clear. · *pgTAP, E2E*
+- **LOG-01** The DM's log is a table with a row for every seat. It has the columns 座位, 玩家, 初始角色, 角色设置, and one column per phase: at least min(5, ⌈players / 2⌉) nights and days, more if the game goes on longer. Each cell holds one text of up to 500 characters that the DM can write, change or clear. · *pgTAP, E2E*
 - **LOG-02** *(unchanged)* Until the game ends, only the DM can see the log. After it ends, the log appears in the summary and history, as the full table. · *pgTAP, E2E*
 - **LOG-03** The 日志 tab shows one phase at a time, the current one by default, with a cell for every row. The DM can switch to any earlier phase and edit it. · *E2E*
-- **LOG-04** The full table is at the bottom of the DM's page, below the console. Its seat and name columns stay in place while it scrolls sideways, and the page itself never scrolls sideways. · *E2E (tablet + phone)*
+- **LOG-04** The full table is at the bottom of the DM's page, below the console. Its 座位, 玩家 and 初始角色 columns stay in place while it scrolls sideways, and the page itself never scrolls sideways. · *E2E (tablet + phone)*
 - **LOG-05** The DM can add note rows at the bottom of the table, with an optional label, and can rename and delete them. · *pgTAP, E2E*
-- **LOG-06** No cell can be written for a phase after the current one. · *pgTAP*
+- **LOG-06** The DM can colour cells red, yellow, violet, green or black, or clear them, one cell or a dragged rectangle at a time. When the game starts, the 初始角色 of each evil player is red and of each outsider is yellow. Deaths are never marked automatically. · *pgTAP, E2E*
 - **GRIM-03** *(reworded)* The seat panel's log section shows that seat's row (角色设置 and each phase), editable.
 
 ## Tests
