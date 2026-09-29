@@ -1,10 +1,12 @@
--- M3 · the bot sandbox's database side (BOT-02). The UI exists only in development builds (BOT-01).
+-- M3 · the bot sandbox's database side: the admin's switch (BOT-01) and the bots themselves (BOT-02).
 select * from no_plan();
 
 create temp table u as
-select tests.create_user('dora', 'dm_eligible') as dm, tests.create_user('p1') as p1, tests.create_user('dmitri', 'dm_eligible') as dme;
+select tests.create_user('dora', 'dm_eligible') as dm, tests.create_user('p1') as p1, tests.create_user('dmitri', 'dm_eligible') as dme,
+       tests.create_user('admin') as admin;
 grant select on u to authenticated, anon;
-insert into private.app_config (key, value) values ('bot_sandbox', 'on') on conflict (key) do update set value = 'on';
+-- The configured admin email (helpers) makes 'admin' the admin.
+update profiles set permission = 'admin' where id = (select admin from u);
 
 insert into scripts (id, name, created_by) values ('00000000-0000-0000-0000-00000000007b', '暗流涌动', (select dm from u));
 insert into script_roles (script_id, role_id, position)
@@ -17,6 +19,25 @@ alter table r add column id uuid;
 update r set id = (select id from rooms where code = (select code from r) and status = 'open');
 grant select on r to authenticated, anon;
 insert into room_members (room_id, user_id, seat) values ((select id from r), (select p1 from u), 1), ((select id from r), (select dme from u), null);
+
+-- BOT-01: only the admin flips the switch; every signed-in user can read it.
+select is(tests.try_as((select dm from u), 'select set_bot_sandbox(true)'), 'FORBIDDEN', 'BOT-01: only the admin switches the bot sandbox, not a DM');
+select is(tests.try_as((select p1 from u), 'select set_bot_sandbox(true)'), 'FORBIDDEN', 'BOT-01: …nor a player');
+select is(tests.try_as(null, 'select set_bot_sandbox(true)'), 'permission denied for function set_bot_sandbox', 'BOT-01: …nor a signed-out visitor');
+select is(tests.try_as((select admin from u), 'select set_bot_sandbox(null)'), 'INVALID', 'BOT-01: the switch is on or off');
+select tests.login((select admin from u));
+select set_bot_sandbox(false);
+select tests.logout();
+select tests.login((select p1 from u));
+select is(bot_sandbox_enabled(), false, 'BOT-01: everyone signed in reads the switch: off');
+select tests.logout();
+select is(tests.try_as((select dm from u), format('select dev_add_bots(%L)', (select id from r))), 'SANDBOX_OFF', 'BOT-01: while it is off, the DM cannot add bots');
+select tests.login((select admin from u));
+select set_bot_sandbox(true);
+select tests.logout();
+select tests.login((select p1 from u));
+select is(bot_sandbox_enabled(), true, 'BOT-01: …and on, once the admin switches it on');
+select tests.logout();
 
 select is(tests.try_as((select p1 from u), format('select dev_add_bots(%L)', (select id from r))), 'NOT_DM', 'BOT-02: only the room''s DM adds bots');
 select is(tests.try_as((select dme from u), format('select dev_add_bots(%L)', (select id from r))), 'NOT_DM', 'BOT-02: …not another DM-eligible member');
@@ -72,10 +93,14 @@ select is((select raised from votes where nomination_id = (select nom from g) an
 select is((select seat || ':' || body from board_posts where game_id = (select id from g)), '4:我是好人', 'BOT-02: a bot posts as its seat');
 
 -- Off: the functions refuse.
-update private.app_config set value = 'off' where key = 'bot_sandbox';
+select tests.login((select admin from u));
+select set_bot_sandbox(false);
+select tests.logout();
 select is(tests.try_as((select dm from u), format('select dev_bot_hand(%L, %L, true)', (select nom from g), pg_temp.bot(5))), 'SANDBOX_OFF', 'BOT-01: with the sandbox off, bots cannot act');
 select is(tests.try_as((select dm from u), format('select dev_remove_bots(%L)', (select id from r))), 'SANDBOX_OFF', 'BOT-01: …or be added or removed');
-update private.app_config set value = 'on' where key = 'bot_sandbox';
+select tests.login((select admin from u));
+select set_bot_sandbox(true);
+select tests.logout();
 
 select tests.login((select dm from u));
 select end_game((select id from g), 'good');

@@ -145,5 +145,5 @@ These come from an earlier, discarded M0 attempt (2026-09-27):
 Look and feel, wording, and how it plays at a real table. These are covered by:
 - mockup approval;
 - screenshot review each milestone;
-- the bot sandbox, a dev-only tool that adds N bot players so the owner can run a full game solo;
+- the bot sandbox, a testing tool the admin switches on under 管理 (off by default), which adds bot players so one person can run a full game;
 - a dress rehearsal with 2–3 friends before the first real game night.

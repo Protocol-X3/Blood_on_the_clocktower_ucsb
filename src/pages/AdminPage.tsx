@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { cn } from '@/components/ui/cn';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { Dialog } from '@/components/ui/Dialog';
@@ -11,7 +12,7 @@ import { errorMessage } from '@/services/errors';
 import { supabase, type Profile } from '@/services/supabase';
 import { MessagePage } from './ComingSoon';
 
-/** PERM-06: the admin grants and revokes DM-eligible; everyone else sees "no permission". */
+/** PERM-06: the admin grants and revokes DM-eligible, and switches the bot sandbox (BOT-01); everyone else sees "no permission". */
 export function AdminPage() {
   const { profile } = useAuth();
   if (profile?.permission !== 'admin') {
@@ -73,6 +74,7 @@ function AdminUsers() {
             {notice}
           </p>
         ) : null}
+        <BotSwitch />
         <Panel className="mx-4 mt-5" padding="none">
           <ul aria-label="用户">
             {users.map((u) => (
@@ -118,5 +120,58 @@ function AdminUsers() {
         </Dialog>
       ) : null}
     </ThemeScope>
+  );
+}
+
+/** BOT-01: the bot sandbox, off unless the admin switches it on. */
+function BotSwitch() {
+  const [on, setOn] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.rpc('bot_sandbox_enabled').then(({ data }) => setOn(data === true));
+  }, []);
+
+  async function toggle() {
+    setBusy(true);
+    setError(null);
+    const { error: rpcError } = await supabase.rpc('set_bot_sandbox', { p_on: !on });
+    setBusy(false);
+    if (rpcError) setError(errorMessage(rpcError));
+    else setOn(!on);
+  }
+
+  return (
+    <Panel className="mx-4 mt-5 flex items-start justify-between gap-4" aria-label="机器人沙盒">
+      <div className="min-w-0">
+        <h2 className="font-serif text-base font-bold tracking-wider text-gold-strong">机器人沙盒</h2>
+        <p className="mt-1 text-sm leading-relaxed text-ink-muted">
+          开启后，所有说书人都可以在大厅用机器人填满空座，方便测试。机器人是游客账号，不计入战绩。正式对局前请关闭。
+        </p>
+        {error ? (
+          <p role="alert" className="mt-2 text-sm text-blood-text">
+            {error}
+          </p>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on === true}
+        aria-label="开启机器人沙盒"
+        disabled={on === null || busy}
+        onClick={toggle}
+        className={cn(
+          'relative mt-1 inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors disabled:opacity-50',
+          on ? 'border-gold bg-gold' : 'border-line bg-surface-2',
+        )}
+      >
+        <span
+          aria-hidden="true"
+          className={cn('inline-block size-6 rounded-full shadow transition-transform', on ? 'translate-x-7 bg-gold-ink' : 'translate-x-1 bg-ink-faint')}
+        />
+      </button>
+    </Panel>
   );
 }

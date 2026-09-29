@@ -88,8 +88,8 @@ export const ERROR_MESSAGES: Record<string, string> = {
   // M5 · accounts
   CANNOT_DELETE_SELF: '不能删除自己的账号',
   USER_IN_GAME: '该用户正在对局中，请在对局结束后再删除',
-  // Development tools (BOT-01: the messages must not name the sandbox)
-  SANDBOX_OFF: '开发工具未开启',
+  // The bot sandbox (BOT-01)
+  SANDBOX_OFF: '机器人沙盒未开启',
   NOT_A_BOT: '该座位不是机器人',
 };
 

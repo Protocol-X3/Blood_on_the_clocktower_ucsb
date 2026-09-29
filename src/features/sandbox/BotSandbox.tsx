@@ -1,5 +1,5 @@
-// BOT-02: the bot sandbox, for development builds only (BOT-01). This module is only
-// ever loaded through `sandbox.ts`, so production builds don't contain it.
+// BOT-02: the bot sandbox, a testing tool the admin switches on under 管理 (BOT-01). This
+// module is loaded through `sandbox.ts`, and only while the sandbox is on.
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Panel } from '@/components/ui/Panel';
@@ -19,7 +19,7 @@ export function LobbyBots({ room }: { room: Room }) {
   }
   return (
     <Panel className="flex flex-col gap-3 border-dashed" aria-label="机器人沙盒">
-      <h2 className="font-serif text-base font-bold tracking-wider text-gold-strong">机器人沙盒 · 仅开发版</h2>
+      <h2 className="font-serif text-base font-bold tracking-wider text-gold-strong">机器人沙盒 · 测试用</h2>
       <div className="flex gap-2">
         <Button variant="outline" className="flex-1" onClick={() => run('dev_add_bots')}>
           填充机器人
