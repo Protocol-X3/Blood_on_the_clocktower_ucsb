@@ -613,6 +613,9 @@ isOneToOne: false
 "draw_card":
 { Args: { "p_card": number,"p_game": string }; Returns: undefined
                            },
+"discard_game":
+{ Args: { "p_game": string }; Returns: undefined
+                           },
 "end_game":
 { Args: { "p_game": string,"p_winner": Database["public"]['Enums']["alignment"] }; Returns: undefined
                            },

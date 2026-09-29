@@ -1,6 +1,6 @@
 -- M3 permission matrix: every M3 action × every kind of user × five game states.
 -- Each call runs as that user and is rolled back, so they don't affect each other.
-select plan(595);
+select plan(630);
 
 create temp table u as
 select tests.create_user('admin') as admin,
@@ -68,7 +68,8 @@ insert into calls values
   (14, 'post_board', $$select post_board(%g, '大家好')$$, '{dm,player,guest}', '{dm,player,guest}', '{dm,player,guest}', '{dm,player,guest}', '{}'),
   (15, 'delete_post (the DM''s)', 'select delete_post(%p)', '{dm}', '{dm}', '{dm}', '{dm}', '{}'),
   (16, 'end_game', $$select end_game(%g, 'good')$$, '{dm}', '{dm}', '{dm}', '{dm}', '{}'),
-  (17, 'close_vote (not yet counted)', 'select close_vote(%n)', '{}', '{}', '{}', '{}', '{}');
+  (17, 'close_vote (not yet counted)', 'select close_vote(%n)', '{}', '{}', '{}', '{}', '{}'),
+  (18, 'discard_game', 'select discard_game(%g)', '{dm}', '{dm}', '{dm}', '{dm}', '{}');
 
 create temp table outcomes (state text, state_ord int, call_ord int, actor_ord int, call text, actor text, expected text, actual text);
 
@@ -116,7 +117,7 @@ select pg_temp.record('ended', 5);
 select is(
   case when actual = 'allow' then 'allow' else 'deny' end,
   expected,
-  format('M3 permission matrix: %s by %s (%s) → %s%s', call, actor, state, expected,
+  format('END-05 · M3 permission matrix: %s by %s (%s) → %s%s', call, actor, state, expected,
          case when actual <> 'allow' and expected = 'deny' then ' [' || actual || ']' else '' end)
 )
 from outcomes
