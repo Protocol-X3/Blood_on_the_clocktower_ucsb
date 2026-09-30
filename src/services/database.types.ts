@@ -601,6 +601,9 @@ isOneToOne: false
 "dev_remove_bots":
 { Args: { "p_room": string }; Returns: number
                            },
+"discard_game":
+{ Args: { "p_game": string }; Returns: undefined
+                           },
 "dm_kick":
 { Args: { "p_room": string,"p_user": string }; Returns: undefined
                            },
@@ -613,11 +616,11 @@ isOneToOne: false
 "draw_card":
 { Args: { "p_card": number,"p_game": string }; Returns: undefined
                            },
-"discard_game":
-{ Args: { "p_game": string }; Returns: undefined
-                           },
 "end_game":
 { Args: { "p_game": string,"p_winner": Database["public"]['Enums']["alignment"] }; Returns: undefined
+                           },
+"import_script":
+{ Args: { "p_dry_run"?: boolean,"p_spec": Json,"p_token": string }; Returns: Json
                            },
 "join_room":
 { Args: { "p_code": string }; Returns: string
@@ -664,6 +667,11 @@ isOneToOne: false
                            },
 "save_script":
 { Args: { "p_author": string,"p_name": string,"p_roles": (string)[],"p_script": string }; Returns: string
+                           },
+"script_import_library":
+{ Args: { "p_token": string }; Returns: {
+              "ability": string,"edition": string,"id": string,"is_official": boolean,"name": string,"team": string
+            }[]
                            },
 "set_alignment":
 { Args: { "p_alignment": Database["public"]['Enums']["alignment"],"p_game": string,"p_seat": number }; Returns: undefined

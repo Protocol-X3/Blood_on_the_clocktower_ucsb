@@ -27,24 +27,29 @@ if ('missing' in conn) {
 }
 const supabase = createClient(conn.url, conn.key, { auth: { persistSession: false } });
 const { data, error } = await supabase.rpc('script_import_library', { p_token: conn.token });
+// After a network call, set the exit code instead of calling process.exit(): exiting while the
+// HTTPS connection is still closing crashes Node on Windows.
 if (error) {
   console.error(`✗ ${explainImportError(error.message)}`);
-  process.exit(1);
+  process.exitCode = 1;
+} else {
+  report(data as LibraryRole[]);
 }
-const library = data as LibraryRole[];
 
-const counts: Record<string, number> = {};
-let identical = 0;
-for (const m of matchRoles(photo, library)) {
-  const [team, name, ability] = m.photo;
-  counts[team] = (counts[team] ?? 0) + 1;
-  if (!m.role) {
-    console.log(`? ${name}: not in the library (no name match; no ability ≥60% alike). Check the wiki; otherwise a new 自制角色.\n    ${ability}`);
-    continue;
+function report(library: LibraryRole[]) {
+  const counts: Record<string, number> = {};
+  let identical = 0;
+  for (const m of matchRoles(photo, library)) {
+    const [team, name, ability] = m.photo;
+    counts[team] = (counts[team] ?? 0) + 1;
+    if (!m.role) {
+      console.log(`? ${name}: not in the library (no name match; no ability ≥60% alike). Check the wiki; otherwise a new 自制角色.\n    ${ability}`);
+      continue;
+    }
+    const label = `${name} (${m.role.id}, ${m.role.edition}${m.how === 'ability' ? `, matched by ability as ${m.role.name}` : ''})`;
+    const notes = [m.teamDiffers && `TEAM: library ${m.role.team}, photo ${team}`, m.versions.length && `OTHER VERSIONS: ${m.versions.map((v) => `${v.name} (${v.id})`).join(', ')}`].filter(Boolean);
+    if (m.identical) identical++;
+    console.log(`${m.identical ? '=' : '≠'} ${label}${notes.length ? `\n    ${notes.join(' · ')}` : ''}${m.identical ? '' : `\n    ${m.diff}`}`);
   }
-  const label = `${name} (${m.role.id}, ${m.role.edition}${m.how === 'ability' ? `, matched by ability as ${m.role.name}` : ''})`;
-  const notes = [m.teamDiffers && `TEAM: library ${m.role.team}, photo ${team}`, m.versions.length && `OTHER VERSIONS: ${m.versions.map((v) => `${v.name} (${v.id})`).join(', ')}`].filter(Boolean);
-  if (m.identical) identical++;
-  console.log(`${m.identical ? '=' : '≠'} ${label}${notes.length ? `\n    ${notes.join(' · ')}` : ''}${m.identical ? '' : `\n    ${m.diff}`}`);
+  console.log(`\n${identical}/${photo.length} identical apart from punctuation · library: ${library.length} roles · photo teams:`, counts);
 }
-console.log(`\n${identical}/${photo.length} identical apart from punctuation · library: ${library.length} roles · photo teams:`, counts);
