@@ -67,7 +67,9 @@ For each `≠`, decide whether the ability **means** the same thing:
 - **Same meaning → use the library role**, even if the name or wording differs. Examples judged
   "same" so far: synonyms (拜访/询问, 获得/以得知, 杀了/杀死了, 如果/如果当…时), punctuation, and
   parenthetical side notes that name a reminder token or a nickname (理发师 "（今晚理发）",
-  麻脸巫婆 "（生死无常夜）", 教授 "（复活）", 艺术家 "（是/不是/我不知道）").
+  麻脸巫婆 "（生死无常夜）", 教授 "（复活）", 艺术家 "（是/不是/我不知道）"). Also judged "same"
+  (黯月初升, 2026-09-30): 刺客 "（无视防御）", 主谋 "（主谋日）", 沙巴洛斯 "（复活）", 僵怖
+  "（在其他玩家视野里）", and 疯子's bracketed note explaining its official setup.
 - **Different meaning → a separate role.** One word can change everything: "选择一名玩家" vs
   "选择一名存活的玩家", "你要选择" (must) vs "你可以选择" (may), 首个夜晚 vs 每个夜晚*, a different
   setup modifier. Compare word by word; don't trust overall similarity.
