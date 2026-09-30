@@ -34,7 +34,16 @@ export function readRuleFiles(): { path: string; text: string }[] {
     .map((f) => ({ path: relative(ROOT, f).replaceAll('\\', '/'), text: readFileSync(f, 'utf8') }));
 }
 
+/** The .env text with KEY set to value: the existing line replaced, or a new one appended. */
+export function withEnvValue(text: string, key: string, value: string): string {
+  const line = `${key}=${value}`;
+  const pattern = new RegExp(`^[ \\t]*${key}[ \\t]*=.*$`, 'm');
+  if (pattern.test(text)) return text.replace(pattern, () => line);
+  return `${text}${text === '' || text.endsWith('\n') ? '' : '\n'}${line}\n`;
+}
+
 /** Parses KEY=value lines (as in .env.local). Values are never logged by callers. */
+
 export function parseEnvFile(text: string): Record<string, string> {
   const env: Record<string, string> = {};
   for (const line of text.split(/\r?\n/)) {

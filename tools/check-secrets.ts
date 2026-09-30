@@ -9,7 +9,7 @@ import { scanForSecrets } from './lib/secrets.ts';
 const mode = process.argv[2];
 const envPath = join(ROOT, '.env.local');
 const env = existsSync(envPath) ? parseEnvFile(readFileSync(envPath, 'utf8')) : {};
-const literals = ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_DB_URL', 'ANTHROPIC_API_KEY', ...(mode === '--repo' ? ['ADMIN_EMAIL'] : [])]
+const literals = ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_DB_URL', 'SCRIPT_IMPORT_TOKEN', 'ANTHROPIC_API_KEY', ...(mode === '--repo' ? ['ADMIN_EMAIL'] : [])]
   .filter((k) => env[k])
   .map((k) => ({ name: k, value: env[k]! }));
 

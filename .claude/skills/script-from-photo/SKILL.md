@@ -14,16 +14,29 @@ Never save before the owner has approved the plan.
 
 ## Tools
 
-Run from the repo root. Both read `.env.local` and never print secrets.
+Run from the repo root. Both talk to Supabase over **HTTPS** with a single-purpose **import
+token** (SCRIPT-07), so they work on the owner's PC and in cloud sessions alike (a cloud session's
+proxy carries only web traffic; a direct database connection just hangs). They read
+`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` and `SCRIPT_IMPORT_TOKEN` from `.env.local`
+or the environment, and never print secrets. The token can only read the role library and save
+scripts; it can't touch anything else.
+
+- **A cloud session** needs those three as the environment's variables, and network access to the
+  project's `*.supabase.co` host. It doesn't need `SUPABASE_DB_URL`.
+- **`✗ … SCRIPT_IMPORT_TOKEN is missing or out of date`** → on the owner's PC,
+  `node tools/db.ts import-token` makes a new token (it replaces the old one, which stops working)
+  and writes it into `.env.local`; the owner copies it into the cloud environment's variables.
+  Never ask for the token in chat.
 
 - `node tools/compare-script.ts <photo.json>` — matches the transcription against the **live**
   library (official roles and 自制角色) and prints, per role: `=` identical apart from punctuation,
   `≠` with a character diff (`[+added-removed]`), `?` not in the library, plus team mismatches and
   other versions of the same character.
-- `node tools/save-script.ts <spec.json> [--dry-run]` — creates the new 自制角色 and saves the
-  script in one transaction, acting as the owner through the app's own RPCs
-  (`create_custom_role`, `save_script`), then reads every role back. It refuses a script name
-  that already exists (unless `"replace": true`) and a 自制角色 whose name is already taken.
+- `node tools/save-script.ts <spec.json> [--dry-run]` — sends the spec to the database's
+  `import_script`, which creates the new 自制角色 and saves the script in one transaction, as the
+  admin, through the app's own RPCs (`create_custom_role`, `save_script`), then returns every role
+  as saved. It refuses a script name that already exists (unless `"replace": true`) and a
+  自制角色 whose name is already taken. `--dry-run` does all of it and rolls back.
 
 Put working files (transcription, spec) in the session's scratchpad, not in the repo.
 
@@ -80,7 +93,8 @@ For each `≠`, decide whether the ability **means** the same thing:
   bump the counts in `supabase/tests/m2_library.test.sql`, update LIB-01 in
   `docs/rules/m2-setup-roles.md`, run `node tools/gen-roles-migration.ts <timestamp>_<name>.sql`,
   record it in the roadmap's decision log, and ship it as a PR. After merge + CI, apply it with
-  `node tools/db.ts push`. (Example: 气球驾驶员（旧版）, id `balloonist_old`, text from the sheet.)
+  `node tools/db.ts push` **from a `main` checkout on the owner's PC** (it needs
+  `SUPABASE_DB_URL`, which cloud sessions don't have; a cloud session hands this step to the PC). (Example: 气球驾驶员（旧版）, id `balloonist_old`, text from the sheet.)
 - **Not official anywhere → a new 自制角色** (edition `homebrew`):
   - name as printed; if a library role already has that name, **ask**, suggesting the next free
     suffix: 名字（改）, then （改2）, （改3）… (戏子（改） is official, so a homebrew 戏子 would be 戏子（改2）);

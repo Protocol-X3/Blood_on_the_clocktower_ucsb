@@ -12,28 +12,31 @@
 //     ]
 //   }
 //
-// Everything runs in one transaction through the same RPCs the app uses (create_custom_role,
-// save_script), so their checks apply and the owner owns the result. A custom role lands in
-// the 自制角色 collection. --dry-run does all of it, prints the result and rolls back.
-// Secret values are never printed.
+// Runs over HTTPS with the import token (SCRIPT-07), so it works in cloud sessions too. The
+// database's import_script does everything in one transaction through the same RPCs the app
+// uses (create_custom_role, save_script), so their checks apply and the admin owns the result.
+// A custom role lands in the 自制角色 collection. --dry-run does all of it, prints the result
+// and rolls back. Secret values are never printed.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import pg from 'pg';
+import { createClient } from '@supabase/supabase-js';
 import { parseEnvFile, ROOT } from './lib/files.ts';
+import { explainImportError, importEnv, roleNameClashes, type ScriptSpec } from './lib/scriptImport.ts';
 
-type Team = 'townsfolk' | 'outsider' | 'minion' | 'demon';
-interface CustomRole {
+interface SavedRole {
+  position: number;
+  id: string;
   name: string;
-  team: Team;
-  ability: string;
-  glyph?: string | null;
-  reminders?: string[];
+  team: string;
+  edition: string;
+  is_official: boolean;
+  created: boolean;
 }
-interface Spec {
-  name: string;
-  author?: string | null;
-  replace?: boolean;
-  roles: (string | { custom: CustomRole })[];
+interface Saved {
+  script: string;
+  replaced: boolean;
+  dry_run: boolean;
+  roles: SavedRole[];
 }
 
 const [file, flag] = process.argv.slice(2);
@@ -42,70 +45,35 @@ if (!file || (flag && flag !== '--dry-run')) {
   process.exit(2);
 }
 const dryRun = flag === '--dry-run';
-const spec = JSON.parse(readFileSync(file, 'utf8')) as Spec;
+const spec = JSON.parse(readFileSync(file, 'utf8')) as ScriptSpec;
 const envPath = join(ROOT, '.env.local');
-const env = { ...(existsSync(envPath) ? parseEnvFile(readFileSync(envPath, 'utf8')) : {}), ...process.env } as Record<string, string>;
-if (!env.SUPABASE_DB_URL || !env.ADMIN_EMAIL) {
-  console.error('✗ SUPABASE_DB_URL and ADMIN_EMAIL must be set (.env.local)');
+const conn = importEnv({ ...(existsSync(envPath) ? parseEnvFile(readFileSync(envPath, 'utf8')) : {}), ...process.env });
+if ('missing' in conn) {
+  console.error(`✗ not set: ${conn.missing.join(', ')} (.env.local, or the cloud environment's variables)`);
+  process.exit(1);
+}
+const supabase = createClient(conn.url, conn.key, { auth: { persistSession: false } });
+
+function fail(message: string): never {
+  console.error(`✗ nothing saved: ${message}`);
   process.exit(1);
 }
 
-const local = /localhost|127\.0\.0\.1/.test(env.SUPABASE_DB_URL);
-const client = new pg.Client({ connectionString: env.SUPABASE_DB_URL, ssl: local ? false : { rejectUnauthorized: false } });
-await client.connect();
-try {
-  await client.query('begin');
-  const owner = (await client.query(`select id from auth.users where email = $1`, [env.ADMIN_EMAIL])).rows[0]?.id;
-  if (!owner) throw new Error('the admin account has not signed in yet');
-  // A name already in use needs the owner's decision: replace it ("replace": true), rename, or stop.
-  const existing = (await client.query(`select id from public.scripts where name = $1`, [spec.name])).rows[0]?.id ?? null;
-  if (existing && !spec.replace) throw new Error(`a script named ${spec.name} already exists; ask the owner (replace, new name or stop)`);
-  if (!existing && spec.replace) throw new Error(`"replace" is set, but there is no script named ${spec.name}`);
-  // Act as the owner, like the app does, so RLS and the RPCs' own checks apply.
-  await client.query(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ sub: owner, role: 'authenticated' })]);
-  await client.query('set local role authenticated');
+// Name clashes first, with the clashing role's id, before anything is created.
+const library = await supabase.rpc('script_import_library', { p_token: conn.token });
+if (library.error) fail(explainImportError(library.error.message, spec));
+const clashes = roleNameClashes(spec, library.data as { id: string; name: string; edition: string }[]);
+if (clashes.length) fail(clashes.join('\n  '));
 
-  const ids: string[] = [];
-  const created = new Set<string>();
-  for (const r of spec.roles) {
-    if (typeof r === 'string') {
-      ids.push(r);
-      continue;
-    }
-    const c = r.custom;
-    // A 自制角色 made for an earlier script is reused by its id, never created twice.
-    const clash = (await client.query(`select id, edition from public.roles where name = $1`, [c.name])).rows[0];
-    if (clash) throw new Error(`a role named ${c.name} already exists (${clash.id}, ${clash.edition}); use its id or pick another name`);
-    const { rows } = await client.query(`select public.create_custom_role($1, $2::public.team, $3, $4, $5::text[]) as id`, [
-      c.name,
-      c.team,
-      c.ability,
-      c.glyph ?? null,
-      c.reminders ?? [],
-    ]);
-    ids.push(rows[0].id);
-    created.add(rows[0].id);
-  }
-  const script = (await client.query(`select public.save_script($1, $2, $3, $4::text[]) as id`, [existing, spec.name, spec.author ?? null, ids])).rows[0].id;
+const { data, error } = await supabase.rpc('import_script', { p_token: conn.token, p_spec: spec, p_dry_run: dryRun });
+if (error) fail(explainImportError(error.message, spec));
+const saved = data as Saved;
 
-  // Read it back: every role, in order, with its team and collection.
-  const { rows } = await client.query(
-    `select sr.position, r.id, r.name, r.team, r.edition, r.is_official
-     from public.script_roles sr join public.roles r on r.id = sr.role_id
-     where sr.script_id = $1 order by sr.position`,
-    [script],
-  );
-  const counts = rows.reduce<Record<string, number>>((m, r) => ({ ...m, [r.team]: (m[r.team] ?? 0) + 1 }), {});
-  console.log(`${dryRun ? '[dry run] ' : ''}${spec.name}${spec.author ? ` · ${spec.author}` : ''} · ${rows.length} roles`, counts);
-  for (const r of rows) console.log(`  ${String(r.position).padStart(2)} ${r.team.padEnd(9)} ${r.name} (${r.id}, ${r.edition}${r.is_official ? '' : created.has(r.id) ? ', new 自制角色' : ', 自制角色'})`);
-  if (rows.length !== spec.roles.length) throw new Error(`expected ${spec.roles.length} roles, read back ${rows.length}`);
-
-  await client.query(dryRun ? 'rollback' : 'commit');
-  console.log(dryRun ? '✓ dry run: rolled back, nothing saved' : `✓ ${existing ? 'replaced' : 'saved'} script ${script}`);
-} catch (e) {
-  await client.query('rollback');
-  console.error('✗ rolled back:', (e as Error).message);
-  process.exitCode = 1;
-} finally {
-  await client.end();
+// The script as the database saved it: every role, in order, with its team and collection.
+const counts = saved.roles.reduce<Record<string, number>>((m, r) => ({ ...m, [r.team]: (m[r.team] ?? 0) + 1 }), {});
+console.log(`${dryRun ? '[dry run] ' : ''}${spec.name}${spec.author ? ` · ${spec.author}` : ''} · ${saved.roles.length} roles`, counts);
+for (const r of saved.roles) {
+  console.log(`  ${String(r.position).padStart(2)} ${r.team.padEnd(9)} ${r.name} (${r.id}, ${r.edition}${r.is_official ? '' : r.created ? ', new 自制角色' : ', 自制角色'})`);
 }
+if (saved.roles.length !== spec.roles.length) fail(`expected ${spec.roles.length} roles, the database has ${saved.roles.length}`);
+console.log(dryRun ? '✓ dry run: rolled back, nothing saved' : `✓ ${saved.replaced ? 'replaced' : 'saved'} script ${saved.script}`);

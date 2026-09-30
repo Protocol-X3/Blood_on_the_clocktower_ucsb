@@ -85,6 +85,7 @@ The owner's PC can't run Docker, because Riot Vanguard (the anti-cheat for Riot 
 - **Integration and E2E tests refuse to run against the cloud project** (QA-12) unless `ALLOW_LIVE_TEST_DATA=1` is set on purpose. Smoke tests against the deployed site (`BASE_URL=… --grep @smoke`) create no data and still run.
 - **Migrations** are applied with `node tools/db.ts push` only after the PR is merged, from a checkout of `main`, because the push applies every migration in the working tree.
 - **The owner tests on the live site**, with the bot sandbox switched on under 管理 when needed, and discards test games (放弃本局, END-05) so they never reach stats or history.
+- **Scripts from photos (M6)** can be made in a cloud session too: the skill's tools talk HTTPS with a single-purpose import token (SCRIPT-07), because a cloud session's proxy carries only web traffic. The cloud environment holds `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` and `SCRIPT_IMPORT_TOKEN`, never the database password or the secret key. `node tools/db.ts import-token` (on the PC) makes a new token and revokes the old one.
 
 Other notes:
 - Secrets (database passwords, service-role keys, API keys) are never committed or pasted into chat. They go in `.env.local` (gitignored) or in the CI and Vercel secret settings.

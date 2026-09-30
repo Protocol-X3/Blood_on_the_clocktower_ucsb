@@ -28,6 +28,11 @@ export const ERROR_MESSAGES: Record<string, string> = {
   SCRIPT_EMPTY: '剧本至少需要一个角色',
   SCRIPT_DUPLICATE_ROLE: '同一个角色不能重复加入剧本',
   SCRIPT_NOT_FOUND: '剧本不存在',
+  SCRIPT_NAME_TAKEN: '已有同名剧本',
+  ROLE_NAME_TAKEN: '已有同名角色',
+  IMPORT_TOKEN_INVALID: '导入令牌无效',
+  IMPORT_SPEC_INVALID: '剧本数据格式不正确',
+  ADMIN_NOT_SIGNED_IN: '管理员账号尚未登录过',
   // M2 · setup and card draw
   GAME_NOT_FOUND: '对局不存在',
   NOT_IN_SETUP: '对局不在配置阶段',

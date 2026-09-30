@@ -5,10 +5,12 @@
 // photo.json: [["townsfolk", "钟表匠", "在你的首个夜晚，…"], …] — team, name and ability as printed.
 // Prints one line per role: = identical (apart from punctuation), ≠ with a character diff to
 // judge by meaning, ? not in the library, plus any other versions of the same character.
+// Reads the library over HTTPS with the import token (SCRIPT-07), so it works in cloud sessions too.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import pg from 'pg';
+import { createClient } from '@supabase/supabase-js';
 import { parseEnvFile, ROOT } from './lib/files.ts';
+import { explainImportError, importEnv } from './lib/scriptImport.ts';
 import { matchRoles, type LibraryRole, type PhotoRole } from './lib/scriptPhoto.ts';
 
 const file = process.argv[2];
@@ -18,16 +20,18 @@ if (!file) {
 }
 const photo = JSON.parse(readFileSync(file, 'utf8')) as PhotoRole[];
 const envPath = join(ROOT, '.env.local');
-const env = { ...(existsSync(envPath) ? parseEnvFile(readFileSync(envPath, 'utf8')) : {}), ...process.env } as Record<string, string>;
-if (!env.SUPABASE_DB_URL) {
-  console.error('✗ SUPABASE_DB_URL is not set');
+const conn = importEnv({ ...(existsSync(envPath) ? parseEnvFile(readFileSync(envPath, 'utf8')) : {}), ...process.env });
+if ('missing' in conn) {
+  console.error(`✗ not set: ${conn.missing.join(', ')} (.env.local, or the cloud environment's variables)`);
   process.exit(1);
 }
-const local = /localhost|127\.0\.0\.1/.test(env.SUPABASE_DB_URL);
-const client = new pg.Client({ connectionString: env.SUPABASE_DB_URL, ssl: local ? false : { rejectUnauthorized: false } });
-await client.connect();
-const library = (await client.query(`select id, name, team::text as team, ability, edition from public.roles order by is_official desc, id`)).rows as LibraryRole[];
-await client.end();
+const supabase = createClient(conn.url, conn.key, { auth: { persistSession: false } });
+const { data, error } = await supabase.rpc('script_import_library', { p_token: conn.token });
+if (error) {
+  console.error(`✗ ${explainImportError(error.message)}`);
+  process.exit(1);
+}
+const library = data as LibraryRole[];
 
 const counts: Record<string, number> = {};
 let identical = 0;
