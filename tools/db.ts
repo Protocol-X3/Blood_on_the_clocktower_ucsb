@@ -2,11 +2,14 @@
 //   node tools/db.ts push        apply pending migrations (supabase db push)
 //   node tools/db.ts types       regenerate src/services/database.types.ts
 //   node tools/db.ts set-admin   store ADMIN_EMAIL in private.app_config and grant admin (PERM-02)
+//   node tools/db.ts import-token  new script-import token (SCRIPT-07): its SHA-256 goes in the
+//                                  database, the token into .env.local; the old one stops working
 // Secret values are never printed.
+import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import pg from 'pg';
-import { parseEnvFile, ROOT } from './lib/files.ts';
+import { parseEnvFile, ROOT, withEnvValue } from './lib/files.ts';
 import { supabaseCli } from './lib/supabaseCli.ts';
 
 const envPath = join(ROOT, '.env.local');
@@ -51,7 +54,24 @@ if (command === 'push') {
   } finally {
     await client.end();
   }
+} else if (command === 'import-token') {
+  const token = randomBytes(32).toString('hex');
+  const local = /localhost|127\.0\.0\.1/.test(dbUrl);
+  const client = new pg.Client({ connectionString: dbUrl, ssl: local ? false : { rejectUnauthorized: false } });
+  await client.connect();
+  try {
+    await client.query(
+      `insert into private.app_config (key, value) values ('script_import_token_sha256', $1)
+       on conflict (key) do update set value = excluded.value`,
+      [createHash('sha256').update(token).digest('hex')],
+    );
+  } finally {
+    await client.end();
+  }
+  writeFileSync(envPath, withEnvValue(existsSync(envPath) ? readFileSync(envPath, 'utf8') : '', 'SCRIPT_IMPORT_TOKEN', token));
+  console.log('✓ new script-import token stored (hash in the database, token in .env.local as SCRIPT_IMPORT_TOKEN); the old one no longer works');
+  console.log("  Copy it into the cloud environment's variables if cloud sessions use the script-from-photo skill.");
 } else {
-  console.error('usage: node tools/db.ts push | types | set-admin');
+  console.error('usage: node tools/db.ts push | types | set-admin | import-token');
   process.exitCode = 2;
 }

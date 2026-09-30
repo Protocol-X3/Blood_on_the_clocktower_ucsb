@@ -16,6 +16,7 @@ Status: **Approved** by the owner, 2026-09-27.
 - **SCRIPT-04** A custom role created in the editor (or by Claude from a script photo, M6) is saved into the library in the **自制角色** collection, so other scripts can reuse it. *Changed (2026-09-28): 自制角色 replaces the 自定义 label.* *Decided (2026-09-27): this is in M2, not M6, because the manual editor needs it.* · *pgTAP, E2E*
 - **SCRIPT-05** A script's roles are shown grouped by team, in this order: Townsfolk, Outsiders, Minions, Demons. · *E2E*
 - **SCRIPT-06** Editing a script later doesn't change games already played with it, because each game keeps its own copy of the roles used. · *pgTAP*
+- **SCRIPT-07** Claude's script-from-photo tools (M6) reach the database over HTTPS with a single-purpose import token, so they work in cloud sessions too. With the token they can read the role library and save a script, custom roles included, as the admin, through the same checks as the editor; an existing name needs an explicit replace, and a custom role is never created twice. Without a valid token they can do nothing. Only the token's hash is stored, and a new token revokes the old one. *Added 2026-09-29.* · *pgTAP, Unit*
 
 ## SETUP · Setup wizard
 
