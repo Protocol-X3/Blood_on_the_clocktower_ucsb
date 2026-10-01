@@ -137,5 +137,10 @@ Write the spec (library ids, and `{"custom": {…}}` objects for new 自制角�
 
 ## Record
 
-After saving, note anything new the owner decided (a new rule, a judgment on a wording) in this
-skill, so the next script follows it.
+Record only a **special decision**: the owner answered one of this skill's questions (a version
+choice, an unsure wording, a name clash, a replace) or set a new rule. Then add it to this skill so
+the next script follows it, add a dated line to the roadmap's decision log, and commit and push.
+
+A routine import needs no record and no commit: every role followed the rules above, your
+"same meaning" calls were the obvious kind (synonyms, side notes, nicknames), and the owner only
+approved the plan. Saving the script is the whole job.
