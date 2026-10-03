@@ -422,13 +422,13 @@ isOneToOne: false
                   ]
                 },"scripts": {
                   Row: {
-                    "author": string | null,"created_at": string,"created_by": string | null,"id": string,"name": string,"updated_at": string
+                    "author": string | null,"created_at": string,"created_by": string | null,"id": string,"name": string,"special_rules": string | null,"updated_at": string
                   }
                   Insert: {
-                    "author"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"name": string,"updated_at"?: string
+                    "author"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"name": string,"special_rules"?: string | null,"updated_at"?: string
                   }
                   Update: {
-                    "author"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"name"?: string,"updated_at"?: string
+                    "author"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"name"?: string,"special_rules"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -666,7 +666,7 @@ isOneToOne: false
 { Args: { "p_game": string,"p_seat": number }; Returns: undefined
                            },
 "save_script":
-{ Args: { "p_author": string,"p_name": string,"p_roles": (string)[],"p_script": string }; Returns: string
+{ Args: { "p_author": string,"p_name": string,"p_roles": (string)[],"p_script": string,"p_special_rules"?: string }; Returns: string
                            },
 "script_import_library":
 { Args: { "p_token": string }; Returns: {

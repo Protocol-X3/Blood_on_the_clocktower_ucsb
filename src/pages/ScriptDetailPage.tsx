@@ -14,7 +14,7 @@ import { TEAM_LABEL } from '@/lib/game/teams';
 import { supabase } from '@/services/supabase';
 import { MessagePage } from './ComingSoon';
 
-/** 剧本详情: the script's roles grouped by team (SCRIPT-05). */
+/** 剧本详情: the script's 特殊规则, if any (SCRIPT-08), and its roles grouped by team (SCRIPT-05). */
 export function ScriptDetailPage() {
   const { id = '' } = useParams();
   const { profile } = useAuth();
@@ -54,6 +54,12 @@ export function ScriptDetailPage() {
           ) : null}
         </header>
         <div className="mt-6 flex flex-col gap-5 px-4">
+          {state.script.special_rules ? (
+            <Panel variant="gilded" aria-label="特殊规则">
+              <h2 className="text-center font-serif text-lg font-bold tracking-[0.3em]">特殊规则</h2>
+              <p className="mt-3 whitespace-pre-line leading-relaxed">{state.script.special_rules}</p>
+            </Panel>
+          ) : null}
           {groupByTeam(state.roles).map((group) => (
             <Panel key={group.team} aria-label={TEAM_LABEL[group.team]}>
               <h2 className="font-serif text-lg font-bold tracking-wider text-gold-strong">

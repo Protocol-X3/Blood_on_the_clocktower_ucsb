@@ -34,7 +34,7 @@ Notes:
 
 - `profiles`: nickname, permission level (admin / dm_eligible / player), is_guest
 - `roles`: the role library, official and custom
-- `scripts`
+- `scripts`: name, author, optional `special_rules` (特殊规则, display only); `script_roles` lists the roles in order
 - `rooms`: code, current DM seat holder, seat count, current game
 - `room_members`: who is in the room and their seat
 - `games`: room, script, DM, assignment mode, status, phase, winner

@@ -5,6 +5,7 @@
 //   {
 //     "name": "钟声来了",
 //     "author": "Bruce C.",            // or null
+//     "special_rules": "…",            // the sheet's 特殊规则 (SCRIPT-08), or null
 //     "replace": false,                // true: overwrite the existing script of that name (owner's choice)
 //     "roles": [                       // in script order
 //       "clockmaker",                  // a library role id
@@ -36,6 +37,7 @@ interface Saved {
   script: string;
   replaced: boolean;
   dry_run: boolean;
+  special_rules: string | null;
   roles: SavedRole[];
 }
 
@@ -79,6 +81,7 @@ async function save() {
   for (const r of saved.roles) {
     console.log(`  ${String(r.position).padStart(2)} ${r.team.padEnd(9)} ${r.name} (${r.id}, ${r.edition}${r.is_official ? '' : r.created ? ', new 自制角色' : ', 自制角色'})`);
   }
+  console.log(saved.special_rules ? `  特殊规则:\n    ${saved.special_rules.replaceAll('\n', '\n    ')}` : '  特殊规则: none');
   if (saved.roles.length !== spec.roles.length) {
     return refuse(`expected ${spec.roles.length} roles, the database ${dryRun ? 'would save' : 'saved'} ${saved.roles.length}; check the script in 剧本库`);
   }

@@ -68,3 +68,35 @@ test('SCRIPT-02: a script needs a name and at least one role', async ({ page, us
   await page.getByRole('button', { name: '保存剧本' }).click();
   await expect(page.getByRole('alert')).toHaveText('剧本至少需要一个角色');
 });
+
+test('SCRIPT-08: a script can carry 特殊规则, shown in 剧本库; the editor keeps, changes and clears them', async ({ page, users }) => {
+  await signIn(page, await users.make({ level: 'dm_eligible' }));
+  await page.goto('/scripts/new');
+  const name = `规则剧本${Date.now() % 100000}`;
+  const text = ['每晚只能有一名玩家死亡。', '恶魔可以自刀。'];
+  await page.getByLabel('剧本名称').fill(name);
+  await page.getByLabel('特殊规则（可选）').fill(text.join('\n'));
+  await page.getByRole('region', { name: '角色库' }).getByRole('button', { name: '小恶魔', exact: true }).click();
+  await page.getByRole('button', { name: '保存剧本' }).click();
+  await expect(page.getByRole('heading', { name })).toBeVisible();
+
+  // On the script's page, with its line breaks.
+  const rules = page.getByRole('region', { name: '特殊规则' });
+  await expect(rules).toBeVisible();
+  expect((await rules.locator('p').innerText()).split('\n')).toEqual(text);
+
+  // The 剧本库 card says the script has them.
+  await page.goto('/scripts');
+  const card = page.getByRole('link', { name: new RegExp(name) });
+  await expect(card).toContainText('特殊规则');
+
+  // Reopened for editing they are kept; cleared, they are gone.
+  await card.click();
+  await page.getByRole('link', { name: '编辑剧本' }).click();
+  await expect(page.getByLabel('特殊规则（可选）')).toHaveValue(text.join('\n'));
+  await page.getByLabel('特殊规则（可选）').fill('');
+  await page.getByRole('button', { name: '保存剧本' }).click();
+  await expect(page.getByRole('heading', { name })).toBeVisible();
+  await expect(page.getByRole('region', { name: '恶魔' })).toBeVisible();
+  await expect(rules).toHaveCount(0);
+});

@@ -1,5 +1,5 @@
 -- M2 · role library and scripts.
-select plan(30);
+select plan(39);
 
 create temp table u as
 select tests.create_user('dora', 'dm_eligible') as dm,
@@ -55,6 +55,34 @@ select is(tests.try_as((select dm from u), $$ select save_script(null, repeat('�
 select is(tests.try_as((select dm from u), $$ select save_script(null, '空剧本', null, array[]::text[]) $$), 'SCRIPT_EMPTY', 'SCRIPT-02: a script needs at least one role');
 select is(tests.try_as((select dm from u), $$ select save_script(null, '重复', null, array['imp','imp']) $$), 'SCRIPT_DUPLICATE_ROLE', 'SCRIPT-02: no role twice');
 select throws_ok(format($$ insert into script_roles values (%L, 'chef', 99) $$, (select id from s)), '23505', null, 'SCRIPT-02: no role twice, even at the database level');
+
+-- SCRIPT-08: optional 特殊规则, kept with the script.
+select tests.login((select dm from u));
+create temp table s8 as select save_script(null, '特殊规则剧本', null, array['imp'], E'  每晚只能有一名玩家死亡。\r\n恶魔可以自刀。\n  ') as id;
+select save_script(null, '无规则剧本', null, array['imp'], E' \n ');
+select tests.logout();
+grant select on s8 to authenticated, anon;
+select tests.login((select player from u));
+select is((select special_rules from scripts where id = (select id from s8)), E'每晚只能有一名玩家死亡。\n恶魔可以自刀。',
+  'SCRIPT-08: a script keeps its 特殊规则, trimmed and with its line breaks, for every signed-in user to read');
+select tests.logout();
+select is((select special_rules from scripts where name = '无规则剧本'), null, 'SCRIPT-08: 特殊规则 are optional; blank means none');
+select is((select special_rules from scripts where id = (select id from s)), null, 'SCRIPT-08: …and a script saved without them has none');
+select is(tests.try_as((select dm from u), $$ select save_script(null, '长规则', null, array['imp'], repeat('规', 2001)) $$), 'SCRIPT_RULES_TOO_LONG',
+  'SCRIPT-08: 特殊规则 are at most 2000 characters');
+select is(tests.try_as((select dm from u), $$ select save_script(null, '长规则', null, array['imp'], repeat('规', 2000)) $$), 'allow', 'SCRIPT-08: …2000 is fine');
+select is(tests.try_as((select player from u), format($$ select save_script(%L, '特殊规则剧本', null, array['imp'], '玩家改的') $$, (select id from s8))), 'FORBIDDEN',
+  'SCRIPT-01 · SCRIPT-08: players cannot change a script''s 特殊规则');
+select tests.login((select dm from u));
+select save_script((select id from s8), '特殊规则剧本', null, array['imp'], '新规则');
+select tests.logout();
+select is((select special_rules from scripts where id = (select id from s8)), '新规则', 'SCRIPT-08: editing the script replaces its 特殊规则');
+select tests.login((select dm from u));
+select save_script((select id from s8), '特殊规则剧本', null, array['imp'], '');
+select tests.logout();
+select is((select special_rules from scripts where id = (select id from s8)), null, 'SCRIPT-08: …or clears them');
+select throws_ok(format($$ update scripts set special_rules = E' 新规则\n' where id = %L $$, (select id from s8)), '23514', null,
+  'SCRIPT-08: no untrimmed or blank 特殊规则, even at the database level');
 
 -- SCRIPT-03 / SCRIPT-04: custom roles
 select is(tests.try_as((select player from u), $$ select create_custom_role('月光骑士', 'townsfolk', '每晚得知一件事。') $$), 'FORBIDDEN',

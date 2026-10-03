@@ -61,6 +61,7 @@ export function ScriptsPage() {
                       </Chip>
                     ) : null;
                   })}
+                  {s.special_rules ? <Chip tone="gold">特殊规则</Chip> : null}
                 </span>
               </Link>
             </li>

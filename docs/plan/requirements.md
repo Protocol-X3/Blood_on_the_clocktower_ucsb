@@ -119,6 +119,8 @@ Ways to add a script:
 2. **Manual editor:** pick roles from the library, or add custom roles by hand.
 3. ~~**JSON import**~~: dropped for now (2026-09-28).
 
+A script may have **特殊规则**: extra rules that come with the script (SCRIPT-08). They're optional free text, entered in the editor or read from the photo by Claude, and shown on the script's page in 剧本库. Nothing in a game reads them. *Added 2026-10-02.*
+
 Internal script format: compatible with the standard BotC script JSON.
 - A `{"id":"_meta", "name", "author"}` entry.
 - Official roles as ID strings.

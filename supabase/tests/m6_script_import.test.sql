@@ -37,20 +37,23 @@ select is((select name || ':' || team || ':' || edition from lib where id = 'clo
 
 -- A dry run builds everything and keeps nothing.
 select tests.login_anon();
-create temp table dry as select import_script((select token from t), pg_temp.spec('钟声测试'), true) as r;
+create temp table dry as select import_script((select token from t), pg_temp.spec('钟声测试', '{"special_rules": "每局游戏至少有一名外来者。"}'), true) as r;
 create temp table claims_after as select current_setting('request.jwt.claims', true) as c;
 select tests.logout();
 select is((select r ->> 'dry_run' from dry), 'true', 'SCRIPT-07: a dry run reports the script it would save');
 select is((select jsonb_array_length(r -> 'roles') from dry), 3, 'SCRIPT-07: …with every role');
+select is((select r ->> 'special_rules' from dry), '每局游戏至少有一名外来者。', 'SCRIPT-07 · SCRIPT-08: …and its 特殊规则');
 select is((select count(*)::int from scripts where name = '钟声测试') + (select count(*)::int from roles where name = '卡牌测试师'), 0, 'SCRIPT-07: …and rolls it all back');
 select is((select c from claims_after), '{"role":"anon"}', 'SCRIPT-07: the caller''s identity is restored afterwards');
 
 -- The real import: owned by the admin, custom role in 自制角色, in order.
 select tests.login_anon();
-create temp table saved as select import_script((select token from t), pg_temp.spec('钟声测试')) as r;
+create temp table saved as select import_script((select token from t), pg_temp.spec('钟声测试', '{"special_rules": " 每局游戏至少有一名外来者。\n"}')) as r;
 select tests.logout();
 select is((select created_by from scripts where name = '钟声测试'), (select admin from u), 'SCRIPT-07: the script is saved as the admin');
 select is((select author from scripts where name = '钟声测试'), 'Bruce C.', 'SCRIPT-07: …with its author');
+select is((select special_rules from scripts where name = '钟声测试'), '每局游戏至少有一名外来者。', 'SCRIPT-07 · SCRIPT-08: …with the sheet''s 特殊规则, trimmed like the editor''s');
+select is((select r ->> 'special_rules' from saved), '每局游戏至少有一名外来者。', 'SCRIPT-08: the result reads the 特殊规则 back as saved');
 select is((select array_agg(r2.name order by sr.position) from script_roles sr join roles r2 on r2.id = sr.role_id join scripts s on s.id = sr.script_id where s.name = '钟声测试'),
   array['洗衣妇', '小恶魔', '卡牌测试师'], 'SCRIPT-07: …with its roles in order');
 select is((select edition || ':' || is_official || ':' || reminders[1] from roles where name = '卡牌测试师'), 'homebrew:false:已看牌', 'SCRIPT-04 · SCRIPT-07: the new role joins 自制角色');
@@ -71,6 +74,7 @@ select tests.logout();
 select is((select array_agg(r2.name order by sr.position) from script_roles sr join roles r2 on r2.id = sr.role_id join scripts s on s.id = sr.script_id where s.name = '钟声测试'),
   array['厨师', '卡牌测试师'], 'SCRIPT-07: "replace" overwrites the script, reusing the 自制角色 by its id');
 select is((select count(*)::int from scripts where name = '钟声测试'), 1, 'SCRIPT-07: …without a second copy');
+select is((select special_rules from scripts where name = '钟声测试'), null, 'SCRIPT-07 · SCRIPT-08: …and its 特殊规则 too (the new spec has none)');
 
 -- The editor's own checks still apply, and a bad spec changes nothing.
 select is(tests.try_as(null, format($$select import_script(%L, '{"name": "空剧本", "roles": []}')$$, (select token from t))), 'SCRIPT_EMPTY', 'SCRIPT-02 · SCRIPT-07: the editor''s checks apply');
@@ -78,6 +82,10 @@ select is(tests.try_as(null, format($$select import_script(%L, '{"name": "坏", 
 select is(tests.try_as(null, format($$select import_script(%L, '{"name": "坏", "roles": [{"custom": {"name": "怪", "team": "dragon", "ability": "x"}}]}')$$, (select token from t))), 'IMPORT_SPEC_INVALID',
   'SCRIPT-07: a malformed custom role is refused');
 select is(tests.try_as(null, format($$select import_script(%L, '{"roles": ["chef"]}')$$, (select token from t))), 'IMPORT_SPEC_INVALID', 'SCRIPT-07: a spec needs a name');
+select is(tests.try_as(null, format($$select import_script(%L, '{"name": "坏", "special_rules": ["x"], "roles": ["chef"]}')$$, (select token from t))), 'IMPORT_SPEC_INVALID',
+  'SCRIPT-07 · SCRIPT-08: 特殊规则 are text or nothing');
+select is(tests.try_as(null, format($$select import_script(%L, %L)$$, (select token from t), jsonb_build_object('name', '坏', 'special_rules', repeat('规', 2001), 'roles', jsonb_build_array('chef')))),
+  'SCRIPT_RULES_TOO_LONG', 'SCRIPT-08: the editor''s 2000-character limit applies to imports');
 select is((select count(*)::int from scripts where name in ('空剧本', '坏')), 0, 'SCRIPT-07: refused imports leave nothing behind');
 
 -- Replacing the stored hash revokes the old token.

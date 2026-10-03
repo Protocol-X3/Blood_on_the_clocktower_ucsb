@@ -48,6 +48,15 @@ describe('script-from-photo tools over HTTPS', () => {
     expect(explainImportError('SCRIPT_EMPTY')).toBe('SCRIPT_EMPTY');
   });
 
+  it('SCRIPT-08: a spec carries the sheet’s 特殊规则; the tool says what to do when they are too long', () => {
+    const withRules: ScriptSpec = { ...spec, special_rules: '每局游戏至少有一名外来者。' };
+    expect(roleNameClashes(withRules, [])).toEqual([]);
+    expect(explainImportError('SCRIPT_RULES_TOO_LONG', withRules)).toMatch(/2000/);
+    expect(explainImportError('IMPORT_SPEC_INVALID')).toMatch(/special_rules/);
+    // save-script prints the 特殊规则 as saved, so the dry run's readback shows them.
+    expect(readFileSync('tools/save-script.ts', 'utf8')).toMatch(/saved\.special_rules/);
+  });
+
   it('SCRIPT-07: a new token replaces the old one in .env.local and leaves every other line alone', () => {
     const before = 'VITE_SUPABASE_URL=https://x.supabase.co\r\nSCRIPT_IMPORT_TOKEN=old\r\nADMIN_EMAIL=a@b.c\r\n';
     const after = withEnvValue(before, 'SCRIPT_IMPORT_TOKEN', 'new$&');

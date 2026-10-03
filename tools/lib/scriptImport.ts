@@ -29,6 +29,8 @@ export interface CustomRole {
 export interface ScriptSpec {
   name: string;
   author?: string | null;
+  /** SCRIPT-08: the sheet's 特殊规则, verbatim (at most 2000 characters); null or absent for none. */
+  special_rules?: string | null;
   replace?: boolean;
   roles: (string | { custom: CustomRole })[];
 }
@@ -56,8 +58,10 @@ export function explainImportError(code: string, spec?: ScriptSpec): string {
       return `"replace" is set, but there is no script named ${spec?.name}`;
     case 'ROLE_NAME_TAKEN':
       return 'a custom role has the name of a role already in the library; use its id or pick another name';
+    case 'SCRIPT_RULES_TOO_LONG':
+      return 'special_rules is longer than 2000 characters; ask the owner what to shorten';
     case 'IMPORT_SPEC_INVALID':
-      return 'the spec is malformed: it needs a name and roles (ids, or {"custom": {name, team, ability, glyph, reminders}})';
+      return 'the spec is malformed: it needs a name and roles (ids, or {"custom": {name, team, ability, glyph, reminders}}); author and special_rules are strings or null';
     default:
       return code;
   }
