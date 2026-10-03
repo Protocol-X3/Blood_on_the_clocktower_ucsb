@@ -28,7 +28,10 @@ const FILTERS = [
   { key: 'homebrew', label: EDITION_LABEL.homebrew },
 ] as const;
 
-/** Create (`/scripts/new`) or edit (`/scripts/:id/edit`) a script (SCRIPT-01..04). */
+/** SCRIPT-08: the database's limit for 特殊规则. */
+const RULES_MAX = 2000;
+
+/** Create (`/scripts/new`) or edit (`/scripts/:id/edit`) a script (SCRIPT-01..04, SCRIPT-08). */
 export function ScriptEditorPage() {
   const { profile } = useAuth();
   if (!profile || profile.permission === 'player' || profile.is_guest) {
@@ -43,6 +46,7 @@ function Editor() {
   const [library, setLibrary] = useState<Role[] | null>(null);
   const [name, setName] = useState('');
   const [author, setAuthor] = useState('');
+  const [rules, setRules] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['key']>('tb');
   const [query, setQuery] = useState('');
@@ -57,9 +61,10 @@ function Editor() {
     ]).then(([roles, script]) => {
       setLibrary(roles.data ?? []);
       if (script.data) {
-        const s = script.data as { name: string; author: string | null; script_roles: { role_id: string; position: number }[] };
+        const s = script.data as { name: string; author: string | null; special_rules: string | null; script_roles: { role_id: string; position: number }[] };
         setName(s.name);
         setAuthor(s.author ?? '');
+        setRules(s.special_rules ?? '');
         setSelected([...s.script_roles].sort((a, b) => a.position - b.position).map((r) => r.role_id));
       }
     });
@@ -88,6 +93,7 @@ function Editor() {
       p_name: name,
       p_author: author,
       p_roles: selected,
+      p_special_rules: rules,
     });
     setSaving(false);
     if (saveError) setError(errorMessage(saveError));
@@ -109,6 +115,23 @@ function Editor() {
             <Panel className="flex flex-col gap-3">
               <TextField label="剧本名称" value={name} onChange={(e) => setName(e.target.value)} maxLength={30} placeholder="例如：暗流涌动" />
               <TextField label="作者（可选）" value={author} onChange={(e) => setAuthor(e.target.value)} maxLength={30} />
+              {/* SCRIPT-08: shown on the script's page in 剧本库; nothing in a game reads it. */}
+              <label className="flex flex-col gap-1.5 text-sm text-ink-muted">
+                <span className="flex items-baseline justify-between gap-2">
+                  特殊规则（可选）
+                  <span className="text-xs text-ink-faint" aria-hidden="true">
+                    {rules.length} / {RULES_MAX}
+                  </span>
+                </span>
+                <textarea
+                  value={rules}
+                  onChange={(e) => setRules(e.target.value)}
+                  maxLength={RULES_MAX}
+                  rows={4}
+                  placeholder="这个剧本附带的额外规则，会显示在剧本库中"
+                  className="rounded-xl border border-line bg-surface-2 px-4 py-3 text-ink placeholder:text-ink-faint/70 focus:border-gold focus:outline-none"
+                />
+              </label>
             </Panel>
             <Panel aria-label="已选角色">
               <h2 className="font-serif text-lg font-bold tracking-wider text-gold-strong">已选角色 · {selected.length}</h2>

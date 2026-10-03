@@ -35,8 +35,9 @@ scripts; it can't touch anything else.
 - `node tools/save-script.ts <spec.json> [--dry-run]` — sends the spec to the database's
   `import_script`, which creates the new 自制角色 and saves the script in one transaction, as the
   admin, through the app's own RPCs (`create_custom_role`, `save_script`), then returns every role
-  as saved. It refuses a script name that already exists (unless `"replace": true`) and a
-  自制角色 whose name is already taken. `--dry-run` does all of it and rolls back.
+  as saved, plus the script's 特殊规则. It refuses a script name that already exists (unless
+  `"replace": true`) and a 自制角色 whose name is already taken. `--dry-run` does all of it and
+  rolls back.
 
 Put working files (transcription, spec) in the session's scratchpad, not in the repo.
 
@@ -52,6 +53,11 @@ Put working files (transcription, spec) in the session's scratchpad, not in the 
 - **Left out** (the app has no place for them; list them in your summary): 传奇角色 (Fabled),
   旅行者 (Travellers), 相克规则 (jinx notes), the night-order sidebars, "支持7-15人" and the
   glossary (疯狂, 中毒/醉酒 …).
+- **特殊规则** (SCRIPT-08): rules the sheet adds for this script, usually in a box titled
+  特殊规则 (or 剧本规则 / 额外规则). Transcribe them verbatim into `special_rules`, one rule per
+  line, at most 2000 characters; `null` if the sheet has none. The app only shows them in 剧本库;
+  nothing in a game reads them. If you can't tell whether a box is a 特殊规则 (rather than a
+  jinx, a night-order note or the glossary), ask.
 - If any text is unreadable or ambiguous, ask for a clearer photo. Don't guess a word.
 
 Write the transcription as JSON: `[["townsfolk", "钟表匠", "在你的首个夜晚，…"], …]`.
@@ -110,30 +116,33 @@ For each `≠`, decide whether the ability **means** the same thing:
 Summarize for the owner before saving:
 
 - name, author, role counts per team, and that the order follows the sheet;
+- the 特殊规则 as you'll save them (or "none");
 - a table of every `≠` role: the difference and your verdict (and why);
 - the new 自制角色 (name, team, ability, glyph, tokens) and any official role to add;
 - what's left out (Fabled, Travellers, 相克规则 …);
-- **if the script name already exists**: what differs from the saved script, and ask whether to
-  replace it (`"replace": true`), save under a new name, or stop.
+- **if the script name already exists**: what differs from the saved script (特殊规则 included),
+  and ask whether to replace it (`"replace": true`), save under a new name, or stop. Replacing
+  overwrites everything, 特殊规则 too, so the spec must carry the ones to keep.
 
 Then ask for approval (e.g. "Save it" / "Change something first").
 
 ## 6. Save and verify
 
-Write the spec (library ids, and `{"custom": {…}}` objects for new 自制角色, in script order):
+Write the spec (library ids, and `{"custom": {…}}` objects for new 自制角色, in script order;
+`special_rules` is a string with `\n` between rules, or `null`):
 
 ```json
-{ "name": "钟声来了", "author": "Bruce C.", "roles": [
+{ "name": "钟声来了", "author": "Bruce C.", "special_rules": null, "roles": [
   "clockmaker", "chambermaid",
   { "custom": { "name": "卡牌大师", "team": "townsfolk", "ability": "每个夜晚，…", "glyph": "牌", "reminders": [] } },
   "monk" ] }
 ```
 
 1. `node tools/save-script.ts spec.json --dry-run` and check the readback: every role, in order,
-   on the right team, count matching the sheet.
+   on the right team, count matching the sheet, and the 特殊规则 as on the sheet.
 2. Run it again without `--dry-run`.
-3. Tell the owner it's saved: name, author, role count, new 自制角色, what was left out, and that
-   it's in 剧本库 (home page → 剧本库, or `/scripts`).
+3. Tell the owner it's saved: name, author, role count, new 自制角色, 特殊规则 (if any), what was
+   left out, and that it's in 剧本库 (home page → 剧本库, or `/scripts`).
 
 ## Record
 

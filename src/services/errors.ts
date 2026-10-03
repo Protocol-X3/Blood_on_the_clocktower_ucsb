@@ -25,6 +25,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   ROLE_INVALID: '角色需要名称（最多 20 字）、阵营和能力描述（最多 300 字），图标为 1 个字',
   ROLE_NOT_FOUND: '角色不存在',
   SCRIPT_NAME_INVALID: '剧本名称需为 1–30 个字，作者最多 30 字',
+  SCRIPT_RULES_TOO_LONG: '特殊规则最多 2000 字',
   SCRIPT_EMPTY: '剧本至少需要一个角色',
   SCRIPT_DUPLICATE_ROLE: '同一个角色不能重复加入剧本',
   SCRIPT_NOT_FOUND: '剧本不存在',
