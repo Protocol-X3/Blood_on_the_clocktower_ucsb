@@ -13,6 +13,7 @@ Status: **Approved** by the owner, 2026-09-27.
 - **AUTH-07** Every page except `/login` needs a signed-in user. Visitors who aren't signed in are sent to `/login` and brought back afterwards. · *E2E*
 - **AUTH-08** A session survives page reloads and the phone locking. Players don't have to sign in again during a game night. · *E2E*
 - **AUTH-09** A signed-in user, Google or guest, can change their own nickname at any time on their 个人主页, under the same rules as AUTH-03 (their own current name, even in another letter case, doesn't count as taken). The new name shows everywhere at once, including in rooms and past games, and the old name becomes free. *Added 2026-09-28.* · *pgTAP, E2E*
+- **AUTH-10** Accounts nobody can use any more are removed automatically, once a day: (a) a guest with no sign-in session left (signing out ends a guest's only session, AUTH-06), once the account is an hour old; (b) a guest whose session has been idle for 30 days; (c) any account, guest or Google, that still has no nickname a day after it was created. Never removed: anyone who has a seat in any game or ran one (so history and stats keep their names), members of an open room, bots, and DM-eligible or admin accounts. Nobody can run the cleanup by hand. *Added 2026-10-03.* · *pgTAP*
 
 ## PERM · Permission levels
 
