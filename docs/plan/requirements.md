@@ -107,6 +107,7 @@ The DM picks the winning team. Everyone sees the **summary page**: actual and sh
 
 - **Google sign-in** (Supabase Auth). Each profile has a unique nickname shown in the app.
 - **Guest login (游客登录):** guests sign in themselves on their own phone with just a nickname, using Supabase anonymous sign-in. They get the full player experience, but their games are excluded from stats. A guest can later upgrade to Google sign-in and keep their history.
+- **Account cleanup (AUTH-10):** a daily database job removes guest accounts that can't be reached any more (signed out, or idle for 30 days) and accounts that never got a nickname. Anyone who has played or run a game is kept. *Added 2026-10-03.*
 - Every game is stored. Store each player's **final** alignment, since alignment can change mid-game.
 - v1 stats: overall win rate, win rate by team (good/evil), games played, most-played roles, and games run as DM. More will be added later.
 
