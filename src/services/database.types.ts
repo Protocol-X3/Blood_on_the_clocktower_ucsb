@@ -662,6 +662,9 @@ isOneToOne: false
 "rename_log_note":
 { Args: { "p_label": string,"p_note": string }; Returns: undefined
                            },
+"retreat_phase":
+{ Args: { "p_game": string }; Returns: undefined
+                           },
 "revive_seat":
 { Args: { "p_game": string,"p_seat": number }; Returns: undefined
                            },
@@ -729,6 +732,9 @@ isOneToOne: false
                            },
 "unassign_seat":
 { Args: { "p_game": string,"p_seat": number }; Returns: undefined
+                           },
+"undo_day_result":
+{ Args: { "p_game": string }; Returns: undefined
                            },
 "update_setup":
 { Args: { "p_game": string,"p_mode": Database["public"]['Enums']["assignment_mode"],"p_script": string }; Returns: undefined

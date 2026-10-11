@@ -9,8 +9,9 @@ Status: **Approved** by the owner, 2026-09-27.
 - **PHASE-01** A game starts at 第1夜. Each advance goes from night N to day N, then from day N to night N+1. · *Unit, pgTAP*
 - **PHASE-02** Only the DM can advance the phase, and everyone sees the new phase. · *pgTAP, E2E*
 - **PHASE-03** Player screens use the night theme during nights and the day theme during days. · *E2E*
-- **PHASE-04** Phases only move forward; there's no undo. *Decided (2026-09-27): there's no undo button. Mistakes are fixed with the DM's other actions, such as reviving a player.* · *pgTAP*
+- **PHASE-04** The phase moves one step at a time: forward (PHASE-01) or back (PHASE-06). Nothing sets it directly to an arbitrary phase. *Changed (2026-10-11): the owner added a way back (PHASE-06) after an accidental advance left a day with no way to hold its nominations. Before that (decided 2026-09-27) phases only moved forward and mistakes were fixed with the DM's other actions.* · *Unit, pgTAP*
 - **PHASE-05** Nominations and votes only happen during days. · *pgTAP*
+- **PHASE-06** The DM can step the phase back one step: from day N to night N, and from night N to day N−1. The button **返回上一夜** / **返回上一天** sits to the left of 进入第N天/夜. Only the phase moves: deaths, revives, nominations, votes, day results, board posts, ghost votes and the DM log stay exactly as recorded. It can't go back before 第1夜 (the button isn't shown there), and not while a nomination is open. Everyone sees the phase it went back to, and a day returned to can hold nominations unless that day was already concluded. *Added 2026-10-11.* · *Unit, pgTAP, Integration, E2E*
 
 ## DEATH · Deaths, revives and ghost votes
 
@@ -42,6 +43,7 @@ Status: **Approved** by the owner, 2026-09-27.
 - **VOTE-12** If the DM's device disconnects or sleeps mid-circle, the circle pauses and resumes from the same seat. · *Integration, E2E*
 - **VOTE-13** When the circle completes, everyone sees the final count, the threshold and who is on the block. · *E2E*
 - **VOTE-14** At the end of the day, the DM confirms the execution of the player on the block, which marks them dead with cause 处决, or confirms 无人处决 (no execution). · *pgTAP, E2E*
+- **VOTE-15** During a day that has a result, the DM can undo it with **撤销处决** (or **撤销结果** after 无人处决), after a confirmation. The day is open again: more nominations can be held and the DM concludes it anew. An execution undone never happened: the executed player is alive again and that death is removed from the record instead of being kept as a revival (a player the DM already revived stays alive; one who has died again since stays dead). The day's nominations and their vote counts stay. It works only during that day, so after moving on the DM first steps back to it (PHASE-06). *Added 2026-10-11.* · *pgTAP, Integration, E2E*
 
 ## BOARD · Public board (公告板)
 

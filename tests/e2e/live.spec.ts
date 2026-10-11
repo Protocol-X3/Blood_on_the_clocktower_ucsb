@@ -345,3 +345,92 @@ test('END-05: the DM discards the game: everyone is back in the lobby, and it ne
   await expect(phone.getByTestId('history-row')).toHaveCount(before.history);
   await closeAll(t);
 });
+
+test('PHASE-06: the DM steps back after advancing by mistake; only the phase moves', async ({ page, browser, users }) => {
+  const t = await liveGame(users, browser);
+  const phone = t.phones[0]!;
+  await signIn(page, t.dm);
+  await page.goto(`/room/${t.code}`);
+  const status = page.getByRole('region', { name: '对局状态' });
+  const title = page.getByTestId('phase-title');
+
+  // Nothing before 第1夜.
+  await expect(status.getByRole('button', { name: '进入第1天' })).toBeVisible();
+  await expect(status.getByRole('button', { name: /^返回上一/ })).toHaveCount(0);
+
+  // Day 1, then on to night 2 by mistake, before any nomination; a death is recorded that night.
+  await status.getByRole('button', { name: '进入第1天' }).click();
+  await expect(status.getByRole('button', { name: '返回上一夜' })).toBeVisible();
+  await status.getByRole('button', { name: '进入第2夜' }).click();
+  await expect(title).toHaveText('第2夜');
+  await rpc(t.dmc, 'kill_seat', { p_game: t.gameId, p_seat: 5, p_cause: 'night' });
+  await expect(phone.getByTestId('town-seat-5')).toContainText('夜间死亡');
+
+  // 返回上一天 sits to the left of 进入第2天.
+  const back = status.getByRole('button', { name: '返回上一天' });
+  const forward = status.getByRole('button', { name: '进入第2天' });
+  expect((await back.boundingBox())!.x).toBeLessThan((await forward.boundingBox())!.x);
+  await back.click();
+
+  // Back in day 1 for everyone: the day theme, and the nomination that was missed can be held.
+  await expect(title).toHaveText('第1天');
+  await expect(phone.getByTestId('game-theme')).toHaveAttribute('data-theme', 'day');
+  await expect(status.getByRole('button', { name: '进入第2夜' })).toBeVisible();
+  expect((await t.dmc.rpc('open_nomination', { p_game: t.gameId, p_nominator: 1, p_nominee: 2 })).error).toBeNull();
+  // The phase can't move either way during a nomination.
+  await expect(status.getByRole('button', { name: '返回上一夜' })).toBeDisabled();
+
+  // The death recorded in night 2 was not undone.
+  await expect(phone.getByTestId('town-seat-5')).toContainText('夜间死亡');
+  const { data: deaths } = await t.dmc.from('game_deaths').select('seat, phase_kind, phase_number').eq('game_id', t.gameId);
+  expect(deaths).toEqual([{ seat: 5, phase_kind: 'night', phase_number: 2 }]);
+  await closeAll(t);
+});
+
+test('VOTE-15 · PHASE-06: the DM undoes a mistaken execution after moving on to the night, and executes someone else', async ({ page, browser, users }) => {
+  const t = await liveGame(users, browser);
+  const phone = t.phones[0]!;
+  // Day 1: seat 2 is voted onto the block (3 of 5), executed, and the DM moves on to night 2.
+  const hold = async (nominator: number, nominee: number, voters: number[]) => {
+    const { data: nom } = await t.dmc.rpc('open_nomination', { p_game: t.gameId, p_nominator: nominator, p_nominee: nominee });
+    for (const seat of voters) await rpc(t.clients[seat - 1]!, 'set_hand', { p_nomination: nom!, p_raised: true });
+    await rpc(t.dmc, 'start_vote', { p_nomination: nom! });
+    for (let i = 0; i < 5; i += 1) await rpc(t.dmc, 'advance_vote', { p_nomination: nom!, p_expected: i });
+    await rpc(t.dmc, 'close_vote', { p_nomination: nom! });
+  };
+  await rpc(t.dmc, 'advance_phase', { p_game: t.gameId });
+  await hold(1, 2, [1, 3, 4]);
+  await rpc(t.dmc, 'conclude_day', { p_game: t.gameId, p_execute: true });
+  await rpc(t.dmc, 'advance_phase', { p_game: t.gameId });
+  await expect(phone.getByTestId('town-seat-2')).toContainText('处决');
+
+  await signIn(page, t.dm);
+  await page.goto(`/room/${t.code}`);
+  const status = page.getByRole('region', { name: '对局状态' });
+  await status.getByRole('button', { name: '返回上一天' }).click();
+  await page.getByRole('tab', { name: '提名' }).click();
+  const today = page.getByRole('region', { name: '今日提名' });
+  await expect(today).toContainText('今日处决：2号');
+
+  // 撤销处决 asks first, then reopens the day and brings seat 2 back.
+  await today.getByRole('button', { name: '撤销处决' }).click();
+  const dialog = page.getByRole('dialog', { name: '撤销处决' });
+  await expect(dialog).toContainText('2号');
+  await dialog.getByRole('button', { name: '确认撤销处决' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(today).not.toContainText('今日处决');
+  await expect(today).toContainText('上处决台：2号');
+  await expect(page.getByRole('region', { name: '发起提名' })).toBeVisible();
+  await expect(phone.getByTestId('town-seat-2')).toContainText('存活');
+  const { data: deaths } = await t.dmc.from('game_deaths').select('seat').eq('game_id', t.gameId);
+  expect(deaths).toEqual([]);
+
+  // A new nomination outvotes the first, and that player is executed instead.
+  await hold(3, 5, [1, 2, 3, 4]);
+  await expect(today).toContainText('上处决台：5号');
+  await today.getByRole('button', { name: '处决 5号' }).click();
+  await expect(today).toContainText('今日处决：5号');
+  await expect(phone.getByTestId('town-seat-5')).toContainText('处决');
+  await expect(phone.getByTestId('town-seat-2')).toContainText('存活');
+  await closeAll(t);
+});

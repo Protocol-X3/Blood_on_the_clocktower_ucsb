@@ -3,7 +3,7 @@
 // succeed, or refuse with a given error code. The model applies the action only
 // when it succeeds. It checks in the same order as the database functions, so
 // the expected error code is exact.
-import { nextPhase, type Phase } from '../../src/lib/game/phase.ts';
+import { nextPhase, prevPhase, type Phase } from '../../src/lib/game/phase.ts';
 import { canRaiseHand, circleOrder, onTheBlock, voteThreshold } from '../../src/lib/game/vote.ts';
 
 export type DeathCause = 'executed' | 'night' | 'other';
@@ -66,6 +66,14 @@ export interface ModelSeatRole {
   alignment: 'good' | 'evil';
 }
 
+export interface ModelDeath {
+  seat: number;
+  cause: DeathCause;
+  kind: Phase['kind'];
+  number: number;
+  revived: boolean;
+}
+
 export type Outcome = { ok: true; value?: unknown } | { ok: false; code: string };
 
 const ok = (value?: unknown): Outcome => ({ ok: true, value });
@@ -79,6 +87,8 @@ export class GameModel {
   nominations: ModelNomination[] = [];
   /** day → executed seat (null: 无人处决). */
   dayResults = new Map<number, number | null>();
+  /** Every death on record, oldest first (END-03). */
+  deaths: ModelDeath[] = [];
   posts: ModelPost[] = [];
   speed = 1500;
   // M4 · the grimoire
@@ -124,6 +134,7 @@ export class GameModel {
 
   private kill(seat: number, cause: DeathCause) {
     Object.assign(this.seats[seat - 1]!, { alive: false, cause });
+    this.deaths.push({ seat, cause, kind: this.phase.kind, number: this.phase.number, revived: false });
   }
 
   // PHASE-01 / PHASE-04
@@ -131,6 +142,15 @@ export class GameModel {
     const refused = this.running() ?? (this.openNomination ? fail('NOMINATION_OPEN') : null);
     if (refused) return refused;
     this.phase = nextPhase(this.phase);
+    return ok();
+  }
+
+  // PHASE-06: only the phase moves back; everything recorded stays.
+  retreatPhase(): Outcome {
+    const previous = prevPhase(this.phase);
+    const refused = this.running() ?? (this.openNomination ? fail('NOMINATION_OPEN') : previous ? null : fail('PHASE_FIRST'));
+    if (refused) return refused;
+    this.phase = previous!;
     return ok();
   }
 
@@ -154,6 +174,8 @@ export class GameModel {
     if (!s) return fail('SEAT_INVALID');
     if (s.alive) return fail('NOT_DEAD');
     Object.assign(s, { alive: true, cause: null });
+    const last = this.deaths.filter((d) => d.seat === seat).at(-1);
+    if (last) last.revived = true;
     return ok();
   }
 
@@ -334,6 +356,24 @@ export class GameModel {
     }
     this.dayResults.set(this.phase.number, target);
     return ok(target);
+  }
+
+  // VOTE-15: the day reopens; an execution undone never happened.
+  undoDayResult(): Outcome {
+    const refused = this.running();
+    if (refused) return refused;
+    if (this.phase.kind !== 'day') return fail('NOT_DAY');
+    const day = this.phase.number;
+    if (!this.dayResults.has(day)) return fail('DAY_NOT_OVER');
+    const target = this.dayResults.get(day) ?? null;
+    if (target !== null) {
+      const execution = (d: ModelDeath) => d.seat === target && d.cause === 'executed' && d.kind === 'day' && d.number === day;
+      const last = this.deaths.filter((d) => d.seat === target).at(-1);
+      if (last && execution(last) && !last.revived) Object.assign(this.seats[target - 1]!, { alive: true, cause: null });
+      this.deaths = this.deaths.filter((d) => !execution(d));
+    }
+    this.dayResults.delete(day);
+    return ok();
   }
 
   // BOARD-01 (seat null: the DM)
