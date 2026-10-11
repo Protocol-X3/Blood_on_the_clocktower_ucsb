@@ -1,6 +1,6 @@
 -- M3 permission matrix: every M3 action × every kind of user × five game states.
 -- Each call runs as that user and is rolled back, so they don't affect each other.
-select plan(665);
+select plan(700);
 
 create temp table u as
 select tests.create_user('admin') as admin,
@@ -71,7 +71,9 @@ insert into calls values
   (17, 'close_vote (not yet counted)', 'select close_vote(%n)', '{}', '{}', '{}', '{}', '{}'),
   (18, 'discard_game', 'select discard_game(%g)', '{dm}', '{dm}', '{dm}', '{dm}', '{}'),
   -- PHASE-06: the "night" state is 第1夜, which has nothing before it.
-  (19, 'retreat_phase', 'select retreat_phase(%g)', '{}', '{dm}', '{}', '{}', '{}');
+  (19, 'retreat_phase', 'select retreat_phase(%g)', '{}', '{dm}', '{}', '{}', '{}'),
+  -- VOTE-15: none of these states has a day result to undo, so everyone is refused.
+  (20, 'undo_day_result', 'select undo_day_result(%g)', '{}', '{}', '{}', '{}', '{}');
 
 create temp table outcomes (state text, state_ord int, call_ord int, actor_ord int, call text, actor text, expected text, actual text);
 

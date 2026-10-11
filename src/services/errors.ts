@@ -65,6 +65,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   INVALID: '操作无效',
   NOT_DAY: '只有白天可以提名和投票',
   DAY_OVER: '今天已经结束处决，不能再提名',
+  DAY_NOT_OVER: '今天还没有处决结果，无需撤销',
   NOMINATION_NOT_FOUND: '提名不存在',
   VOTE_STARTED: '计票已经开始',
   NO_OPEN_VOTE: '当前没有进行中的投票',

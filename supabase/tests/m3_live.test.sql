@@ -211,6 +211,29 @@ select is((select executed_seat from day_results where game_id = (select id from
 select is(tests.try_as((select dm from u), format('select open_nomination(%L, 1, 2)', (select id from g))), 'DAY_OVER', 'VOTE-14: after the execution, the day has no more nominations');
 select is(tests.try_as((select dm from u), format('select conclude_day(%L, false)', (select id from g))), 'DAY_OVER', 'VOTE-14: a day is concluded once');
 
+-- VOTE-15: the DM undoes the day's result. The owner's flow: on to the night by mistake, back to the day, undo.
+select is(tests.try_as((select p1 from u), format('select undo_day_result(%L)', (select id from g))), 'NOT_DM', 'VOTE-15: only the DM undoes a day''s result');
+select pg_temp.as_dm(format('select advance_phase(%L)', (select id from g)));
+select is(tests.try_as((select dm from u), format('select undo_day_result(%L)', (select id from g))), 'NOT_DAY', 'VOTE-15: a result is undone during its own day, not at night');
+select pg_temp.as_dm(format('select retreat_phase(%L)', (select id from g)));
+select pg_temp.as_dm(format('select undo_day_result(%L)', (select id from g)));
+select is(array[(pg_temp.seat(4)).alive::text, coalesce((pg_temp.seat(4)).death_cause::text, 'none')], array['true', 'none'], 'PHASE-06 · VOTE-15: back in the day, undoing the execution brings the player back to life');
+select is((select count(*)::int from day_results where game_id = (select id from g) and day_number = 2), 0, 'VOTE-15: the day has no result any more');
+select is((select count(*)::int from game_deaths where game_id = (select id from g) and seat = 4 and cause = 'executed'), 0, 'VOTE-15: the execution leaves the death record instead of staying as a revival');
+select is(array[(pg_temp.nom()).status::text, (pg_temp.nom()).vote_count::text], array['closed', '3'], 'VOTE-15: the day''s nominations and their counts stay');
+select is(tests.try_as((select dm from u), format('select open_nomination(%L, 1, 2)', (select id from g))), 'allow', 'VOTE-15: the day is open for nominations again');
+select is(tests.try_as((select dm from u), format('select undo_day_result(%L)', (select id from g))), 'DAY_NOT_OVER', 'VOTE-15: a day without a result has nothing to undo');
+select pg_temp.as_dm(format('select conclude_day(%L, false)', (select id from g)));
+select pg_temp.as_dm(format('select undo_day_result(%L)', (select id from g)));
+select is((select count(*)::int from day_results where game_id = (select id from g) and day_number = 2), 0, 'VOTE-15: 无人处决 can be undone too');
+select pg_temp.as_dm(format('select conclude_day(%L, true)', (select id from g)));
+select pg_temp.as_dm(format('select revive_seat(%L, 4)', (select id from g)));
+select pg_temp.as_dm(format('select undo_day_result(%L)', (select id from g)));
+select is(array[(pg_temp.seat(4)).alive::text, (select count(*)::text from game_deaths where game_id = (select id from g) and seat = 4)], array['true', '0'],
+  'VOTE-15: a player the DM had already revived stays alive, and the execution still leaves the record');
+select pg_temp.as_dm(format('select conclude_day(%L, true)', (select id from g)));
+select is(array[(pg_temp.seat(4)).alive::text, (pg_temp.seat(4)).death_cause::text], array['false', 'executed'], 'VOTE-14 · VOTE-15: after an undo, the DM concludes the day again');
+
 -- A tie: day 3, nominees 1 and 2 with one vote each → nobody.
 select pg_temp.as_dm(format('select advance_phase(%L)', (select id from g)));
 select pg_temp.as_dm(format('select advance_phase(%L)', (select id from g)));

@@ -127,7 +127,7 @@ async function act(sim: Sim, label: string, expected: Outcome, call: PromiseLike
 
 /** The database state, in the model's shape, plus invariants that hold whatever the model says. */
 async function compare(sim: Sim) {
-  const [game, seats, noms, votes, results, posts, roles, tokens, cells, notes, rowMarks] = await Promise.all([
+  const [game, seats, noms, votes, results, posts, roles, tokens, cells, notes, rowMarks, deaths] = await Promise.all([
     sim.dm.from('games').select('status, phase_kind, phase_number, winner, vote_speed_ms').eq('id', sim.gameId).single(),
     sim.dm.from('game_seats').select('seat, alive, ghost_vote_used, death_cause').eq('game_id', sim.gameId).order('seat'),
     sim.dm.from('nominations').select('*').eq('game_id', sim.gameId).order('created_at'),
@@ -139,6 +139,7 @@ async function compare(sim: Sim) {
     sim.dm.from('dm_log_cells').select('seat, note_id, column_kind, phase_number, body, mark').eq('game_id', sim.gameId),
     sim.dm.from('dm_log_notes').select('id, label').eq('game_id', sim.gameId).order('position'),
     sim.dm.from('dm_log_row_marks').select('seat, mark').eq('game_id', sim.gameId).order('seat'),
+    sim.dm.from('game_deaths').select('seat, cause, phase_kind, phase_number, revived').eq('game_id', sim.gameId).order('id'),
   ]);
   const byToken = (a: { seat: number; label: string }, b: { seat: number; label: string }) => a.seat - b.seat || a.label.localeCompare(b.label);
   const m = sim.model;
@@ -174,6 +175,7 @@ async function compare(sim: Sim) {
           })),
       })),
       dayResults: Object.fromEntries(results.data!.map((d) => [d.day_number, d.executed_seat])),
+      deaths: deaths.data!.map((d) => ({ seat: d.seat, cause: d.cause, kind: d.phase_kind, number: d.phase_number, revived: d.revived })),
       posts: posts.data!.length,
       seatRoles: roles.data!.map((r) => ({ actual: r.actual_role_id, shown: r.shown_role_id, alignment: r.alignment })),
       tokens: tokens.data!.map((t) => ({ seat: t.seat, label: t.label })).sort(byToken),
@@ -192,6 +194,7 @@ async function compare(sim: Sim) {
     seats: m.seats,
     nominations: m.nominations,
     dayResults: Object.fromEntries(m.dayResults),
+    deaths: m.deaths,
     posts: m.posts.length,
     seatRoles: m.seatRoles,
     tokens: [...m.tokens].sort(byToken),
@@ -301,7 +304,7 @@ async function other(sim: Sim, r: Rng, seat: () => number, open: ModelNomination
   const choice = r.pick(
     m.phase.kind === 'day'
       ? m.nominations.some((n) => n.day === m.phase.number && n.status === 'closed') && !m.dayResults.has(m.phase.number)
-        ? ['conclude', 'conclude', 'conclude', 'conclude', 'nominate', 'nominate', 'phase', 'back', 'kill', 'post', 'lateHand']
+        ? ['conclude', 'conclude', 'conclude', 'conclude', 'nominate', 'nominate', 'phase', 'back', 'undo', 'kill', 'post', 'lateHand']
         : [
             'nominate',
             'nominate',
@@ -310,6 +313,8 @@ async function other(sim: Sim, r: Rng, seat: () => number, open: ModelNomination
             'conclude',
             'phase',
             'back',
+            'undo',
+            'undo',
             'kill',
             'revive',
             'ghost',
@@ -321,7 +326,7 @@ async function other(sim: Sim, r: Rng, seat: () => number, open: ModelNomination
             'lateHand',
             ...GRIMOIRE,
           ]
-      : ['phase', 'phase', 'phase', 'back', 'kill', 'kill', 'revive', 'ghost', 'post', 'delete', 'nominate', 'speed', ...GRIMOIRE, ...GRIMOIRE],
+      : ['phase', 'phase', 'phase', 'back', 'undo', 'kill', 'kill', 'revive', 'ghost', 'post', 'delete', 'nominate', 'speed', ...GRIMOIRE, ...GRIMOIRE],
   );
   switch (choice) {
     case 'token': {
@@ -421,6 +426,9 @@ async function other(sim: Sim, r: Rng, seat: () => number, open: ModelNomination
     }
     case 'phase':
       await act(sim, 'phase', m.advancePhase(), dm.rpc('advance_phase', { p_game: g }));
+      return;
+    case 'undo':
+      await act(sim, 'undo', m.undoDayResult(), dm.rpc('undo_day_result', { p_game: g }));
       return;
     case 'back':
       await act(sim, 'back', m.retreatPhase(), dm.rpc('retreat_phase', { p_game: g }));
@@ -530,7 +538,7 @@ async function play(table: Table, index: number) {
 }
 
 describe('M3 simulation', () => {
-  it(`M3.3 · PHASE-01 · PHASE-04 · PHASE-06 · DEATH-04 · VOTE-04 · VOTE-07 · VOTE-08 · VOTE-11: ${GAMES} random games through the real RPCs match the reference model (seed ${SEED})`, async () => {
+  it(`M3.3 · PHASE-01 · PHASE-04 · PHASE-06 · DEATH-04 · VOTE-15 · VOTE-04 · VOTE-07 · VOTE-08 · VOTE-11: ${GAMES} random games through the real RPCs match the reference model (seed ${SEED})`, async () => {
     const dmUser = await poolUser('sim-dm', { level: 'dm_eligible' });
     const playerUsers = await Promise.all(Array.from({ length: MAX_PLAYERS }, (_, i) => poolUser(`sim-${i}`)));
     const dm = await clientFor(dmUser);

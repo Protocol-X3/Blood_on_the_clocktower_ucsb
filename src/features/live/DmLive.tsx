@@ -202,6 +202,7 @@ function NominationPanel({ game, data, names, act, speed }: { game: Game; data: 
   const seatNos = data.seats.map((s) => s.seat);
   const [nominator, setNominator] = useState<number>(seatNos[0] ?? 1);
   const [nominee, setNominee] = useState<number>(seatNos[1] ?? 1);
+  const [undoing, setUndoing] = useState(false);
   const nominatorAlive = data.seats.find((s) => s.seat === nominator)?.alive ?? true;
   const warnings = nominationWarnings(
     today.map((n) => ({
@@ -346,9 +347,15 @@ function NominationPanel({ game, data, names, act, speed }: { game: Game; data: 
           ))}
         </ol>
         {result ? (
-          <p role="status" className="mt-1 text-sm font-medium">
-            {result.executed_seat ? `今日处决：${result.executed_seat}号 ${names.get(result.executed_seat)}` : '今日无人处决'}
-          </p>
+          <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+            <p role="status" className="text-sm font-medium">
+              {result.executed_seat ? `今日处决：${result.executed_seat}号 ${names.get(result.executed_seat)}` : '今日无人处决'}
+            </p>
+            {/* VOTE-15 */}
+            <Button variant="outline" onClick={() => setUndoing(true)}>
+              {result.executed_seat ? '撤销处决' : '撤销结果'}
+            </Button>
+          </div>
         ) : !nom ? (
           <div className="mt-2 flex flex-col gap-2 border-t border-line pt-3">
             <p className="text-sm" role="status">
@@ -389,6 +396,27 @@ function NominationPanel({ game, data, names, act, speed }: { game: Game; data: 
           </div>
         ) : null}
       </Panel>
+      {undoing && result ? (
+        <Dialog
+          open
+          onOpenChange={(o) => !o && setUndoing(false)}
+          title={result.executed_seat ? '撤销处决' : '撤销结果'}
+          description={
+            result.executed_seat
+              ? `${result.executed_seat}号 ${names.get(result.executed_seat) ?? ''} 的处决会被取消并复活，今天重新开放，可以继续提名并再次决定处决。已有提名的票数保留。`
+              : '“今日无人处决”会被取消，今天重新开放，可以继续提名并再次决定处决。已有提名的票数保留。'
+          }
+        >
+          <div className="flex flex-col gap-3">
+            <Button variant="danger" onClick={() => act(() => supabase.rpc('undo_day_result', { p_game: game.id }), () => setUndoing(false))}>
+              {result.executed_seat ? '确认撤销处决' : '确认撤销结果'}
+            </Button>
+            <Button variant="ghost" onClick={() => setUndoing(false)}>
+              返回
+            </Button>
+          </div>
+        </Dialog>
+      ) : null}
     </div>
   );
 }

@@ -43,6 +43,7 @@ Status: **Approved** by the owner, 2026-09-27.
 - **VOTE-12** If the DM's device disconnects or sleeps mid-circle, the circle pauses and resumes from the same seat. · *Integration, E2E*
 - **VOTE-13** When the circle completes, everyone sees the final count, the threshold and who is on the block. · *E2E*
 - **VOTE-14** At the end of the day, the DM confirms the execution of the player on the block, which marks them dead with cause 处决, or confirms 无人处决 (no execution). · *pgTAP, E2E*
+- **VOTE-15** During a day that has a result, the DM can undo it with **撤销处决** (or **撤销结果** after 无人处决), after a confirmation. The day is open again: more nominations can be held and the DM concludes it anew. An execution undone never happened: the executed player is alive again and that death is removed from the record instead of being kept as a revival (a player the DM already revived stays alive; one who has died again since stays dead). The day's nominations and their vote counts stay. It works only during that day, so after moving on the DM first steps back to it (PHASE-06). *Added 2026-10-11.* · *pgTAP, Integration, E2E*
 
 ## BOARD · Public board (公告板)
 

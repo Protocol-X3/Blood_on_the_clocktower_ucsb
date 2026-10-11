@@ -120,8 +120,9 @@ export function useGameData(gameId: string) {
     for (const [table, key] of Object.entries(TABLE_OF)) {
       channel = channel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `game_id=eq.${gameId}` }, () => reload([key!]));
     }
-    // Realtime can't filter deletes (their payload holds only the key), so listen to all post deletions.
-    for (const [table, key] of [['board_posts', 'posts'], ['grimoire_tokens', 'tokens'], ['dm_log_cells', 'logCells'], ['dm_log_notes', 'logNotes']] as const) {
+    // Realtime can't filter deletes (their payload holds only the key), so listen to all deletions of these.
+    // Day results and deaths are deleted when the DM undoes a day's result (VOTE-15).
+    for (const [table, key] of [['board_posts', 'posts'], ['grimoire_tokens', 'tokens'], ['dm_log_cells', 'logCells'], ['dm_log_notes', 'logNotes'], ['day_results', 'dayResults'], ['game_deaths', 'deaths']] as const) {
       channel = channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table }, () => reload([key]));
     }
     channel.subscribe((status) => {
