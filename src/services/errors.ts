@@ -57,6 +57,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   // M3 · the live game
   NOT_IN_PROGRESS: '对局不在进行中',
   NOMINATION_OPEN: '请先结束当前的提名',
+  PHASE_FIRST: '已经是第1夜，无法再返回',
   CAUSE_REQUIRED: '请选择死亡原因',
   NOTE_TOO_LONG: '说明最多 40 字',
   ALREADY_DEAD: '该玩家已经死亡',

@@ -662,6 +662,9 @@ isOneToOne: false
 "rename_log_note":
 { Args: { "p_label": string,"p_note": string }; Returns: undefined
                            },
+"retreat_phase":
+{ Args: { "p_game": string }; Returns: undefined
+                           },
 "revive_seat":
 { Args: { "p_game": string,"p_seat": number }; Returns: undefined
                            },

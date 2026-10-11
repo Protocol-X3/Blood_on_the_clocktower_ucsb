@@ -65,7 +65,7 @@ The DM has a dedicated step-by-step setup wizard. It opens only once every seat 
 
 ### 3. In progress
 
-- **Phases:** 第1夜 → 第1天 → 第2夜 … The DM advances the phase with one button. Board posts are tagged with the phase; the DM log has a column per phase.
+- **Phases:** 第1夜 → 第1天 → 第2夜 … The DM advances the phase with one button, and can step back one phase with 返回上一天/夜 to undo an accidental advance; stepping back moves only the phase and undoes nothing recorded (PHASE-06, added 2026-10-11). Board posts are tagged with the phase; the DM log has a column per phase.
 - **The DM can at any time:**
   - mark a player dead with a public **cause** (e.g. 处决 executed, 夜间死亡 died at night), or revive them;
   - manage reminder tokens (中毒, 醉酒, custom);

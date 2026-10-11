@@ -3,7 +3,7 @@
 // succeed, or refuse with a given error code. The model applies the action only
 // when it succeeds. It checks in the same order as the database functions, so
 // the expected error code is exact.
-import { nextPhase, type Phase } from '../../src/lib/game/phase.ts';
+import { nextPhase, prevPhase, type Phase } from '../../src/lib/game/phase.ts';
 import { canRaiseHand, circleOrder, onTheBlock, voteThreshold } from '../../src/lib/game/vote.ts';
 
 export type DeathCause = 'executed' | 'night' | 'other';
@@ -131,6 +131,15 @@ export class GameModel {
     const refused = this.running() ?? (this.openNomination ? fail('NOMINATION_OPEN') : null);
     if (refused) return refused;
     this.phase = nextPhase(this.phase);
+    return ok();
+  }
+
+  // PHASE-06: only the phase moves back; everything recorded stays.
+  retreatPhase(): Outcome {
+    const previous = prevPhase(this.phase);
+    const refused = this.running() ?? (this.openNomination ? fail('NOMINATION_OPEN') : previous ? null : fail('PHASE_FIRST'));
+    if (refused) return refused;
+    this.phase = previous!;
     return ok();
   }
 

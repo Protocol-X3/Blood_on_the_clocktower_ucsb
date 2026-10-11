@@ -301,7 +301,7 @@ async function other(sim: Sim, r: Rng, seat: () => number, open: ModelNomination
   const choice = r.pick(
     m.phase.kind === 'day'
       ? m.nominations.some((n) => n.day === m.phase.number && n.status === 'closed') && !m.dayResults.has(m.phase.number)
-        ? ['conclude', 'conclude', 'conclude', 'conclude', 'nominate', 'nominate', 'phase', 'kill', 'post', 'lateHand']
+        ? ['conclude', 'conclude', 'conclude', 'conclude', 'nominate', 'nominate', 'phase', 'back', 'kill', 'post', 'lateHand']
         : [
             'nominate',
             'nominate',
@@ -309,6 +309,7 @@ async function other(sim: Sim, r: Rng, seat: () => number, open: ModelNomination
             'nominate',
             'conclude',
             'phase',
+            'back',
             'kill',
             'revive',
             'ghost',
@@ -320,7 +321,7 @@ async function other(sim: Sim, r: Rng, seat: () => number, open: ModelNomination
             'lateHand',
             ...GRIMOIRE,
           ]
-      : ['phase', 'phase', 'phase', 'kill', 'kill', 'revive', 'ghost', 'post', 'delete', 'nominate', 'speed', ...GRIMOIRE, ...GRIMOIRE],
+      : ['phase', 'phase', 'phase', 'back', 'kill', 'kill', 'revive', 'ghost', 'post', 'delete', 'nominate', 'speed', ...GRIMOIRE, ...GRIMOIRE],
   );
   switch (choice) {
     case 'token': {
@@ -420,6 +421,9 @@ async function other(sim: Sim, r: Rng, seat: () => number, open: ModelNomination
     }
     case 'phase':
       await act(sim, 'phase', m.advancePhase(), dm.rpc('advance_phase', { p_game: g }));
+      return;
+    case 'back':
+      await act(sim, 'back', m.retreatPhase(), dm.rpc('retreat_phase', { p_game: g }));
       return;
     case 'kill': {
       const s = seat();
@@ -526,7 +530,7 @@ async function play(table: Table, index: number) {
 }
 
 describe('M3 simulation', () => {
-  it(`M3.3 · PHASE-01 · PHASE-04 · DEATH-04 · VOTE-04 · VOTE-07 · VOTE-08 · VOTE-11: ${GAMES} random games through the real RPCs match the reference model (seed ${SEED})`, async () => {
+  it(`M3.3 · PHASE-01 · PHASE-04 · PHASE-06 · DEATH-04 · VOTE-04 · VOTE-07 · VOTE-08 · VOTE-11: ${GAMES} random games through the real RPCs match the reference model (seed ${SEED})`, async () => {
     const dmUser = await poolUser('sim-dm', { level: 'dm_eligible' });
     const playerUsers = await Promise.all(Array.from({ length: MAX_PLAYERS }, (_, i) => poolUser(`sim-${i}`)));
     const dm = await clientFor(dmUser);

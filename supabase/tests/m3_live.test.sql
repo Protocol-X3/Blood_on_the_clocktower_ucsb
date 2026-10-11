@@ -76,9 +76,29 @@ select pg_temp.as_dm(format('select advance_phase(%L)', (select id from g)));
 select is(pg_temp.phase(), 'night2', 'PHASE-01: day 1 → night 2');
 select pg_temp.as_dm(format('select advance_phase(%L)', (select id from g)));
 select is(pg_temp.phase(), 'day2', 'PHASE-01: night 2 → day 2');
+
+-- PHASE-06: the DM steps back one phase at a time; PHASE-04: there is no other way to move it.
+select is(tests.try_as((select p1 from u), format('select retreat_phase(%L)', (select id from g))), 'NOT_DM', 'PHASE-06: a player cannot move the phase back');
+select is(tests.try_as((select onlooker from u), format('select retreat_phase(%L)', (select id from g))), 'NOT_DM', 'PHASE-06: nor can an onlooker');
+select pg_temp.as_dm(format('select retreat_phase(%L)', (select id from g)));
+select is(pg_temp.phase(), 'night2', 'PHASE-06: the DM steps back day 2 → night 2');
+select tests.login((select p2 from u));
+select is((select phase_kind || phase_number from games where id = (select id from g)), 'night2', 'PHASE-06: players read the phase it went back to');
+select tests.logout();
+select pg_temp.as_dm(format('select retreat_phase(%L)', (select id from g)));
+select is(pg_temp.phase(), 'day1', 'PHASE-06: night 2 → day 1');
+select is(tests.try_as((select dm from u), format('select open_nomination(%L, 1, 2)', (select id from g))), 'allow', 'PHASE-06: back in that day, a nomination can be held after all');
+select pg_temp.as_dm(format('select retreat_phase(%L)', (select id from g)));
+select is(pg_temp.phase(), 'night1', 'PHASE-06: day 1 → night 1');
+select is(tests.try_as((select dm from u), format('select retreat_phase(%L)', (select id from g))), 'PHASE_FIRST', 'PHASE-06: there is nothing before 第1夜');
+select pg_temp.as_dm(format('select advance_phase(%L)', (select id from g)));
+select pg_temp.as_dm(format('select advance_phase(%L)', (select id from g)));
+select pg_temp.as_dm(format('select advance_phase(%L)', (select id from g)));
+select is(pg_temp.phase(), 'day2', 'PHASE-01 · PHASE-06: advancing again continues from where the phase stands');
 select is(
-  (select count(*)::int from pg_proc where pronamespace = 'public'::regnamespace and proname ~ '(undo|rewind|previous|back|set_phase)'),
-  0, 'PHASE-04: there is no function to undo or set a phase: phases only move forward');
+  (select array_agg(proname::text order by proname) from pg_proc where pronamespace = 'public'::regnamespace and proname ~ 'phase'),
+  array['advance_phase', 'retreat_phase'],
+  'PHASE-04: the phase moves one step at a time, forward or back; no function sets it directly');
 
 -- ───────────── DEATH ─────────────
 select is(tests.try_as((select p1 from u), format($$select kill_seat(%L, 3, 'night')$$, (select id from g))), 'NOT_DM', 'DEATH-01: only the DM marks deaths');
@@ -247,6 +267,22 @@ select is((select count(*)::int from board_posts where game_id = (select id from
 select is((select count(*)::int from nominations where game_id = (select id from g)), 0, 'BOARD-04: …nor its nominations');
 select tests.logout();
 
+-- PHASE-06: stepping back moves only the phase; everything recorded stays.
+create function pg_temp.recorded() returns text language sql as $$
+  select concat_ws(' | ',
+    (select count(*) from public.game_deaths where game_id = (select id from g)),
+    (select count(*) from public.nominations where game_id = (select id from g)),
+    (select count(*) from public.day_results where game_id = (select id from g)),
+    (select count(*) from public.board_posts where game_id = (select id from g)),
+    (select string_agg(seat || ':' || alive || ':' || ghost_vote_used, ',' order by seat) from public.game_seats where game_id = (select id from g)));
+$$;
+create temp table before_back as select pg_temp.recorded() as snapshot, pg_temp.phase() as phase;
+select pg_temp.as_dm(format('select retreat_phase(%L)', (select id from g)));
+select isnt(pg_temp.phase(), (select phase from before_back), 'PHASE-06: with deaths, nominations and results on record, the phase still steps back');
+select is(pg_temp.recorded(), (select snapshot from before_back), 'PHASE-06: …and no death, nomination, day result or board post is undone');
+select pg_temp.as_dm(format('select advance_phase(%L)', (select id from g)));
+select is(pg_temp.phase(), (select phase from before_back), 'PHASE-06: advancing returns to the phase it left');
+
 -- ───────────── END ─────────────
 select pg_temp.as_dm(format('select advance_phase(%L)', (select id from g)));
 select pg_temp.as_dm(format('select advance_phase(%L)', (select id from g)));
@@ -254,6 +290,7 @@ select tests.login((select dm from u));
 update g set nom = open_nomination((select id from g), 1, 2);
 select tests.logout();
 select is(tests.try_as((select dm from u), format('select advance_phase(%L)', (select id from g))), 'NOMINATION_OPEN', 'PHASE-02: the phase cannot change during a nomination');
+select is(tests.try_as((select dm from u), format('select retreat_phase(%L)', (select id from g))), 'NOMINATION_OPEN', 'PHASE-06: …in either direction');
 select is(tests.try_as((select p1 from u), format($$select end_game(%L, 'good')$$, (select id from g))), 'NOT_DM', 'END-01: only the DM ends the game');
 select is(tests.try_as((select dm from u), format('select end_game(%L, null)', (select id from g))), 'WINNER_REQUIRED', 'END-01: the DM chooses the winning team');
 select tests.login((select p1 from u));
