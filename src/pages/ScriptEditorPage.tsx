@@ -51,6 +51,7 @@ function Editor() {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['key']>('tb');
   const [query, setQuery] = useState('');
   const [creating, setCreating] = useState(false);
+  const [removing, setRemoving] = useState<Role | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -194,14 +195,14 @@ function Editor() {
               {visible.map((r) => {
                 const on = selected.includes(r.id);
                 return (
-                  <li key={r.id}>
+                  <li key={r.id} className="flex items-center gap-1">
                     <button
                       type="button"
                       onClick={() => toggle(r.id)}
                       aria-pressed={on}
                       aria-label={r.name}
                       className={cn(
-                        'flex min-h-14 w-full items-center gap-3 rounded-xl px-2 text-left transition-colors',
+                        'flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-xl px-2 text-left transition-colors',
                         on ? 'bg-gold/15' : 'hover:bg-surface-2',
                       )}
                     >
@@ -212,6 +213,12 @@ function Editor() {
                       </span>
                       <span className={cn('text-sm', on ? 'font-bold text-gold-strong' : 'text-ink-faint')}>{on ? '已加入' : '加入'}</span>
                     </button>
+                    {/* SCRIPT-10: 自制角色 only; official roles are never deleted. */}
+                    {r.is_official ? null : (
+                      <Button variant="ghost" size="icon" aria-label={`删除 ${r.name}`} onClick={() => setRemoving(r)} className="shrink-0 text-ink-faint hover:text-blood-text">
+                        <span aria-hidden="true">×</span>
+                      </Button>
+                    )}
                   </li>
                 );
               })}
@@ -236,6 +243,18 @@ function Editor() {
         </div>
       </div>
 
+      {removing ? (
+        <DeleteRoleDialog
+          role={removing}
+          onClose={() => setRemoving(null)}
+          onDeleted={(roleId) => {
+            setLibrary((l) => (l ?? []).filter((r) => r.id !== roleId));
+            setSelected((s) => s.filter((x) => x !== roleId));
+            setRemoving(null);
+          }}
+        />
+      ) : null}
+
       <CustomRoleDialog
         open={creating}
         onOpenChange={setCreating}
@@ -246,6 +265,54 @@ function Editor() {
         }}
       />
     </ThemeScope>
+  );
+}
+
+/** SCRIPT-10: a 自制角色 is deleted only when no script uses it. */
+function DeleteRoleDialog({ role, onClose, onDeleted }: { role: Role; onClose: () => void; onDeleted: (id: string) => void }) {
+  const [usedBy, setUsedBy] = useState<string[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from('script_roles')
+      .select('scripts(name)')
+      .eq('role_id', role.id)
+      .then(({ data }) => setUsedBy((data ?? []).map((r) => (r.scripts as { name: string } | null)?.name ?? '').filter(Boolean)));
+  }, [role.id]);
+
+  async function remove() {
+    setError(null);
+    const { error: deleteError } = await supabase.rpc('delete_custom_role', { p_role: role.id });
+    if (deleteError) setError(errorMessage(deleteError));
+    else onDeleted(role.id);
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()} title="删除自制角色" className="max-w-md">
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-ink-muted">
+          {usedBy === null
+            ? '正在检查……'
+            : usedBy.length
+              ? `「${role.name}」还在这些剧本中：${usedBy.join('、')}。请先把它从这些剧本中移除并保存，再删除。`
+              : `「${role.name}」会从角色库中删除，无法恢复。已经玩过的对局不受影响。`}
+        </p>
+        {error ? (
+          <p role="alert" className="text-sm text-blood-text">
+            {error}
+          </p>
+        ) : null}
+        {usedBy !== null && usedBy.length === 0 ? (
+          <Button variant="danger" onClick={remove}>
+            确认删除角色
+          </Button>
+        ) : null}
+        <Button variant="ghost" onClick={onClose}>
+          返回
+        </Button>
+      </div>
+    </Dialog>
   );
 }
 

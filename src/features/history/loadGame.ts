@@ -38,7 +38,8 @@ export async function loadGame(game: Game): Promise<GameRecord> {
   const { data: profiles } = ids.length ? await supabase.from('profiles').select('id, nickname').in('id', ids) : { data: [] };
   return {
     game,
-    scriptName: script.data?.name ?? null,
+    // SCRIPT-09: a script deleted later keeps its name on the games played with it.
+    scriptName: script.data?.name ?? game.script_name ?? null,
     seats: seats.data ?? [],
     roles: roles.data ?? [],
     library: library.data ?? [],

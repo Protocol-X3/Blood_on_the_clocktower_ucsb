@@ -117,7 +117,7 @@ The group switches between many custom scripts, and it usually has **only a phot
 
 Ways to add a script:
 1. **Photo → Claude (primary).** The owner sends a photo of the script to Claude in a Claude Code session. Claude reads it, maps the roles to the library, adds homebrew roles as custom roles, and saves the script to the database, following a project skill. *Changed (2026-09-28): this replaces the planned in-app photo upload, Edge Function and review form.* The owner checks the result in the app, where the manual editor can fix anything.
-2. **Manual editor:** pick roles from the library, or add custom roles by hand.
+2. **Manual editor:** pick roles from the library, or add custom roles by hand. DM-eligible users can also delete scripts, and 自制角色 that no script uses; past games keep their roles and the script's name (SCRIPT-09, SCRIPT-10, added 2026-10-16).
 3. ~~**JSON import**~~: dropped for now (2026-09-28).
 
 A script may have **特殊规则**: extra rules that come with the script (SCRIPT-08). They're optional free text, entered in the editor or read from the photo by Claude, and shown on the script's page in 剧本库. Nothing in a game reads them. *Added 2026-10-02.*

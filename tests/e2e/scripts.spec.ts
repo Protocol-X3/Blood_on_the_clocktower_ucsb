@@ -100,3 +100,48 @@ test('SCRIPT-08: a script can carry 特殊规则, shown in 剧本库; the editor
   await expect(page.getByRole('region', { name: '恶魔' })).toBeVisible();
   await expect(rules).toHaveCount(0);
 });
+
+test('SCRIPT-09 · SCRIPT-10: a DM deletes a script, then its 自制角色 once no script uses it', async ({ page, users }) => {
+  await signIn(page, await users.make({ level: 'dm_eligible' }));
+  await page.goto('/scripts/new');
+  const name = `删除剧本${Date.now() % 100000}`;
+  const custom = `删除角色${Date.now() % 1000}`;
+  await page.getByLabel('剧本名称').fill(name);
+  const library = page.getByRole('region', { name: '角色库' });
+  await library.getByRole('button', { name: '小恶魔', exact: true }).click();
+  await page.getByRole('button', { name: '新建自制角色' }).click();
+  const create = page.getByRole('dialog', { name: '新建自制角色' });
+  await create.getByLabel('角色名称').fill(custom);
+  await create.getByLabel('能力').fill('每个夜晚，你会得知一件事。');
+  await create.getByRole('button', { name: '创建角色' }).click();
+  await expect(create).toHaveCount(0);
+  await page.getByRole('button', { name: '保存剧本' }).click();
+  await expect(page.getByRole('heading', { name })).toBeVisible();
+
+  // SCRIPT-10: official roles have no delete button; a role still in a script can't be deleted.
+  await page.getByRole('link', { name: '编辑剧本' }).click();
+  await library.getByRole('button', { name: '全部', exact: true }).click();
+  await expect(library.getByRole('button', { name: '删除 小恶魔' })).toHaveCount(0);
+  await library.getByRole('button', { name: `删除 ${custom}` }).click();
+  const refuse = page.getByRole('dialog', { name: '删除自制角色' });
+  await expect(refuse).toContainText(`还在这些剧本中：${name}`);
+  await expect(refuse.getByRole('button', { name: '确认删除角色' })).toHaveCount(0);
+  await refuse.getByRole('button', { name: '返回' }).click();
+
+  // SCRIPT-09: delete the script from its page, after confirming.
+  await page.goto('/scripts');
+  await page.getByRole('link', { name: new RegExp(name) }).click();
+  await page.getByRole('button', { name: '删除剧本' }).click();
+  await page.getByRole('dialog', { name: '删除剧本' }).getByRole('button', { name: '确认删除剧本' }).click();
+  await expect(page).toHaveURL(/\/scripts$/);
+  await expect(page.getByRole('link', { name: new RegExp(name) })).toHaveCount(0);
+
+  // SCRIPT-10: now unused, the role can be deleted.
+  await page.goto('/scripts/new');
+  await library.getByRole('button', { name: '自制角色', exact: true }).click();
+  await library.getByRole('button', { name: `删除 ${custom}` }).click();
+  const confirm = page.getByRole('dialog', { name: '删除自制角色' });
+  await confirm.getByRole('button', { name: '确认删除角色' }).click();
+  await expect(confirm).toHaveCount(0);
+  await expect(library.getByRole('button', { name: custom, exact: true })).toHaveCount(0);
+});

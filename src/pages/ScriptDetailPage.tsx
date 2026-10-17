@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import { Button } from '@/components/ui/Button';
+import { Dialog } from '@/components/ui/Dialog';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { Ornament } from '@/components/ui/Ornament';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -11,6 +12,7 @@ import { useAuth } from '@/features/auth/useAuth';
 import { groupByTeam, type Role, type Script } from '@/features/roles/data';
 import { RoleRow } from '@/features/roles/RoleCard';
 import { TEAM_LABEL } from '@/lib/game/teams';
+import { errorMessage } from '@/services/errors';
 import { supabase } from '@/services/supabase';
 import { MessagePage } from './ComingSoon';
 
@@ -20,6 +22,7 @@ export function ScriptDetailPage() {
   const { profile } = useAuth();
   const canEdit = profile && profile.permission !== 'player' && !profile.is_guest;
   const [state, setState] = useState<{ script: Script; roles: Role[] } | 'missing' | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     supabase
@@ -48,9 +51,14 @@ export function ScriptDetailPage() {
           {state.script.author ? <p className="mt-1 text-sm text-ink-muted">{state.script.author}</p> : null}
           <Ornament className="mt-4" />
           {canEdit ? (
-            <Button asChild variant="outline" className="mt-4">
-              <Link to={`/scripts/${id}/edit`}>编辑剧本</Link>
-            </Button>
+            <div className="mt-4 flex gap-2">
+              <Button asChild variant="outline">
+                <Link to={`/scripts/${id}/edit`}>编辑剧本</Link>
+              </Button>
+              <Button variant="ghost" className="text-blood-text" onClick={() => setDeleting(true)}>
+                删除剧本
+              </Button>
+            </div>
           ) : null}
         </header>
         <div className="mt-6 flex flex-col gap-5 px-4">
@@ -76,6 +84,47 @@ export function ScriptDetailPage() {
           ))}
         </div>
       </div>
+      {deleting ? <DeleteScriptDialog script={state.script} onClose={() => setDeleting(false)} /> : null}
     </ThemeScope>
+  );
+}
+
+/** SCRIPT-09: games played with it keep their roles and the script's name. */
+function DeleteScriptDialog({ script, onClose }: { script: Script; onClose: () => void }) {
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function remove() {
+    setBusy(true);
+    setError(null);
+    const { error: deleteError } = await supabase.rpc('delete_script', { p_script: script.id });
+    setBusy(false);
+    if (deleteError) setError(errorMessage(deleteError));
+    else navigate('/scripts', { replace: true });
+  }
+
+  return (
+    <Dialog
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title="删除剧本"
+      description={`「${script.name}」会从剧本库中删除，无法恢复。已经玩过的对局不受影响，仍会显示这个剧本的名称。剧本里的自制角色会留在角色库中。`}
+      className="max-w-md"
+    >
+      <div className="flex flex-col gap-3">
+        {error ? (
+          <p role="alert" className="text-sm text-blood-text">
+            {error}
+          </p>
+        ) : null}
+        <Button variant="danger" onClick={remove} disabled={busy}>
+          确认删除剧本
+        </Button>
+        <Button variant="ghost" onClick={onClose}>
+          返回
+        </Button>
+      </div>
+    </Dialog>
   );
 }

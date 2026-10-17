@@ -1,6 +1,6 @@
 -- M2 permission matrix: every M2 action × every kind of user × lobby / setup (card draw) / setup (manual).
 -- Each call runs as that user and is rolled back, so they don't affect each other.
-select plan(231);
+select plan(273);
 
 create temp table u as
 select tests.create_user('admin') as admin,
@@ -14,6 +14,10 @@ select tests.create_user('admin') as admin,
 insert into scripts (id, name, created_by) values ('00000000-0000-0000-0000-00000000007b', '暗流涌动', (select dm from u));
 insert into script_roles (script_id, role_id, position)
 select '00000000-0000-0000-0000-00000000007b', id, row_number() over (order by id) from roles where edition = 'tb';
+-- SCRIPT-09 / SCRIPT-10: a script and a 自制角色 that nothing uses, to delete.
+insert into scripts (id, name, created_by) values ('00000000-0000-0000-0000-00000000007c', '空闲剧本', (select dm from u));
+insert into script_roles (script_id, role_id, position) values ('00000000-0000-0000-0000-00000000007c', 'imp', 1);
+insert into roles (id, name, team, ability, edition, is_official) values ('custom-matrix0001', '矩阵角色', 'townsfolk', '测试能力', 'homebrew', false);
 
 select tests.login((select dm from u));
 create temp table r as select create_room(5) as code;
@@ -50,7 +54,11 @@ insert into calls values
   (8, 'shuffle_cards', 'select shuffle_cards(%s)', '{}', '{dm}', '{}'),
   (9, 'draw_card (a free card)', 'select draw_card(%s, 1)', '{}', '{player,guest}', '{}'),
   (10, 'start_game', 'select start_game(%s)', '{}', '{}', '{dm}'),
-  (11, 'update_setup', $$select update_setup(%s, '00000000-0000-0000-0000-00000000007b', 'draw')$$, '{}', '{dm}', '{dm}');
+  (11, 'update_setup', $$select update_setup(%s, '00000000-0000-0000-0000-00000000007b', 'draw')$$, '{}', '{dm}', '{dm}'),
+  (12, 'delete_script', $$select delete_script('00000000-0000-0000-0000-00000000007c')$$,
+     '{admin,dm,dm-eligible}', '{admin,dm,dm-eligible}', '{admin,dm,dm-eligible}'),
+  (13, 'delete_custom_role', $$select delete_custom_role('custom-matrix0001')$$,
+     '{admin,dm,dm-eligible}', '{admin,dm,dm-eligible}', '{admin,dm,dm-eligible}');
 
 create temp table outcomes (state text, state_ord int, call_ord int, actor_ord int, call text, actor text, expected text, actual text);
 
