@@ -87,6 +87,9 @@ export class GameModel {
   nominations: ModelNomination[] = [];
   /** day → executed seat (null: 无人处决). */
   dayResults = new Map<number, number | null>();
+  /** How often the phase stepped back (PHASE-06) and a day's result was undone (VOTE-15). */
+  retreats = 0;
+  undone = 0;
   /** Every death on record, oldest first (END-03). */
   deaths: ModelDeath[] = [];
   posts: ModelPost[] = [];
@@ -151,6 +154,7 @@ export class GameModel {
     const refused = this.running() ?? (this.openNomination ? fail('NOMINATION_OPEN') : previous ? null : fail('PHASE_FIRST'));
     if (refused) return refused;
     this.phase = previous!;
+    this.retreats += 1;
     return ok();
   }
 
@@ -373,6 +377,7 @@ export class GameModel {
       this.deaths = this.deaths.filter((d) => !execution(d));
     }
     this.dayResults.delete(day);
+    this.undone += 1;
     return ok();
   }
 

@@ -301,10 +301,14 @@ async function other(sim: Sim, r: Rng, seat: () => number, open: ModelNomination
   const m = sim.model;
   const dm = sim.dm;
   const g = sim.gameId;
-  const choice = r.pick(
+  // PHASE-06 / VOTE-15: occasional (undo mostly when today has a result), so the walk still
+  // reaches as many executions as before; as list entries they undid too many (2026-10-16).
+  const rare = r.next();
+  const resultToday = m.phase.kind === 'day' && m.dayResults.has(m.phase.number);
+  const choice = rare < 0.01 ? 'back' : rare < 0.013 || (resultToday && rare < 0.025) ? 'undo' : r.pick(
     m.phase.kind === 'day'
       ? m.nominations.some((n) => n.day === m.phase.number && n.status === 'closed') && !m.dayResults.has(m.phase.number)
-        ? ['conclude', 'conclude', 'conclude', 'conclude', 'nominate', 'nominate', 'phase', 'back', 'undo', 'kill', 'post', 'lateHand']
+        ? ['conclude', 'conclude', 'conclude', 'conclude', 'nominate', 'nominate', 'phase', 'kill', 'post', 'lateHand']
         : [
             'nominate',
             'nominate',
@@ -312,9 +316,6 @@ async function other(sim: Sim, r: Rng, seat: () => number, open: ModelNomination
             'nominate',
             'conclude',
             'phase',
-            'back',
-            'undo',
-            'undo',
             'kill',
             'revive',
             'ghost',
@@ -326,7 +327,7 @@ async function other(sim: Sim, r: Rng, seat: () => number, open: ModelNomination
             'lateHand',
             ...GRIMOIRE,
           ]
-      : ['phase', 'phase', 'phase', 'back', 'undo', 'kill', 'kill', 'revive', 'ghost', 'post', 'delete', 'nominate', 'speed', ...GRIMOIRE, ...GRIMOIRE],
+      : ['phase', 'phase', 'phase', 'kill', 'kill', 'revive', 'ghost', 'post', 'delete', 'nominate', 'speed', ...GRIMOIRE, ...GRIMOIRE],
   );
   switch (choice) {
     case 'token': {
@@ -559,7 +560,7 @@ describe('M3 simulation', () => {
     };
 
     let next = 0;
-    const stats = { games: 0, nominations: 0, executions: 0, deaths: 0 };
+    const stats = { games: 0, nominations: 0, executions: 0, deaths: 0, retreats: 0, undone: 0 };
     await Promise.all(
       Array.from({ length: Math.min(PARALLEL, GAMES) }, async () => {
         while (next < GAMES) {
@@ -568,6 +569,8 @@ describe('M3 simulation', () => {
           stats.nominations += sim.model.nominations.length;
           stats.executions += [...sim.model.dayResults.values()].filter((s) => s !== null).length;
           stats.deaths += sim.model.seats.filter((s) => !s.alive).length;
+          stats.retreats += sim.model.retreats;
+          stats.undone += sim.model.undone;
         }
       }),
     );
@@ -578,5 +581,7 @@ describe('M3 simulation', () => {
     // The random walk must actually reach the interesting parts.
     expect(stats.nominations).toBeGreaterThan(GAMES);
     expect(stats.executions).toBeGreaterThan(GAMES / 10);
+    expect(stats.retreats).toBeGreaterThan(0);
+    expect(stats.undone).toBeGreaterThan(0);
   }, 1_800_000);
 });
