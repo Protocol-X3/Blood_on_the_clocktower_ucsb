@@ -246,13 +246,13 @@ isOneToOne: false
                   ]
                 },"games": {
                   Row: {
-                    "assignment_mode": Database["public"]['Enums']["assignment_mode"] | null,"created_at": string,"dm_id": string | null,"ended_at": string | null,"id": string,"phase_kind": string | null,"phase_number": number | null,"room_id": string,"script_id": string | null,"seat_count": number | null,"started_at": string | null,"status": Database["public"]['Enums']["game_status"],"vote_speed_ms": number,"winner": Database["public"]['Enums']["alignment"] | null
+                    "assignment_mode": Database["public"]['Enums']["assignment_mode"] | null,"created_at": string,"dm_id": string | null,"ended_at": string | null,"id": string,"phase_kind": string | null,"phase_number": number | null,"room_id": string,"script_id": string | null,"script_name": string | null,"seat_count": number | null,"started_at": string | null,"status": Database["public"]['Enums']["game_status"],"vote_speed_ms": number,"winner": Database["public"]['Enums']["alignment"] | null
                   }
                   Insert: {
-                    "assignment_mode"?: Database["public"]['Enums']["assignment_mode"] | null,"created_at"?: string,"dm_id"?: string | null,"ended_at"?: string | null,"id"?: string,"phase_kind"?: string | null,"phase_number"?: number | null,"room_id": string,"script_id"?: string | null,"seat_count"?: number | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["game_status"],"vote_speed_ms"?: number,"winner"?: Database["public"]['Enums']["alignment"] | null
+                    "assignment_mode"?: Database["public"]['Enums']["assignment_mode"] | null,"created_at"?: string,"dm_id"?: string | null,"ended_at"?: string | null,"id"?: string,"phase_kind"?: string | null,"phase_number"?: number | null,"room_id": string,"script_id"?: string | null,"script_name"?: string | null,"seat_count"?: number | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["game_status"],"vote_speed_ms"?: number,"winner"?: Database["public"]['Enums']["alignment"] | null
                   }
                   Update: {
-                    "assignment_mode"?: Database["public"]['Enums']["assignment_mode"] | null,"created_at"?: string,"dm_id"?: string | null,"ended_at"?: string | null,"id"?: string,"phase_kind"?: string | null,"phase_number"?: number | null,"room_id"?: string,"script_id"?: string | null,"seat_count"?: number | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["game_status"],"vote_speed_ms"?: number,"winner"?: Database["public"]['Enums']["alignment"] | null
+                    "assignment_mode"?: Database["public"]['Enums']["assignment_mode"] | null,"created_at"?: string,"dm_id"?: string | null,"ended_at"?: string | null,"id"?: string,"phase_kind"?: string | null,"phase_number"?: number | null,"room_id"?: string,"script_id"?: string | null,"script_name"?: string | null,"seat_count"?: number | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["game_status"],"vote_speed_ms"?: number,"winner"?: Database["public"]['Enums']["alignment"] | null
                   }
                   Relationships: [
                     {
@@ -583,8 +583,14 @@ isOneToOne: false
 "delete_log_note":
 { Args: { "p_note": string }; Returns: undefined
                            },
+"delete_custom_role":
+{ Args: { "p_role": string }; Returns: undefined
+                           },
 "delete_post":
 { Args: { "p_post": string }; Returns: undefined
+                           },
+"delete_script":
+{ Args: { "p_script": string }; Returns: undefined
                            },
 "dev_add_bots":
 { Args: { "p_room": string }; Returns: number

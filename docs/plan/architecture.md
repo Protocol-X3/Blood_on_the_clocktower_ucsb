@@ -37,7 +37,7 @@ Notes:
 - `scripts`: name, author, optional `special_rules` (特殊规则, display only); `script_roles` lists the roles in order
 - `rooms`: code, current DM seat holder, seat count, current game
 - `room_members`: who is in the room and their seat
-- `games`: room, script, DM, assignment mode, status, phase, winner
+- `games`: room, script (and the script's name if it is deleted later), DM, assignment mode, status, phase, winner
 - `game_seats`: seat, player, actual role, shown role, alignment, alive, death cause, ghost vote used. Access to roles is restricted.
 - `grimoire_tokens`: DM only
 - `dm_log_cells`, `dm_log_notes`, `dm_log_row_marks`: the DM log table (one text and/or colour per cell, note rows, row colours set at the start). DM only until the game ends ([log-spreadsheet.md](log-spreadsheet.md))
