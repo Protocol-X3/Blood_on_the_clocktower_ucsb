@@ -59,25 +59,20 @@ test('AUTH-06: signing out returns to the sign-in page', async ({ page, users })
   forgetSession(u);
 });
 
-test('AUTH-06: a guest is warned that the account cannot be recovered before signing out', async ({ page, users }) => {
-  const g = await users.make({ guest: true });
-  await signIn(page, g);
+test('AUTH-06 · AUTH-02: the account menu has no guest options, and the sign-in page offers only Google', async ({ page, users }) => {
+  const u = await users.make();
+  await signIn(page, u);
   await page.goto('/');
-  await page.getByRole('button', { name: `账号：${g.nickname}` }).click();
-  await page.getByRole('button', { name: '退出登录' }).click();
-  await expect(page.getByRole('alert')).toContainText('游客账号退出后将无法找回');
-  await expect(page).toHaveURL(/\/$/);
-  await page.getByRole('button', { name: '仍然退出' }).click();
+  await page.getByRole('button', { name: `账号：${u.nickname}` }).click();
+  const menu = page.getByRole('dialog');
+  await expect(menu.getByRole('button', { name: '绑定 Google 账号' })).toHaveCount(0);
+  await menu.getByRole('button', { name: '退出登录' }).click();
+  // One step: no guest warning in between.
   await expect(page).toHaveURL(/\/login/);
-  forgetSession(g);
-});
-
-test('AUTH-05: a guest is offered to link a Google account', async ({ page, users }) => {
-  const g = await users.make({ guest: true });
-  await signIn(page, g);
-  await page.goto('/');
-  await page.getByRole('button', { name: `账号：${g.nickname}` }).click();
-  await expect(page.getByRole('button', { name: '绑定 Google 账号' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '使用 Google 登录' })).toBeVisible();
+  await expect(page.getByText('游客')).toHaveCount(0);
+  await expect(page.getByRole('textbox')).toHaveCount(0);
+  forgetSession(u);
 });
 
 test('AUTH-09: a user renames themselves on their 个人主页, and everyone sees the new name', async ({ page, users }) => {

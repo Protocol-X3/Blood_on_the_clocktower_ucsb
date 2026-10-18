@@ -5,11 +5,11 @@ Status: **Approved** by the owner, 2026-09-27.
 ## AUTH · Sign-in
 
 - **AUTH-01** A user can sign in with Google. After signing in, they return to the page they were trying to open. · *E2E (up to the Google redirect); full sign-in: owner*
-- **AUTH-02** A guest signs in with only a nickname (游客登录). No email or password is asked for. · *E2E, Integration*
+- **AUTH-02** Guest sign-in (游客登录) is turned off: the sign-in page offers only Google sign-in, and no guest account can be created through sign-in (Supabase refuses anonymous sign-ins, and the database refuses them as a backstop). *Changed (2026-10-18, the owner): before, a guest signed in with only a nickname. All guest accounts were removed the same day.* · *E2E, Integration, pgTAP*
 - **AUTH-03** Nicknames are 1–12 characters after trimming spaces (a Chinese character counts as one) and unique among all users, ignoring letter case. A duplicate shows "昵称已被使用". *Decided (2026-09-27): the limit is 12 characters.* · *Unit, pgTAP, E2E*
 - **AUTH-04** A new Google user must choose a nickname before entering any room. · *E2E*
-- **AUTH-05** A guest can upgrade to a Google account and keeps their nickname, profile and game history. · *Integration*
-- **AUTH-06** Signing out ends the session on that device. A guest who signs out is warned first (in Chinese) that the guest account can't be recovered. · *E2E*
+- ~~**AUTH-05**~~ ~~A guest can upgrade to a Google account and keeps their nickname, profile and game history.~~ *Retired 2026-10-18: there are no guest accounts to upgrade (AUTH-02).*
+- **AUTH-06** Signing out ends the session on that device, in one step from the account menu. *Changed (2026-10-18): the warning for guests went with guest sign-in (AUTH-02).* · *E2E*
 - **AUTH-07** Every page except `/login` needs a signed-in user. Visitors who aren't signed in are sent to `/login` and brought back afterwards. · *E2E*
 - **AUTH-08** A session survives page reloads and the phone locking. Players don't have to sign in again during a game night. · *E2E*
 - **AUTH-09** A signed-in user, Google or guest, can change their own nickname at any time on their 个人主页, under the same rules as AUTH-03 (their own current name, even in another letter case, doesn't count as taken). The new name shows everywhere at once, including in rooms and past games, and the old name becomes free. *Added 2026-09-28.* · *pgTAP, E2E*

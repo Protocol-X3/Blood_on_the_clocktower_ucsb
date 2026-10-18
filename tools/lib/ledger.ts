@@ -24,14 +24,15 @@ export interface LedgerProblems {
   decreased: string[]; // an ID has fewer tests than on the baseline (main)
 }
 
-export function compareLedger(current: Ledger, committed: Ledger, baseline: Ledger | null): LedgerProblems {
+/** `retired`: rules the owner retired (struck through in docs/rules); their tests may go. */
+export function compareLedger(current: Ledger, committed: Ledger, baseline: Ledger | null, retired: ReadonlySet<string> = new Set()): LedgerProblems {
   const ids = new Set([...Object.keys(current), ...Object.keys(committed)]);
   const outdated = [...ids]
     .filter((id) => (current[id] ?? 0) !== (committed[id] ?? 0))
     .map((id) => `${id}: tests=${current[id] ?? 0}, ledger=${committed[id] ?? 0}`);
   const decreased = baseline
     ? Object.keys(baseline)
-        .filter((id) => (committed[id] ?? 0) < baseline[id]!)
+        .filter((id) => !retired.has(id) && (committed[id] ?? 0) < baseline[id]!)
         .map((id) => `${id}: ${baseline[id]} → ${committed[id] ?? 0}`)
     : [];
   return { outdated, decreased };

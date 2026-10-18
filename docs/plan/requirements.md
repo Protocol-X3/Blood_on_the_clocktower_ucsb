@@ -29,7 +29,7 @@ These are enforced in the database (RLS / security-definer functions), not only 
   - **Exception:** the admin can force-reassign the DM seat to another DM-eligible user even mid-game, e.g. if the DM's phone dies.
 - **Only DM-eligible users (and the admin) can create rooms.** Players only join.
 - A room lives until its creator or the admin closes it, or it auto-closes after about 24 hours of inactivity. Its games stay in history.
-- **Guests can never be DM-eligible.** They must upgrade to Google sign-in first.
+- **Guests can never be DM-eligible.** (Guest sign-in is off since 2026-10-18; only sandbox bots are guest accounts.)
 
 ## Game flow
 
@@ -106,7 +106,7 @@ The DM picks the winning team. Everyone sees the **summary page**: actual and sh
 ## Accounts and history
 
 - **Google sign-in** (Supabase Auth). Each profile has a unique nickname shown in the app.
-- **Guest login (游客登录):** guests sign in themselves on their own phone with just a nickname, using Supabase anonymous sign-in. They get the full player experience, but their games are excluded from stats. A guest can later upgrade to Google sign-in and keep their history.
+- ~~**Guest login (游客登录)**~~: *turned off 2026-10-18 (the owner; AUTH-02).* Everyone signs in with Google. Supabase's anonymous sign-ins are off and the database refuses them; all guest accounts were removed the same day. Bots in the development sandbox are still stored as guest accounts.
 - **Account cleanup (AUTH-10):** a daily database job removes guest accounts that can't be reached any more (signed out, or idle for 30 days) and accounts that never got a nickname. Anyone who has played or run a game is kept. *Added 2026-10-03.*
 - Every game is stored. Store each player's **final** alignment, since alignment can change mid-game.
 - v1 stats: overall win rate, win rate by team (good/evil), games played, most-played roles, and games run as DM. More will be added later.
@@ -137,7 +137,7 @@ The **role library** holds the official roles (with Chinese names and abilities:
 | Route | Page |
 |---|---|
 | `/` | 首页: create a room, join by code, recent games |
-| `/login` | 登录: Google or 游客 (guest) |
+| `/login` | 登录: Google (guest sign-in off since 2026-10-18) |
 | `/room/:code` | 房间: lobby, then the game. One URL for everyone: the view (DM console or player view) depends on the user's role in that room, and database rules control what data they get. |
 | `/room/:code/summary` | 对局结算: end-of-game reveal of all roles and the grimoire |
 | `/profile/:id` | 个人主页: stats and game history |

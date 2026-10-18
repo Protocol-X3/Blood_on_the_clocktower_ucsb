@@ -1,5 +1,5 @@
 -- M1 · accounts: profiles, nicknames and permission levels.
-select plan(28);
+select plan(31);
 
 create temp table u as
 select tests.create_user('admin') as admin,
@@ -69,6 +69,15 @@ update profiles set permission = 'dm_eligible' where id = (select alice from u);
 select tests.logout();
 select is((select permission from profiles where id = (select alice from u)), 'player',
   'PERM-08: users cannot edit their own permission level either');
+
+-- AUTH-02: no guest account comes from sign-in (guest sign-in is off since 2026-10-18).
+select throws_ok($$ insert into auth.users (id, aud, role, is_anonymous, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+                    values (gen_random_uuid(), 'authenticated', 'authenticated', true, '{}', '{}', now(), now()) $$,
+  'GUEST_SIGNIN_DISABLED', 'AUTH-02: the database refuses a guest (anonymous) account from sign-in');
+select lives_ok($$ insert into auth.users (id, aud, role, email, is_anonymous, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+                   values (gen_random_uuid(), 'authenticated', 'authenticated', 'google-user@test.botc', false, '{}', '{}', now(), now()) $$,
+  'AUTH-02 · AUTH-01: a Google account is still created as before');
+select is((select count(*)::int from profiles where id in (select id from auth.users where email = 'google-user@test.botc')), 1, 'AUTH-01: …with its profile');
 
 -- AUTH-03: nicknames
 select tests.login((select alice from u));

@@ -35,16 +35,12 @@ export function LoginPage() {
     if (oauthError) setError(errorMessage(oauthError));
   }
 
-  // AUTH-02: guests only give a nickname.
-  async function guest(e: FormEvent) {
+  // AUTH-04: a new Google user chooses a nickname. (AUTH-02: there is no guest sign-in.)
+  async function saveNickname(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      if (!session) {
-        const { error: anonError } = await supabase.auth.signInAnonymously();
-        if (anonError) throw anonError;
-      }
       const { error: nickError } = await supabase.rpc('set_nickname', { p_nickname: nickname });
       if (nickError) throw nickError;
       await refreshProfile();
@@ -68,34 +64,34 @@ export function LoginPage() {
         </header>
 
         <Panel className="mt-8 flex flex-col gap-5" padding="lg">
-          {session ? null : (
+          {session ? (
+            <form onSubmit={saveNickname} className="flex flex-col gap-3">
+              <TextField
+                label="设置你的昵称"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                maxLength={12}
+                autoComplete="nickname"
+                placeholder="1–12 个字符"
+                error={error}
+              />
+              <Button type="submit" variant="outline" size="lg" disabled={busy || nickname.trim().length === 0}>
+                保存昵称
+              </Button>
+            </form>
+          ) : (
             <>
               <Button size="lg" onClick={google}>
                 <GoogleMark />
                 使用 Google 登录
               </Button>
-              <div className="flex items-center gap-3 text-xs text-ink-faint">
-                <span className="h-px flex-1 bg-line" />
-                或
-                <span className="h-px flex-1 bg-line" />
-              </div>
+              {error ? (
+                <p role="alert" className="text-sm text-blood-text">
+                  {error}
+                </p>
+              ) : null}
             </>
           )}
-          <form onSubmit={guest} className="flex flex-col gap-3">
-            <TextField
-              label={session ? '设置你的昵称' : '游客昵称'}
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              maxLength={12}
-              autoComplete="nickname"
-              placeholder="1–12 个字符"
-              error={error}
-            />
-            <Button type="submit" variant="outline" size="lg" disabled={busy || nickname.trim().length === 0}>
-              {session ? '保存昵称' : '以游客身份进入'}
-            </Button>
-          </form>
-          <p className="text-xs leading-relaxed text-ink-faint">游客无需注册，但对局不计入战绩。之后可以绑定 Google 账号保留记录。</p>
         </Panel>
       </main>
     </ThemeScope>

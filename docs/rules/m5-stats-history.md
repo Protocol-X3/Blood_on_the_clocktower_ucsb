@@ -12,7 +12,7 @@ Status: **Approved** by the owner, 2026-09-27.
 - **STATS-04** Most-played roles lists the player's top 3 roles by count, using the actual role they held when the game started. Ties go to the more recently played role. *Decided (2026-09-27): it uses the starting role, not the final role.* · *Unit*
 - **STATS-05** Games as DM is the number of ended games the user ran as DM. · *Unit, Integration*
 - **STATS-06** Guests have no stats. A game with guests still counts normally for the non-guest players in it. · *Unit, pgTAP*
-- **STATS-07** When a guest upgrades to Google sign-in, their earlier games start counting toward their stats. *Decided (2026-09-27): all of the guest's earlier games count after the upgrade, not only the games played afterwards.* · *Integration*
+- ~~**STATS-07**~~ ~~When a guest upgrades to Google sign-in, their earlier games start counting toward their stats.~~ *Retired 2026-10-18: there are no guest accounts to upgrade (AUTH-02).*
 
 ## HIST · Game history
 

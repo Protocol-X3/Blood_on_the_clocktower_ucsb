@@ -18,27 +18,15 @@ function user(opts: UserOptions = {}) {
 }
 
 describe('M1 accounts', () => {
-  it('AUTH-02 · AUTH-05: a guest signs in with just a nickname, then upgrades and keeps their profile', async () => {
+  it('AUTH-02: guest sign-in is off: an anonymous sign-in is refused and creates no account', async () => {
+    const guests = async () => (await admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_guest', true).eq('is_bot', false)).count;
+    const before = await guests();
     const guest = createClient<Database>(url, process.env.VITE_SUPABASE_PUBLISHABLE_KEY!, { auth: { persistSession: false } });
     const { data, error } = await guest.auth.signInAnonymously();
-    expect(error).toBeNull();
-    const id = data.user!.id;
-    extraIds.push(id);
-    const nickname = uniqueNickname('游客');
-    expect((await guest.rpc('set_nickname', { p_nickname: nickname })).error).toBeNull();
-
-    const before = (await admin.from('profiles').select('*').eq('id', id).single()).data!;
-    expect(before).toMatchObject({ nickname, is_guest: true, permission: 'player' });
-
-    // Linking a real identity turns the anonymous user into a permanent one with the same id.
-    // (In the app that identity is Google; here an email identity stands in for it.)
-    const { error: upgradeError } = await admin.auth.admin.updateUserById(id, { email: `e2e-up-${id.slice(0, 8)}@test.botc`, email_confirm: true });
-    expect(upgradeError).toBeNull();
-    const { data: authUser } = await admin.auth.admin.getUserById(id);
-    expect(authUser.user?.is_anonymous).toBe(false);
-
-    const after = (await admin.from('profiles').select('*').eq('id', id).single()).data!;
-    expect(after).toMatchObject({ id, nickname, is_guest: false, permission: 'player' });
+    expect(error).not.toBeNull();
+    expect(data.session).toBeNull();
+    expect((await guest.rpc('set_nickname', { p_nickname: uniqueNickname('游客') })).error).not.toBeNull();
+    expect(await guests()).toBe(before);
   });
 });
 
