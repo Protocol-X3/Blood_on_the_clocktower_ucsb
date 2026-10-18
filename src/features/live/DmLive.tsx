@@ -6,7 +6,7 @@ import { Dialog } from '@/components/ui/Dialog';
 import { Panel } from '@/components/ui/Panel';
 import { RoleToken } from '@/components/ui/RoleToken';
 import type { GameData, Nomination } from '@/features/game/useGameData';
-import { roleGlyph } from '@/lib/game/composition';
+import { hasLunatic, roleGlyph } from '@/lib/game/composition';
 import { nextPhase, phaseLabel, prevPhase, type PhaseKind } from '@/lib/game/phase';
 import { ALIGNMENT_LABEL } from '@/lib/game/teams';
 import { circleOrder, clampVoteSpeed, NOMINATION_WARNING_TEXT, nominationWarnings, VOTE_SPEED, voteThreshold } from '@/lib/game/vote';
@@ -25,6 +25,7 @@ import { LogPanel } from '@/features/grimoire/Log';
 import { logIndex, logRows } from '@/features/grimoire/logData';
 import { LogSheet } from '@/features/grimoire/LogSheet';
 import { SeatDetail } from '@/features/grimoire/SeatDetail';
+import { BluffPanel } from '@/features/roles/BluffStrip';
 
 type Act = (run: () => PromiseLike<{ error: unknown }>, after?: () => void) => Promise<void>;
 type Tab = 'nominate' | 'seat' | 'players' | 'log' | 'board';
@@ -145,6 +146,12 @@ export function DmLive({
                 </div>
               )
           }
+        />
+        {/* SECRET-07: the DM always sees the bluffs, and the Lunatic's version when one is in play. */}
+        <BluffPanel
+          bluffs={data.bluffs}
+          roles={new Map(data.roles.map((r) => [r.role_id, r]))}
+          lunatic={hasLunatic(data.composition.map((c) => c.role_id))}
         />
       </div>
 

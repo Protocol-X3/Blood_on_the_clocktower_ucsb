@@ -7,7 +7,7 @@ import { expect, otherBrowser, signIn, test } from './support/session.ts';
 // DM screens on the tablet profile; players on phone-sized browsers, or through the API.
 test.describe.configure({ mode: 'serial' });
 
-test('M3.4 · PHASE-02 · DEATH-01 · DEATH-02 · NOM-04 · VOTE-01 · VOTE-13 · VOTE-14 · BOARD-01 · BOARD-02 · END-02 · END-03 · END-04: a full game, from the lobby to the summary', async ({
+test('M3.4 · SECRET-07 · PHASE-02 · DEATH-01 · DEATH-02 · NOM-04 · VOTE-01 · VOTE-13 · VOTE-14 · BOARD-01 · BOARD-02 · END-02 · END-03 · END-04: a full game, from the lobby to the summary', async ({
   page,
   browser,
   users,
@@ -48,6 +48,9 @@ test('M3.4 · PHASE-02 · DEATH-01 · DEATH-02 · NOM-04 · VOTE-01 · VOTE-13 �
   const scriptRoles = page.getByRole('region', { name: '剧本角色' });
   for (const r of ['洗衣妇', '厨师', '酒鬼', '投毒者', '小恶魔']) await scriptRoles.getByRole('button', { name: r, exact: true }).click();
   await page.getByLabel('酒鬼 展示为').selectOption({ label: '共情者' });
+  await page.getByRole('button', { name: '下一步' }).click();
+  // 不在场角色 (SETUP-12): the Monk, seen again on the summary (SECRET-07).
+  await scriptRoles.getByRole('button', { name: '僧侣', exact: true }).click();
   await page.getByRole('button', { name: '下一步' }).click();
   for (const [seat, label] of ['洗衣妇', '厨师', '酒鬼（展示：共情者）', '投毒者', '小恶魔'].entries()) {
     await page.getByLabel(`${seat + 1}号的角色`, { exact: true }).selectOption({ label });
@@ -130,6 +133,8 @@ test('M3.4 · PHASE-02 · DEATH-01 · DEATH-02 · NOM-04 · VOTE-01 · VOTE-13 �
   await expect(phones[0]!.getByTestId('summary-seat-3')).toContainText('展示：共情者');
   await expect(phones[0]!.getByTestId('summary-seat-2')).toContainText('第1天 处决');
   await expect(phones[0]!.getByTestId('summary-seat-5')).toContainText('第1夜 夜间死亡 · 已复活');
+  // SECRET-07: after the end, everyone sees the 不在场角色.
+  await expect(phones[0]!.getByTestId('bluff-panel')).toContainText('僧侣');
   await expect(phones[0]!.getByTestId('summary-seat-5')).toContainText('邪恶');
   await phones[0]!.screenshot({
     path: 'docs/reports/M3/summary-phone.png',

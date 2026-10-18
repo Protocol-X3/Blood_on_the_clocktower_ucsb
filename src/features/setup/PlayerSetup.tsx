@@ -16,6 +16,7 @@ export function PlayerSetup({ game, mySeat, seatNames }: { game: Game; mySeat: n
 
   const mine = data.shown[0];
   const myRole = mine ? data.roles.find((r) => r.role_id === mine.shown_role_id) : undefined;
+  const myBluffs = data.myBluffs.map((b) => data.roles.find((r) => r.role_id === b.role_id)).filter((r) => r !== undefined);
 
   if (game.assignment_mode !== 'draw') {
     return <Waiting title="说书人正在配置对局" text="开始游戏后，你会在这里看到自己的角色。" />;
@@ -24,7 +25,7 @@ export function PlayerSetup({ game, mySeat, seatNames }: { game: Game; mySeat: n
     return (
       <div className="flex flex-col items-center gap-4">
         <p className="text-sm tracking-[0.2em] text-ink-muted">你已抽到角色</p>
-        <HiddenRole role={myRole} caption={`我的角色 · ${mySeat}号`} />
+        <HiddenRole role={myRole} caption={`我的角色 · ${mySeat}号`} bluffs={myBluffs} />
         <p className="text-sm text-ink-muted">请勿向他人展示 · 等待说书人开始游戏</p>
       </div>
     );

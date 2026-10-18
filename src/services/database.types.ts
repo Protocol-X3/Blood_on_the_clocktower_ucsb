@@ -150,6 +150,17 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"game_bluffs": {
+                  Row: {
+                    "game_id": string,"lunatic_role_id": string,"position": number,"role_id": string
+                  }
+                  Insert: {
+                    "game_id": string,"lunatic_role_id": string,"position": number,"role_id": string
+                  }
+                  Update: {
+                    "game_id"?: string,"lunatic_role_id"?: string,"position"?: number,"role_id"?: string
+                  }
+                  Relationships: []
                 },"game_composition": {
                   Row: {
                     "game_id": string,"role_id": string,"shown_role_id": string
@@ -580,11 +591,11 @@ isOneToOne: false
 "create_room":
 { Args: { "p_seat_count"?: number }; Returns: string
                            },
-"delete_log_note":
-{ Args: { "p_note": string }; Returns: undefined
-                           },
 "delete_custom_role":
 { Args: { "p_role": string }; Returns: undefined
+                           },
+"delete_log_note":
+{ Args: { "p_note": string }; Returns: undefined
                            },
 "delete_post":
 { Args: { "p_post": string }; Returns: undefined
@@ -646,6 +657,11 @@ isOneToOne: false
 "mark_log_cells":
 { Args: { "p_cells": Json,"p_game": string,"p_mark": string }; Returns: undefined
                            },
+"my_bluffs":
+{ Args: { "p_game": string }; Returns: {
+              "pos": number,"role_id": string
+            }[]
+                           },
 "open_nomination":
 { Args: { "p_game": string,"p_nominator": number,"p_nominee": number }; Returns: string
                            },
@@ -684,6 +700,9 @@ isOneToOne: false
                            },
 "set_alignment":
 { Args: { "p_alignment": Database["public"]['Enums']["alignment"],"p_game": string,"p_seat": number }; Returns: undefined
+                           },
+"set_bluffs":
+{ Args: { "p_bluffs": Json,"p_game": string }; Returns: undefined
                            },
 "set_bot_sandbox":
 { Args: { "p_on": boolean }; Returns: undefined

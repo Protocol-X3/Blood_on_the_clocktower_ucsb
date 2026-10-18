@@ -50,6 +50,7 @@ The DM has a dedicated step-by-step setup wizard. It opens only once every seat 
    - How many Demons, Minions, Outsiders and Townsfolk. The recommended counts for the player count are shown as a hint.
    - Which specific roles are used.
    - The shown role for each role, if it differs from the actual role.
+   - **不在场角色** (added 2026-10-18, SETUP-12/13, SECRET-07): still in 角色配置, the DM picks up to 3 bluffs from the 镇民/外来者 not in play, or none. The actual Demon sees them when flipping their card; a 疯子 (Lunatic) sees the 疯子看到 versions, which can be any role; nobody else does. The DM sees them in game, and everyone on the summary after the end.
    - In manual mode, which seat gets each role.
 3. **Draw / confirm:** in card-draw mode, players draw their cards.
    - Players draw freely, in any order.

@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { checkComposition, countByTeam, roleGlyph, type RoleLike } from '@/lib/game/composition';
+import { bluffCandidates, checkComposition, countByTeam, hasLunatic, roleGlyph, type RoleLike } from '@/lib/game/composition';
 import { recommendedTeamCounts } from '@/lib/game/teamCounts';
 import { TEAMS } from '@/lib/game/teams';
 
@@ -98,5 +98,30 @@ describe('composition', () => {
 
   it('SETUP-07: outside 5–15 seats there is no recommendation to warn about', () => {
     expect(checkComposition(4, SCRIPT.slice(0, 4).map((r) => ({ role: r.id })), SCRIPT)).toEqual({ errors: [], offRecommendation: [] });
+  });
+});
+
+describe('不在场角色', () => {
+  const tb = [role('chef', 'townsfolk'), role('empath', 'townsfolk'), role('monk', 'townsfolk'), role('drunk', 'outsider'), role('saint', 'outsider'), role('poisoner', 'minion'), role('baron', 'minion'), role('imp', 'demon')];
+
+  it('SETUP-12: only the script’s 镇民 and 外来者 that are not actual roles in play can be bluffs', () => {
+    expect(bluffCandidates(tb, ['chef', 'drunk', 'poisoner', 'imp']).map((r) => r.id)).toEqual(['empath', 'monk', 'saint']);
+    // The Drunk's shown role (empath) is not an actual role, so it stays available.
+    expect(bluffCandidates(tb, ['chef', 'drunk']).map((r) => r.id)).toContain('empath');
+    expect(bluffCandidates(tb, []).map((r) => r.id)).toEqual(['chef', 'empath', 'monk', 'drunk', 'saint']);
+  });
+
+  it('SETUP-12: never a 爪牙 or 恶魔, for any composition', () => {
+    fc.assert(
+      fc.property(fc.subarray(tb.map((r) => r.id)), (inPlay) => {
+        const picks = bluffCandidates(tb, inPlay);
+        expect(picks.every((r) => (r.team === 'townsfolk' || r.team === 'outsider') && !inPlay.includes(r.id))).toBe(true);
+      }),
+    );
+  });
+
+  it('SETUP-13: 疯子看到 is available only when the 疯子 is in play', () => {
+    expect(hasLunatic(['lunatic', 'imp'])).toBe(true);
+    expect(hasLunatic(['chef', 'imp'])).toBe(false);
   });
 });

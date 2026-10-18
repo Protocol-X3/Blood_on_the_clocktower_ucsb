@@ -39,6 +39,7 @@ Notes:
 - `room_members`: who is in the room and their seat
 - `games`: room, script (and the script's name if it is deleted later), DM, assignment mode, status, phase, winner
 - `game_seats`: seat, player, actual role, shown role, alignment, alive, death cause, ghost vote used. Access to roles is restricted.
+- `game_bluffs`: up to 3 不在场角色 per game, each with what the Lunatic sees instead. DM only until the end; a player gets their own set through `my_bluffs` (SECRET-07)
 - `grimoire_tokens`: DM only
 - `dm_log_cells`, `dm_log_notes`, `dm_log_row_marks`: the DM log table (one text and/or colour per cell, note rows, row colours set at the start). DM only until the game ends ([log-spreadsheet.md](log-spreadsheet.md))
 - `nominations`: nominator, nominee, phase, vote-circle state, final count

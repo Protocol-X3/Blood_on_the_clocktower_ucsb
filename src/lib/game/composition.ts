@@ -14,6 +14,20 @@ export function roleGlyph(role: Pick<RoleLike, 'name' | 'glyph'>): string {
   return override ? [...override][0]! : ([...role.name.trim()][0] ?? '?');
 }
 
+/**
+ * SETUP-12: the roles the DM may pick as 不在场角色 (the Demon's bluffs): the script's 镇民 and
+ * 外来者 that aren't actual roles in the composition. A Drunk's shown role may still be picked.
+ */
+export function bluffCandidates<R extends Pick<RoleLike, 'id' | 'team'>>(scriptRoles: R[], compositionRoleIds: string[]): R[] {
+  const inPlay = new Set(compositionRoleIds);
+  return scriptRoles.filter((r) => (r.team === 'townsfolk' || r.team === 'outsider') && !inPlay.has(r.id));
+}
+
+/** SETUP-13: the 疯子 (Lunatic) is in play, so each bluff may have what the Lunatic sees instead. */
+export function hasLunatic(compositionRoleIds: string[]): boolean {
+  return compositionRoleIds.includes('lunatic');
+}
+
 /** How many roles of each team. */
 export function countByTeam(roles: Pick<RoleLike, 'team'>[]): TeamCounts {
   const counts: TeamCounts = { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };

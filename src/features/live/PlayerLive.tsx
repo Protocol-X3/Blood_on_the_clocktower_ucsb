@@ -34,6 +34,7 @@ export function PlayerLive({
   const night = game.phase_kind !== 'day';
   const mine = data.shown[0];
   const role = mine ? data.roles.find((r) => r.role_id === mine.shown_role_id) : undefined;
+  const myBluffs = data.myBluffs.map((b) => data.roles.find((r) => r.role_id === b.role_id)).filter((r) => r !== undefined);
   const seat = data.seats.find((s) => s.seat === mySeat);
   const nom = openNomination(data);
   const votes = votesOf(data, nom);
@@ -48,7 +49,7 @@ export function PlayerLive({
     <div className="flex flex-col gap-5">
       {/* SECRET-05: the role stays face down until the player taps it. */}
       {role ? (
-        <HiddenRole role={role} caption={`我的角色 · ${mySeat}号`} />
+        <HiddenRole role={role} caption={`我的角色 · ${mySeat}号`} bluffs={myBluffs} />
       ) : (
         <p className="text-center text-sm text-ink-muted" role="status">
           对局进行中，你正在旁观。

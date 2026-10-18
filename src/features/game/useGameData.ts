@@ -18,6 +18,8 @@ export type GrimoireToken = T['grimoire_tokens']['Row'];
 export type LogCell = T['dm_log_cells']['Row'];
 export type LogNote = T['dm_log_notes']['Row'];
 export type LogRowMark = T['dm_log_row_marks']['Row'];
+export type Bluff = T['game_bluffs']['Row'];
+export type MyBluff = { pos: number; role_id: string };
 
 export interface GameData {
   roles: GameRole[];
@@ -40,6 +42,10 @@ export interface GameData {
   logCells: LogCell[];
   logNotes: LogNote[];
   logRowMarks: LogRowMark[];
+  /** 不在场角色: DM only, until the game ends (SETUP-12, SECRET-07). */
+  bluffs: Bluff[];
+  /** The bluffs this player sees on their card: the Demon's or the Lunatic's set, otherwise none (SECRET-07). */
+  myBluffs: MyBluff[];
 }
 
 // Each table is reloaded on its own when it changes, so a vote tick doesn't refetch the roles.
@@ -59,6 +65,8 @@ const LOADERS = {
   logCells: (g: string) => supabase.from('dm_log_cells').select('*').eq('game_id', g),
   logNotes: (g: string) => supabase.from('dm_log_notes').select('*').eq('game_id', g).order('position'),
   logRowMarks: (g: string) => supabase.from('dm_log_row_marks').select('*').eq('game_id', g),
+  bluffs: (g: string) => supabase.from('game_bluffs').select('*').eq('game_id', g).order('position'),
+  myBluffs: (g: string) => supabase.rpc('my_bluffs', { p_game: g }),
 } satisfies Record<keyof GameData, (g: string) => PromiseLike<{ data: unknown[] | null }>>;
 
 type Key = keyof GameData;
@@ -77,7 +85,10 @@ const TABLE_OF: Partial<Record<string, Key>> = {
   dm_log_cells: 'logCells',
   dm_log_notes: 'logNotes',
   dm_log_row_marks: 'logRowMarks',
+  game_bluffs: 'bluffs',
 };
+// A player's own bluffs follow their card and the bluffs (SECRET-07).
+const ALSO_RELOAD: Partial<Record<Key, Key[]>> = { shown: ['myBluffs'], bluffs: ['myBluffs'] };
 const KEYS = Object.keys(LOADERS) as Key[];
 
 // supabase-js reuses a channel with the same name, so each hook instance gets its own.
@@ -118,7 +129,9 @@ export function useGameData(gameId: string) {
     channels += 1;
     let channel = supabase.channel(`game:${gameId}:${channels}`);
     for (const [table, key] of Object.entries(TABLE_OF)) {
-      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `game_id=eq.${gameId}` }, () => reload([key!]));
+      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `game_id=eq.${gameId}` }, () =>
+        reload([key!, ...(ALSO_RELOAD[key!] ?? [])]),
+      );
     }
     // Realtime can't filter deletes (their payload holds only the key), so listen to all deletions of these.
     // Day results and deaths are deleted when the DM undoes a day's result (VOTE-15).
