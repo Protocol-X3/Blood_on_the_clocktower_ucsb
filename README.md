@@ -25,7 +25,7 @@ The app is a record-keeper. It doesn't automate abilities or enforce the rules; 
 |---|---|
 | Frontend | React, Vite, TypeScript, React Router |
 | UI | Tailwind CSS, shadcn/ui (re-themed), Motion |
-| Backend | Supabase: Postgres, Auth (Google and anonymous), Realtime, Row Level Security |
+| Backend | Supabase: Postgres, Auth (Google), Realtime, Row Level Security |
 | Hosting | Vercel, auto-deploying `main` |
 
 Two ideas shape the code:
@@ -51,7 +51,7 @@ You need Node 22 or newer and a Supabase project.
    npm run dev
    ```
 
-The Supabase project needs anonymous sign-ins and the Google provider enabled, with `http://localhost:5173/**` among its redirect URLs. The schema is in `supabase/migrations/`.
+The Supabase project needs the Google provider enabled and anonymous sign-ins turned off, with `http://localhost:5173/**` among its redirect URLs. The schema is in `supabase/migrations/`.
 
 ## Commands
 

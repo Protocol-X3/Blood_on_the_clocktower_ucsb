@@ -1,10 +1,11 @@
 // QA-08: `node tools/ledger.ts update` rewrites the ledger from the tests;
 // `node tools/ledger.ts check` fails if it's out of date, or if any count is
-// lower than on origin/main.
+// lower than on origin/main (except for rules the owner retired).
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { readTestFiles, ROOT } from './lib/files.ts';
+import { readRuleFiles, readTestFiles, ROOT } from './lib/files.ts';
+import { parseRules } from './lib/ids.ts';
 import { compareLedger, countIds, type Ledger } from './lib/ledger.ts';
 
 const FILE = join(ROOT, 'docs', 'rules', 'test-ledger.json');
@@ -22,7 +23,7 @@ if (process.argv[2] === 'update') {
   } catch {
     baseline = null; // no ledger on main yet
   }
-  const { outdated, decreased } = compareLedger(current, committed, baseline);
+  const { outdated, decreased } = compareLedger(current, committed, baseline, parseRules(readRuleFiles()).retired);
   for (const o of outdated) console.error(`✗ ledger out of date — ${o}`);
   for (const d of decreased) console.error(`✗ fewer tests than on main — ${d}`);
   if (outdated.length) console.error('\nRun `npm run ledger:update` and commit the ledger with the tests.');

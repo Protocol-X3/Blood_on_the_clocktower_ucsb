@@ -27,6 +27,11 @@ describe('test ledger', () => {
     expect(decreased).toEqual([`${A1}: 3 → 1`, `${A2}: 1 → 0`]);
   });
 
+  it('QA-08: a rule the owner retired may lose its tests; an active one still may not', () => {
+    const { decreased } = compareLedger({ [A2]: 0 }, { [A2]: 0 }, { [A1]: 2, [A2]: 1 }, new Set([A1]));
+    expect(decreased).toEqual([`${A2}: 1 → 0`]);
+  });
+
   it('QA-08: more tests than on main is fine', () => {
     expect(compareLedger({ [A1]: 4 }, { [A1]: 4 }, { [A1]: 3 })).toEqual({ outdated: [], decreased: [] });
   });

@@ -9,7 +9,7 @@ How the app is built and tested. What it does is in [requirements.md](requiremen
 | Language | TypeScript |
 | Frontend | React + Vite + React Router: a multi-page app with client-side routing, installable as a PWA. Next.js isn't needed: there's no SEO, and client-side navigation keeps the room's realtime connection alive. |
 | UI | Tailwind CSS + shadcn/ui (Radix primitives, heavily re-themed) + Motion (framer-motion) for animation |
-| Backend | Supabase: Postgres, Auth (Google + anonymous), Realtime, Row Level Security |
+| Backend | Supabase: Postgres, Auth (Google; anonymous sign-ins off since 2026-10-18), Realtime, Row Level Security |
 | LLM | None in the app. Scripts from photos are made by Claude in a Claude Code session, following a project skill (M6, changed 2026-09-28). |
 | Hosting | Vercel (auto-deploys `main`) |
 

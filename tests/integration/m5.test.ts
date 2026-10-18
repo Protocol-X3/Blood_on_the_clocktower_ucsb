@@ -57,13 +57,9 @@ describe('M5 stats', () => {
     expect(dmStats.gamesPlayed).toBe(1);
   }, 120_000);
 
-  it('STATS-06 · STATS-07: a guest has no stats; after upgrading, their earlier games count', async () => {
-    const guestClient = createClient<Database>(url, process.env.VITE_SUPABASE_PUBLISHABLE_KEY!, { auth: { persistSession: false } });
-    const { data: signIn, error } = await guestClient.auth.signInAnonymously();
-    expect(error).toBeNull();
-    const guestId = signIn.user!.id;
-    extraIds.push(guestId);
-    await guestClient.rpc('set_nickname', { p_nickname: uniqueNickname('游客') });
+  it('STATS-06: a guest account has no stats, and the game still counts for everyone else', async () => {
+    // Guest accounts can't be signed into any more (AUTH-02); a pool account flagged as a guest stands in.
+    const guestId = (await user({ guest: true })).id;
     const [dm, a, b, c, d] = await Promise.all(Array.from({ length: 5 }, () => user()));
     const script = await scriptOf(dm!.id);
     await seedGame({
@@ -83,12 +79,6 @@ describe('M5 stats', () => {
     expect((await reader.rpc('profile_stat_rows', { p_user: guestId })).data).toEqual([]);
     // STATS-06: the other players' stats still count the game.
     expect((await reader.rpc('profile_stat_rows', { p_user: c!.id })).data!.some((r) => r.ended_at.startsWith('2026-09-10'))).toBe(true);
-
-    // The guest links a real identity (Google in the app; an email identity stands in here).
-    const { error: upgradeError } = await admin.auth.admin.updateUserById(guestId, { email: `e2e-up-${guestId.slice(0, 8)}@test.botc`, email_confirm: true });
-    expect(upgradeError).toBeNull();
-    const after = (await reader.rpc('profile_stat_rows', { p_user: guestId })).data!;
-    expect(computeStats(rows(after), false)).toMatchObject({ gamesPlayed: 1, wins: 1, rate: 100 });
   }, 120_000);
 });
 

@@ -8,20 +8,19 @@ const publishable = process.env.VITE_SUPABASE_PUBLISHABLE_KEY!;
 const secret = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 describe('Supabase project', () => {
-  it('M0.4: a guest can sign in anonymously and sign out', async () => {
+  it('M0.4 · AUTH-02: the app reaches the Supabase project, which refuses anonymous (guest) sign-ins', async () => {
     assertTestDatabase();
     const client = createClient(url, publishable, { auth: { persistSession: false } });
+    const settings = await fetch(`${url}/auth/v1/settings`, { headers: { apikey: publishable } });
+    expect(settings.ok).toBe(true);
+    const body = (await settings.json()) as { external: { anonymous_users: boolean } };
+    expect(body.external.anonymous_users).toBe(false);
+
     const { data, error } = await client.auth.signInAnonymously();
-    expect(error).toBeNull();
-    expect(data.user?.is_anonymous).toBe(true);
-    const userId = data.user!.id;
-
-    expect((await client.auth.signOut()).error).toBeNull();
-    expect((await client.auth.getSession()).data.session).toBeNull();
-
-    // Leave no test users behind.
-    const admin = createClient(url, secret, { auth: { persistSession: false } });
-    expect((await admin.auth.admin.deleteUser(userId)).error).toBeNull();
+    expect(error).not.toBeNull();
+    expect(data.user).toBeNull();
+    // Nothing was created, so there is nothing to delete with the secret key.
+    expect(secret).toBeTruthy();
   });
 
   it('M0.7: the Supabase CLI can reach the project database', () => {

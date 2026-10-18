@@ -20,10 +20,13 @@ language plpgsql as $$
 declare
   uid uuid := gen_random_uuid();
 begin
+  -- AUTH-02: guest accounts aren't created through sign-in any more; tests still model them.
+  perform set_config('botc.allow_guest_account', case when p_guest then 'on' else '' end, true);
   insert into auth.users (id, aud, role, email, is_anonymous, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
   values (uid, 'authenticated', 'authenticated',
           case when p_guest then null else p_name || '@test.botc' end,
           p_guest, '{}'::jsonb, '{}'::jsonb, now(), now());
+  perform set_config('botc.allow_guest_account', '', true);
   update public.profiles set nickname = left(p_name, 12) where id = uid;
   if p_permission <> 'player' and p_permission <> 'admin' then
     update public.profiles set permission = p_permission where id = uid;
