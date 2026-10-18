@@ -109,6 +109,45 @@ select is((select shown_role_id from game_composition where game_id = (select id
 select is((select shown_role_id from game_composition where game_id = (select id from g) and role_id = 'chef'), 'chef',
   'SETUP-08: the shown role defaults to the role itself');
 
+-- SETUP-12 / SETUP-13: 不在场角色. Composition: washerwoman, chef, drunk (shown empath), poisoner, imp.
+create function pg_temp.bluffs(p_game uuid) returns text language sql as $$
+  select string_agg(role_id || '>' || lunatic_role_id, ',' order by position) from public.game_bluffs where game_id = p_game;
+$$;
+select is(tests.try_as((select p1 from u), format($$ select set_bluffs(%L, '[{"role":"monk"}]') $$, (select id from g))), 'NOT_DM', 'SETUP-05 · SETUP-12: only the DM picks the bluffs');
+select is(tests.try_as((select dm from u), format($$ select set_bluffs(%L, '[{"role":"monk"},{"role":"saint"},{"role":"librarian"},{"role":"mayor"}]') $$, (select id from g))), 'BLUFFS_TOO_MANY', 'SETUP-12: at most 3 bluffs');
+select is(tests.try_as((select dm from u), format($$ select set_bluffs(%L, '[{"role":"monk"},{"role":"monk"}]') $$, (select id from g))), 'BLUFF_DUPLICATE', 'SETUP-12: no bluff twice');
+select is(tests.try_as((select dm from u), format($$ select set_bluffs(%L, '[{"role":"baron"}]') $$, (select id from g))), 'BLUFF_NOT_GOOD', 'SETUP-12: only 镇民 or 外来者, never a 爪牙');
+select is(tests.try_as((select dm from u), format($$ select set_bluffs(%L, '[{"role":"vortox"}]') $$, (select id from g))), 'BLUFF_NOT_GOOD', 'SETUP-12: …and only from the script');
+select is(tests.try_as((select dm from u), format($$ select set_bluffs(%L, '[{"role":"chef"}]') $$, (select id from g))), 'BLUFF_IN_PLAY', 'SETUP-12: a role in the composition cannot be a bluff');
+select is(tests.try_as((select dm from u), format($$ select set_bluffs(%L, '[{"role":"monk","lunatic":"vortox"}]') $$, (select id from g))), 'ROLE_NOT_IN_SCRIPT', 'SETUP-13: what the Lunatic sees comes from the script');
+select tests.login((select dm from u));
+select set_bluffs((select id from g), '[{"role":"empath","lunatic":"imp"},{"role":"monk"},{"role":"saint"}]');
+select tests.logout();
+select is(pg_temp.bluffs((select id from g)), 'empath>imp,monk>monk,saint>saint',
+  'SETUP-12 · SETUP-13: up to 3 bluffs in order; the Drunk''s shown role may be one; what the Lunatic sees defaults to the bluff and may be any role, even one in play');
+select tests.login((select p5 from u));
+select is((select count(*)::int from game_bluffs), 0, 'SECRET-07: players cannot read the bluffs');
+select is((select count(*)::int from my_bluffs((select id from g))), 0, 'SECRET-07: before a player can see their card, they get no bluffs');
+select tests.logout();
+-- A composition change drops a bluff that is now in play; a new script clears them all.
+select tests.login((select dm from u));
+select set_composition((select id from g), '[{"role":"washerwoman"},{"role":"monk"},{"role":"drunk","shown":"empath"},{"role":"poisoner"},{"role":"imp"}]');
+select tests.logout();
+select is(pg_temp.bluffs((select id from g)), 'empath>imp,saint>saint', 'SETUP-12: a bluff that becomes part of the composition is dropped; the others stay');
+select tests.login((select dm from u));
+select update_setup((select id from g), '00000000-0000-0000-0000-0000000000b0', 'manual');
+select tests.logout();
+select is(pg_temp.bluffs((select id from g)), null, 'SETUP-12: choosing another script clears the bluffs');
+select tests.login((select dm from u));
+select update_setup((select id from g), '00000000-0000-0000-0000-00000000007b', 'manual');
+select set_composition((select id from g), '[{"role":"washerwoman"},{"role":"chef"},{"role":"drunk","shown":"empath"},{"role":"poisoner"},{"role":"imp"}]');
+select set_bluffs((select id from g), '[]');
+select tests.logout();
+select is(pg_temp.bluffs((select id from g)), null, 'SETUP-12: the DM may skip the bluffs');
+select tests.login((select dm from u));
+select set_bluffs((select id from g), '[{"role":"empath","lunatic":"imp"},{"role":"monk"},{"role":"saint"}]');
+select tests.logout();
+
 -- SETUP-09: manual assignment
 select tests.login((select dm from u));
 select assign_seat((select id from g), 1, 'washerwoman');
@@ -169,11 +208,29 @@ select is((select actual_role_id || '/' || shown_role_id from seat_roles where g
   'SECRET-02: the DM sees both the actual and the shown role');
 select tests.logout();
 
+-- SECRET-07: the actual Demon sees the bluffs; nobody else does.
+select tests.login((select p5 from u));
+select is((select array_agg(role_id order by pos) from my_bluffs((select id from g))), array['empath', 'monk', 'saint'], 'SECRET-07: the Demon sees the bluffs with their role card');
+select is((select count(*)::int from game_bluffs), 0, 'SECRET-07: …through their own bluffs only, never the table');
+select tests.logout();
+select tests.login((select p3 from u));
+select is((select count(*)::int from my_bluffs((select id from g))), 0, 'SECRET-07: the Drunk gets no bluffs');
+select tests.logout();
+select tests.login((select p4 from u));
+select is((select count(*)::int from my_bluffs((select id from g))), 0, 'SECRET-07: nor does a 爪牙');
+select tests.logout();
+select tests.login((select dm from u));
+select is((select count(*)::int from game_bluffs where game_id = (select id from g)), 3, 'SECRET-02 · SECRET-07: the DM reads the bluffs');
+select tests.logout();
+
 -- SECRET-03 after the game ends
 update games set status = 'ended', ended_at = now() where id = (select id from g);
 select tests.login((select p1 from u));
 select is((select count(*)::int from seat_roles where game_id = (select id from g)), 5, 'SECRET-03: after the game every participant reads every role');
 select is((select count(*)::int from game_composition where game_id = (select id from g)), 5, 'SECRET-03: …and the composition');
+select tests.logout();
+select tests.login((select p1 from u));
+select is((select count(*)::int from game_bluffs where game_id = (select id from g)), 3, 'SECRET-03 · SECRET-07: after the game every participant reads the bluffs');
 select tests.logout();
 select tests.login((select onlooker from u));
 select is((select count(*)::int from seat_roles where game_id = (select id from g)), 0, 'SECRET-03: onlookers were not participants and still see nothing');
@@ -227,5 +284,55 @@ select shuffle_cards((select id from g2));
 select tests.logout();
 select is((select count(*)::int from draw_slots where game_id = (select id from g2) and taken_by_seat is not null), 0, 'DRAW-06: reshuffling resets every draw');
 select is((select count(*)::int from seat_shown_roles where game_id = (select id from g2)), 0, 'DRAW-06: …and every revealed role');
+
+
+-- ───────────── Lunatic (room 1 again, a script with the 疯子) ─────────────
+insert into scripts (id, name, created_by) values ('00000000-0000-0000-0000-00000000007d', '暗流涌动加疯子', (select dm from u));
+insert into script_roles (script_id, role_id, position)
+select '00000000-0000-0000-0000-00000000007d', id, row_number() over (order by id) from roles where edition = 'tb' or id = 'lunatic';
+create function pg_temp.start_lunatic_game(p_comp jsonb, p_roles text[]) returns uuid language plpgsql as $$
+declare
+  gid uuid;
+begin
+  perform tests.login((select dm from u));
+  gid := start_setup((select id from r), '00000000-0000-0000-0000-00000000007d', 'manual');
+  perform set_composition(gid, p_comp);
+  perform set_bluffs(gid, '[{"role":"empath","lunatic":"chef"},{"role":"monk","lunatic":"saint"}]');
+  for i in 1..5 loop
+    perform assign_seat(gid, i, p_roles[i]);
+  end loop;
+  perform start_game(gid);
+  perform tests.logout();
+  return gid;
+end $$;
+
+-- No Demon in play (e.g. 无神论者): the Lunatic, shown as the Imp, still gets their bluffs; no one else gets any.
+create temp table lg as select pg_temp.start_lunatic_game(
+  '[{"role":"lunatic","shown":"imp"},{"role":"chef"},{"role":"washerwoman"},{"role":"poisoner"},{"role":"undertaker"}]',
+  array['lunatic', 'chef', 'washerwoman', 'poisoner', 'undertaker']) as id;
+grant select on lg to authenticated;
+select tests.login((select p1 from u));
+select is((select array_agg(role_id order by pos) from my_bluffs((select id from lg))), array['chef', 'saint'], 'SECRET-07 · SETUP-13: the Lunatic sees what the Lunatic sees, even with no Demon in play');
+select tests.logout();
+select tests.login((select p4 from u));
+select is((select count(*)::int from my_bluffs((select id from lg))), 0, 'SECRET-07 · SETUP-12: with no Demon in play, no one else gets the bluffs');
+select tests.logout();
+select tests.login((select dm from u));
+select is(pg_temp.bluffs((select id from lg)), 'empath>chef,monk>saint', 'SETUP-12: …while the DM still has them');
+select tests.logout();
+update games set status = 'ended', ended_at = now() where id = (select id from lg);
+
+-- With both: the Demon sees the bluffs, the Lunatic sees theirs.
+create temp table lg2 as select pg_temp.start_lunatic_game(
+  '[{"role":"lunatic","shown":"imp"},{"role":"imp"},{"role":"washerwoman"},{"role":"poisoner"},{"role":"chef"}]',
+  array['lunatic', 'imp', 'washerwoman', 'poisoner', 'chef']) as id;
+grant select on lg2 to authenticated;
+select tests.login((select p1 from u));
+select is((select array_agg(role_id order by pos) from my_bluffs((select id from lg2))), array['chef', 'saint'], 'SECRET-07 · SETUP-13: the Lunatic sees what the Lunatic sees');
+select tests.logout();
+select tests.login((select p2 from u));
+select is((select array_agg(role_id order by pos) from my_bluffs((select id from lg2))), array['empath', 'monk'], 'SECRET-07: …and the real Demon sees the real bluffs');
+select tests.logout();
+update games set status = 'ended', ended_at = now() where id = (select id from lg2);
 
 select * from finish();

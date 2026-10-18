@@ -143,6 +143,8 @@ test('M3.6 · BOT-02: the DM fills nine seats with bots; they draw cards, and a 
   const scriptRoles = page.getByRole('region', { name: '剧本角色' });
   for (const r of TEN) await scriptRoles.getByRole('button', { name: r, exact: true }).click();
   await page.getByRole('button', { name: '下一步' }).click();
+  // 不在场角色 (SETUP-12): none this time.
+  await page.getByRole('button', { name: '下一步' }).click();
   await page.getByRole('button', { name: '发牌' }).click();
   const gameId = (await dmc.from('games').select('id').eq('room_id', roomId).neq('status', 'ended').single()).data!.id;
   await expect

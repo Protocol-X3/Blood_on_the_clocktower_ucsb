@@ -1,6 +1,6 @@
 -- M2 permission matrix: every M2 action × every kind of user × lobby / setup (card draw) / setup (manual).
 -- Each call runs as that user and is rolled back, so they don't affect each other.
-select plan(273);
+select plan(294);
 
 create temp table u as
 select tests.create_user('admin') as admin,
@@ -58,7 +58,9 @@ insert into calls values
   (12, 'delete_script', $$select delete_script('00000000-0000-0000-0000-00000000007c')$$,
      '{admin,dm,dm-eligible}', '{admin,dm,dm-eligible}', '{admin,dm,dm-eligible}'),
   (13, 'delete_custom_role', $$select delete_custom_role('custom-matrix0001')$$,
-     '{admin,dm,dm-eligible}', '{admin,dm,dm-eligible}', '{admin,dm,dm-eligible}');
+     '{admin,dm,dm-eligible}', '{admin,dm,dm-eligible}', '{admin,dm,dm-eligible}'),
+  -- SETUP-12: an empty list is always valid, so only who may call it decides.
+  (14, 'set_bluffs', $$select set_bluffs(%s, '[]')$$, '{}', '{dm}', '{dm}');
 
 create temp table outcomes (state text, state_ord int, call_ord int, actor_ord int, call text, actor text, expected text, actual text);
 

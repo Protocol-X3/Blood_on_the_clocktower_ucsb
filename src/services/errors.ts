@@ -60,6 +60,11 @@ export const ERROR_MESSAGES: Record<string, string> = {
   NOT_ALL_ASSIGNED: '还有座位没有分配角色',
   // M3 · the live game
   NOT_IN_PROGRESS: '对局不在进行中',
+  BLUFFS_INVALID: '不在场角色的数据格式不正确',
+  BLUFFS_TOO_MANY: '不在场角色最多选 3 个',
+  BLUFF_DUPLICATE: '同一个角色不能重复选为不在场角色',
+  BLUFF_NOT_GOOD: '不在场角色只能是剧本中的镇民或外来者',
+  BLUFF_IN_PLAY: '本局角色不能作为不在场角色',
   NOMINATION_OPEN: '请先结束当前的提名',
   PHASE_FIRST: '已经是第1夜，无法再返回',
   CAUSE_REQUIRED: '请选择死亡原因',

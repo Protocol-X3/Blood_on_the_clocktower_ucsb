@@ -29,13 +29,13 @@ async function table(
   n: number,
   users: { make: (o?: object) => Promise<TestUser> },
   browser: import('@playwright/test').Browser,
-  opts: { offline?: boolean } = {},
+  opts: { offline?: boolean; extraRoles?: string[] } = {},
 ): Promise<Table> {
   const dm = await users.make({ level: 'dm_eligible' });
   const dmc = await clientFor(dm);
   const { data: tb } = await admin.from('roles').select('id').eq('edition', 'tb');
   const script = `暗流涌动${Date.now() % 100000}`;
-  await dmc.rpc('save_script', { p_script: null as unknown as string, p_name: script, p_author: '', p_roles: tb!.map((r) => r.id) });
+  await dmc.rpc('save_script', { p_script: null as unknown as string, p_name: script, p_author: '', p_roles: [...tb!.map((r) => r.id), ...(opts.extraRoles ?? [])] });
   const { data: code } = await dmc.rpc('create_room', { p_seat_count: n });
   const roomId = (await dmc.rpc('join_room', { p_code: code! })).data!;
   const phoneUser = await users.make();
@@ -70,6 +70,23 @@ async function pickComposition(page: Page, roles: string[]) {
   await expect(page.getByTestId('composition-count')).toHaveText('人数已齐');
 }
 
+/** SETUP-12: the 不在场角色 sub-step of 角色配置; `bluffs` empty skips it. */
+async function pickBluffs(page: Page, bluffs: string[] = []) {
+  await expect(page.getByRole('heading', { name: '角色配置 · 不在场角色' })).toBeVisible();
+  const script = page.getByRole('region', { name: '剧本角色' });
+  for (const b of bluffs) await script.getByRole('button', { name: b, exact: true }).click();
+  await expect(page.getByTestId('bluff-count')).toHaveText(`已选 ${bluffs.length} / 3`);
+}
+
+/** Manual assignment, seat by seat; `label` is the option's text (e.g. 疯子（展示：小恶魔）). */
+async function assignAll(page: Page, labels: string[]) {
+  for (const [i, label] of labels.entries()) await page.getByLabel(`${i + 1}号的角色`, { exact: true }).selectOption({ label });
+}
+
+async function gameIdOf(t: Table) {
+  return (await t.apiPlayers[0]!.from('games').select('id').eq('room_id', t.roomId).neq('status', 'ended').single()).data!.id;
+}
+
 for (const n of [5, 15] as const) {
   test(`M2.4 · SETUP-06 · SETUP-08 · SETUP-09 · SETUP-10 · SECRET-05 · SECRET-06: manual assignment with ${n} players, through to 开始游戏`, async ({ page, browser, users }, info) => {
     test.slow(n === 15, 'fifteen users and many round trips to the cloud database');
@@ -80,6 +97,8 @@ for (const n of [5, 15] as const) {
     const roles = composition(n);
     await pickComposition(page, roles);
     await page.getByLabel('酒鬼 展示为').selectOption({ label: '共情者' });
+    await page.getByRole('button', { name: '下一步' }).click();
+    await pickBluffs(page);
     await page.getByRole('button', { name: '下一步' }).click();
 
     // Assign in order; seat 1 (the phone player) gets the Drunk, shown as the Empath.
@@ -137,7 +156,7 @@ for (const n of [5, 15] as const) {
     const leaks: string[] = [];
     t.phonePlayer.on('response', async (res) => {
       const u = res.url();
-      if (!/\/rest\/v1\/(seat_roles|game_composition|draw_cards|seat_shown_roles)/.test(u)) return;
+      if (!/\/rest\/v1\/(seat_roles|game_composition|draw_cards|seat_shown_roles|game_bluffs)/.test(u)) return;
       const body = await res.json().catch(() => null);
       if (!Array.isArray(body)) return;
       if (/seat_shown_roles/.test(u)) {
@@ -163,7 +182,7 @@ for (const n of [5, 15] as const) {
         if (event !== 'postgres_changes') return;
         const data = (payload as { data?: { table?: string; record?: { seat?: number } } }).data;
         if (!data) return;
-        if (['seat_roles', 'game_composition', 'draw_cards'].includes(data.table ?? '')) leaks.push(`realtime ${data.table} row: ${text}`);
+        if (['seat_roles', 'game_composition', 'draw_cards', 'game_bluffs'].includes(data.table ?? '')) leaks.push(`realtime ${data.table} row: ${text}`);
         else if (data.table === 'seat_shown_roles' && data.record?.seat !== undefined && data.record.seat !== 1) leaks.push(`realtime seat_shown_roles for seat ${data.record.seat}`);
       }),
     );
@@ -172,6 +191,8 @@ for (const n of [5, 15] as const) {
     await page.goto(`/room/${t.code}`);
     await startSetup(page, t.script, '抽卡');
     await pickComposition(page, composition(n));
+    await page.getByRole('button', { name: '下一步' }).click();
+    await pickBluffs(page);
     await page.getByRole('button', { name: '下一步' }).click();
     await expect(t.phonePlayer.getByRole('status')).toContainText('等待说书人发牌');
     await page.getByRole('button', { name: '发牌' }).click();
@@ -213,7 +234,7 @@ for (const n of [5, 15] as const) {
   });
 }
 
-test('SETUP-07 · SETUP-06: counts off the recommendation only warn; 返回 goes back one step at a time, keeping what was chosen', async ({ page, browser, users }) => {
+test('SETUP-07 · SETUP-06 · SETUP-12: counts off the recommendation only warn; 返回 goes back one step at a time, keeping what was chosen', async ({ page, browser, users }) => {
   const t = await table(5, users, browser);
   await signIn(page, t.dm);
   await page.goto(`/room/${t.code}`);
@@ -221,21 +242,28 @@ test('SETUP-07 · SETUP-06: counts off the recommendation only warn; 返回 goes
   await pickComposition(page, ['洗衣妇', '厨师', '管家', '酒鬼', '小恶魔']);
   await expect(page.getByRole('status').filter({ hasText: '与建议的阵营人数不同' })).toBeVisible();
   await page.getByRole('button', { name: '下一步' }).click();
+  await pickBluffs(page, ['僧侣']);
+  await page.getByRole('button', { name: '下一步' }).click();
   await page.getByLabel('1号的角色', { exact: true }).selectOption({ label: '洗衣妇' });
   await expect(page.getByLabel('1号的角色', { exact: true })).toHaveValue('washerwoman');
   const step = page.getByRole('list', { name: '配置步骤' }).locator('[aria-current="step"]');
   await expect(step).toContainText('3');
 
-  // Step 3 → step 2: the composition is still there, and going forward again keeps the assignment.
+  // Step 3 → step 2 (不在场角色, then the composition): both are still there, and going forward
+  // again keeps the bluff and the assignment.
+  await page.getByRole('button', { name: '返回' }).click();
+  await expect(step).toContainText('2');
+  await expect(page.getByRole('region', { name: '伪装身份' })).toContainText('僧侣');
   await page.getByRole('button', { name: '返回' }).click();
   await expect(step).toContainText('2');
   await expect(page.getByTestId('composition-count')).toHaveText('人数已齐');
   await page.getByRole('button', { name: '下一步' }).click();
+  await expect(page.getByTestId('bluff-count')).toHaveText('已选 1 / 3');
+  await page.getByRole('button', { name: '下一步' }).click();
   await expect(page.getByLabel('1号的角色', { exact: true })).toHaveValue('washerwoman');
 
   // Step 3 → step 2 → step 1: the basics show the script and mode already chosen.
-  await page.getByRole('button', { name: '返回' }).click();
-  await page.getByRole('button', { name: '返回' }).click();
+  for (let i = 0; i < 3; i += 1) await page.getByRole('button', { name: '返回' }).click();
   await expect(step).toContainText('1');
   const basics = page.getByRole('region', { name: '基础设置' });
   await expect(basics.getByLabel('剧本').locator('option:checked')).toHaveText(t.script);
@@ -247,10 +275,11 @@ test('SETUP-07 · SETUP-06: counts off the recommendation only warn; 返回 goes
   await page.getByRole('button', { name: '下一步' }).click();
   await expect(page.getByTestId('composition-count')).toHaveText('人数已齐');
   await page.getByRole('button', { name: '下一步' }).click();
+  await page.getByRole('button', { name: '下一步' }).click();
   await expect(page.getByRole('button', { name: '发牌' })).toBeVisible();
 
   // All the way back to the lobby, which discards the setup.
-  for (let i = 0; i < 3; i += 1) await page.getByRole('button', { name: '返回' }).click();
+  for (let i = 0; i < 4; i += 1) await page.getByRole('button', { name: '返回' }).click();
   await expect(page.getByRole('button', { name: '开始配置对局' })).toBeVisible();
   await t.phonePlayer.context().close();
 });
@@ -280,6 +309,8 @@ test('DRAW-03: a card another player took shows 已被抽走，请重选', async
   await startSetup(page, t.script, '抽卡');
   await pickComposition(page, composition(5));
   await page.getByRole('button', { name: '下一步' }).click();
+  await pickBluffs(page);
+  await page.getByRole('button', { name: '下一步' }).click();
   await page.getByRole('button', { name: '发牌' }).click();
   await t.phonePlayer.reload();
   await expect(t.phonePlayer.getByRole('button', { name: '抽取第 2 张牌' })).toBeVisible();
@@ -292,5 +323,127 @@ test('DRAW-03: a card another player took shows 已被抽走，请重选', async
   // …and can pick another card.
   await t.phonePlayer.getByRole('button', { name: '抽取第 3 张牌' }).click();
   await expect(t.phonePlayer.getByTestId('role-hidden')).toBeVisible();
+  await t.phonePlayer.context().close();
+});
+
+test('SETUP-12 · SECRET-07: the DM picks the bluffs from free good roles; the Demon sees them on their card, no one else does', async ({ page, browser, users }) => {
+  const t = await table(5, users, browser);
+  await signIn(page, t.dm);
+  await page.goto(`/room/${t.code}`);
+  await startSetup(page, t.script, '手动分配');
+  await pickComposition(page, ['洗衣妇', '厨师', '酒鬼', '投毒者', '小恶魔']);
+  await page.getByRole('button', { name: '下一步' }).click();
+
+  // Still step 2 (角色配置): roles in play and every 爪牙/恶魔 are greyed out.
+  await expect(page.getByRole('list', { name: '配置步骤' }).locator('[aria-current="step"]')).toContainText('2');
+  const script = page.getByRole('region', { name: '剧本角色' });
+  for (const off of ['厨师', '酒鬼', '投毒者', '男爵', '小恶魔']) await expect(script.getByRole('button', { name: off, exact: true })).toBeDisabled();
+  await pickBluffs(page, ['共情者', '僧侣', '圣徒']);
+  // At most 3; without a 疯子, 疯子看到 is greyed out.
+  await expect(script.getByRole('button', { name: '守鸦人', exact: true })).toBeDisabled();
+  await expect(page.getByLabel('共情者 疯子看到')).toBeDisabled();
+  await page.getByRole('button', { name: '下一步' }).click();
+
+  // The phone player (seat 1) is the Demon.
+  await assignAll(page, ['小恶魔', '洗衣妇', '厨师', '酒鬼', '投毒者']);
+  await page.getByRole('button', { name: '开始游戏' }).click();
+  await expect(t.phonePlayer.getByRole('heading', { name: '第1夜' })).toBeVisible({ timeout: 5000 });
+  await expect(t.phonePlayer.getByTestId('my-bluffs')).toHaveCount(0);
+  await t.phonePlayer.getByTestId('role-hidden').click();
+  const mine = t.phonePlayer.getByTestId('my-bluffs');
+  for (const b of ['共情者', '僧侣', '圣徒']) await expect(mine).toContainText(b);
+  // Hidden again with the card (SECRET-05).
+  await t.phonePlayer.getByRole('button', { name: '隐藏角色' }).click();
+  await expect(mine).toHaveCount(0);
+
+  // Nobody else gets them, and the players can't read the table.
+  const gameId = await gameIdOf(t);
+  for (const c of t.apiPlayers) {
+    expect((await c.rpc('my_bluffs', { p_game: gameId })).data).toEqual([]);
+    expect((await c.from('game_bluffs').select('*').eq('game_id', gameId)).data).toEqual([]);
+  }
+  // The DM sees them on the game screen; no 疯子看到 without a Lunatic.
+  const panel = page.getByTestId('bluff-panel');
+  for (const b of ['共情者', '僧侣', '圣徒']) await expect(panel).toContainText(b);
+  await expect(panel).not.toContainText('疯子看到');
+  await t.phonePlayer.context().close();
+});
+
+test('SETUP-13 · SECRET-07: with a 疯子, the Lunatic sees what the DM chose for them (any role), the Demon sees the real bluffs', async ({ page, browser, users }) => {
+  const t = await table(5, users, browser, { extraRoles: ['lunatic'] });
+  await signIn(page, t.dm);
+  await page.goto(`/room/${t.code}`);
+  await startSetup(page, t.script, '手动分配');
+  await pickComposition(page, ['疯子', '小恶魔', '洗衣妇', '投毒者', '厨师']);
+  await page.getByLabel('疯子 展示为').selectOption({ label: '小恶魔' });
+  await page.getByRole('button', { name: '下一步' }).click();
+  await pickBluffs(page, ['共情者', '僧侣']);
+  // 疯子看到 is open, and offers every role, even one in play.
+  await expect(page.getByLabel('共情者 疯子看到')).toBeEnabled();
+  await page.getByLabel('共情者 疯子看到').selectOption({ label: '厨师' });
+  await page.getByRole('button', { name: '下一步' }).click();
+
+  // The phone player (seat 1) is the Lunatic, shown as the Imp; seat 2 is the real Imp.
+  await assignAll(page, ['疯子（展示：小恶魔）', '小恶魔', '洗衣妇', '投毒者', '厨师']);
+  await page.getByRole('button', { name: '开始游戏' }).click();
+  await expect(t.phonePlayer.getByRole('heading', { name: '第1夜' })).toBeVisible({ timeout: 5000 });
+  await t.phonePlayer.getByTestId('role-hidden').click();
+  await expect(t.phonePlayer.getByTestId('role-card')).toContainText('小恶魔');
+  const mine = t.phonePlayer.getByTestId('my-bluffs');
+  await expect(mine).toContainText('厨师');
+  await expect(mine).toContainText('僧侣');
+  await expect(mine).not.toContainText('共情者');
+
+  const gameId = await gameIdOf(t);
+  const demon = (await t.apiPlayers[0]!.rpc('my_bluffs', { p_game: gameId })).data!;
+  expect(demon.map((b) => b.role_id)).toEqual(['empath', 'monk']);
+  expect((await t.apiPlayers[1]!.rpc('my_bluffs', { p_game: gameId })).data).toEqual([]);
+  // The DM sees both sets.
+  const panel = page.getByTestId('bluff-panel');
+  await expect(panel.getByRole('region', { name: '不在场角色' })).toContainText('共情者');
+  await expect(panel.getByRole('region', { name: '疯子看到' })).toContainText('厨师');
+  await t.phonePlayer.context().close();
+});
+
+test('SETUP-12 · SECRET-07: with no Demon in play the step still appears; only the DM and a Lunatic see bluffs', async ({ page, browser, users }) => {
+  const t = await table(5, users, browser, { extraRoles: ['lunatic'] });
+  await signIn(page, t.dm);
+  await page.goto(`/room/${t.code}`);
+  await startSetup(page, t.script, '手动分配');
+  await pickComposition(page, ['疯子', '洗衣妇', '厨师', '投毒者', '送葬者']);
+  await page.getByLabel('疯子 展示为').selectOption({ label: '小恶魔' });
+  await page.getByRole('button', { name: '下一步' }).click();
+  await pickBluffs(page, ['共情者']);
+  await page.getByLabel('共情者 疯子看到').selectOption({ label: '僧侣' });
+  await page.getByRole('button', { name: '下一步' }).click();
+  await assignAll(page, ['疯子（展示：小恶魔）', '洗衣妇', '厨师', '投毒者', '送葬者']);
+  await page.getByRole('button', { name: '开始游戏' }).click();
+  await expect(t.phonePlayer.getByRole('heading', { name: '第1夜' })).toBeVisible({ timeout: 5000 });
+
+  // The Lunatic still gets their bluffs; no one gets the real ones.
+  await t.phonePlayer.getByTestId('role-hidden').click();
+  await expect(t.phonePlayer.getByTestId('my-bluffs')).toContainText('僧侣');
+  const gameId = await gameIdOf(t);
+  for (const c of t.apiPlayers) expect((await c.rpc('my_bluffs', { p_game: gameId })).data).toEqual([]);
+  await expect(page.getByTestId('bluff-panel')).toContainText('共情者');
+  await t.phonePlayer.context().close();
+});
+
+test('SETUP-12: the DM may skip the bluffs; the Demon\'s card then shows none', async ({ page, browser, users }) => {
+  const t = await table(5, users, browser);
+  await signIn(page, t.dm);
+  await page.goto(`/room/${t.code}`);
+  await startSetup(page, t.script, '手动分配');
+  await pickComposition(page, composition(5));
+  await page.getByRole('button', { name: '下一步' }).click();
+  await pickBluffs(page);
+  await page.getByRole('button', { name: '下一步' }).click();
+  await assignAll(page, ['小恶魔', '洗衣妇', '厨师', '酒鬼', '投毒者']);
+  await page.getByRole('button', { name: '开始游戏' }).click();
+  await expect(t.phonePlayer.getByRole('heading', { name: '第1夜' })).toBeVisible({ timeout: 5000 });
+  await t.phonePlayer.getByTestId('role-hidden').click();
+  await expect(t.phonePlayer.getByTestId('role-card')).toContainText('小恶魔');
+  await expect(t.phonePlayer.getByTestId('my-bluffs')).toHaveCount(0);
+  await expect(page.getByTestId('bluff-panel')).toHaveCount(0);
   await t.phonePlayer.context().close();
 });

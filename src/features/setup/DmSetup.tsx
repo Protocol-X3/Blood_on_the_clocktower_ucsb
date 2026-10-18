@@ -7,7 +7,7 @@ import { RoleToken } from '@/components/ui/RoleToken';
 import { groupByTeam } from '@/features/roles/data';
 import { useGameData, type GameRole } from '@/features/game/useGameData';
 import type { Member } from '@/features/room/useRoom';
-import { checkComposition, countByTeam } from '@/lib/game/composition';
+import { bluffCandidates, checkComposition, countByTeam, hasLunatic } from '@/lib/game/composition';
 import { recommendedTeamCounts } from '@/lib/game/teamCounts';
 import { TEAM_LABEL, TEAMS } from '@/lib/game/teams';
 import { supabase, type Game } from '@/services/supabase';
@@ -16,12 +16,13 @@ import { useScripts } from './useScripts';
 
 type Act = (run: () => PromiseLike<{ error: unknown }>, after?: () => void) => Promise<void>;
 
-type Step = 'basics' | 'composition' | 'assign';
-const STEP_INDEX: Record<Step, number> = { basics: 0, composition: 1, assign: 2 };
+// 不在场角色 is part of 角色配置 (SETUP-12), so it shares that step's number.
+type Step = 'basics' | 'composition' | 'bluffs' | 'assign';
+const STEP_INDEX: Record<Step, number> = { basics: 0, composition: 1, bluffs: 1, assign: 2 };
 
 /**
- * The DM's setup wizard once a setup exists: basics, composition, then assignment or
- * draw, then start (SETUP-06). Every step's 返回 goes back one step; from basics it
+ * The DM's setup wizard once a setup exists: basics, composition and 不在场角色, then
+ * assignment or draw, then start (SETUP-06). Every step's 返回 goes back one step; from basics it
  * returns to the lobby and discards the setup.
  */
 export function DmSetup({ game, members, act }: { game: Game; members: Member[]; act: Act }) {
@@ -78,12 +79,24 @@ export function DmSetup({ game, members, act }: { game: Game; members: Member[];
           onBack={() => setChosen('basics')}
           onSave={(entries, unchanged) =>
             unchanged
+              ? setChosen('bluffs')
+              : run(() => supabase.rpc('set_composition', { p_game: game.id, p_roles: entries }), () => setChosen('bluffs'))
+          }
+        />
+      ) : step === 'bluffs' ? (
+        <BluffStep
+          roles={data.roles}
+          composition={data.composition.map((c) => c.role_id)}
+          initial={data.bluffs.map((b) => ({ role: b.role_id, lunatic: b.lunatic_role_id }))}
+          onBack={() => setChosen('composition')}
+          onSave={(entries, unchanged) =>
+            unchanged
               ? setChosen('assign')
-              : run(() => supabase.rpc('set_composition', { p_game: game.id, p_roles: entries }), () => setChosen('assign'))
+              : run(() => supabase.rpc('set_bluffs', { p_game: game.id, p_bluffs: entries }), () => setChosen('assign'))
           }
         />
       ) : (
-        <AssignStep game={game} data={data} members={members} run={run} onBack={() => setChosen('composition')} />
+        <AssignStep game={game} data={data} members={members} run={run} onBack={() => setChosen('bluffs')} />
       )}
     </div>
   );
@@ -248,6 +261,138 @@ function CompositionStep({
         <Button disabled={check.errors.length > 0} onClick={() => onSave(entries, sameComposition(entries, initial))}>
           下一步
         </Button>
+      </div>
+    </>
+  );
+}
+
+/** `lunatic`: what the 疯子 sees instead (SETUP-13); the bluff itself when there's no Lunatic. */
+type BluffEntry = { role: string; lunatic: string };
+
+/**
+ * SETUP-12 / SETUP-13: 不在场角色, the same layout as the composition. Only the script's 镇民 and
+ * 外来者 that aren't in play can be picked, up to 3, or none. Each bluff's 疯子看到 offers every
+ * role in the script, and is greyed out when there is no Lunatic.
+ */
+function BluffStep({
+  roles,
+  composition,
+  initial,
+  onSave,
+  onBack,
+}: {
+  roles: GameRole[];
+  composition: string[];
+  initial: BluffEntry[];
+  onSave: (entries: BluffEntry[], unchanged: boolean) => void;
+  onBack: () => void;
+}) {
+  const [entries, setEntries] = useState(initial);
+  const byId = useMemo(() => new Map(roles.map((r) => [r.role_id, r])), [roles]);
+  const candidates = useMemo(
+    () => new Set(bluffCandidates(roles.map((r) => ({ id: r.role_id, team: r.team })), composition).map((r) => r.id)),
+    [roles, composition],
+  );
+  const inPlay = new Set(composition);
+  const lunatic = hasLunatic(composition);
+  const full = entries.length >= 3;
+  const toggle = (id: string) =>
+    setEntries((es) => (es.some((e) => e.role === id) ? es.filter((e) => e.role !== id) : es.length >= 3 ? es : [...es, { role: id, lunatic: id }]));
+  // Without a Lunatic, what the Lunatic sees is just the bluff.
+  const toSave = entries.map((e) => ({ role: e.role, lunatic: lunatic ? e.lunatic : e.role }));
+  const unchanged = toSave.length === initial.length && toSave.every((e, i) => e.role === initial[i]!.role && e.lunatic === initial[i]!.lunatic);
+
+  return (
+    <>
+      <Panel className="flex flex-col gap-1" aria-label="不在场角色说明">
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-serif text-lg font-bold tracking-wider text-gold-strong">角色配置 · 不在场角色</h2>
+          <span className="text-sm text-ink-muted" data-testid="bluff-count">
+            已选 {entries.length} / 3
+          </span>
+        </div>
+        <p className="text-sm text-ink-muted">选择最多 3 个不在场的镇民或外来者作为恶魔的伪装身份。恶魔翻开角色牌时会看到它们，疯子会看到“疯子看到”的角色，其他玩家都看不到。也可以不选。</p>
+      </Panel>
+
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-2">
+        <Panel aria-label="剧本角色">
+          <h3 className="font-serif text-base font-bold tracking-wider text-gold-strong">剧本角色</h3>
+          {groupByTeam(roles).map((g) => (
+            <div key={g.team} className="mt-3">
+              <p className="text-xs tracking-[0.2em] text-ink-faint">{TEAM_LABEL[g.team]}</p>
+              <ul className="mt-1 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {g.roles.map((r) => {
+                  const on = entries.some((e) => e.role === r.role_id);
+                  const allowed = candidates.has(r.role_id);
+                  const disabled = !allowed || (!on && full);
+                  return (
+                    <li key={r.role_id}>
+                      <button
+                        type="button"
+                        aria-pressed={on}
+                        aria-label={r.name}
+                        disabled={disabled}
+                        onClick={() => toggle(r.role_id)}
+                        className={cn(
+                          'flex min-h-24 w-full flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 text-xs transition-colors',
+                          on ? 'border-gold bg-gold/15' : 'border-transparent hover:border-line',
+                          disabled && 'cursor-not-allowed opacity-35 grayscale hover:border-transparent',
+                        )}
+                      >
+                        <RoleToken glyph={r.glyph} team={r.team} label={r.name} size="sm" />
+                        <span className="leading-tight">{r.name}</span>
+                        {inPlay.has(r.role_id) ? <span className="text-[10px] text-ink-faint">本局角色</span> : null}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </Panel>
+
+        <Panel aria-label="伪装身份">
+          <h3 className="font-serif text-base font-bold tracking-wider text-gold-strong">伪装身份 · {entries.length}/3</h3>
+          <p className="mt-1 text-xs text-ink-muted">
+            {lunatic ? '“疯子看到”是疯子以为的伪装身份，可以是任何角色。' : '本局没有疯子，“疯子看到”不可用。'}
+          </p>
+          {entries.length === 0 ? <p className="mt-3 text-sm text-ink-faint">尚未选择。</p> : null}
+          <ul className="mt-3 flex flex-col gap-2">
+            {entries.map((e) => {
+              const r = byId.get(e.role);
+              if (!r) return null;
+              return (
+                <li key={e.role} className="flex items-center gap-3">
+                  <RoleToken glyph={r.glyph} team={r.team} label={r.name} size="sm" />
+                  <span className="min-w-0 flex-1 truncate font-medium">{r.name}</span>
+                  <label className={cn('flex items-center gap-2 text-xs text-ink-muted', !lunatic && 'opacity-40')}>
+                    疯子看到
+                    <select
+                      aria-label={`${r.name} 疯子看到`}
+                      disabled={!lunatic}
+                      value={lunatic ? e.lunatic : e.role}
+                      onChange={(ev) => setEntries((es) => es.map((x) => (x.role === e.role ? { ...x, lunatic: ev.target.value } : x)))}
+                      className="min-h-11 rounded-lg border border-line bg-surface-2 px-2 text-sm text-ink disabled:cursor-not-allowed"
+                    >
+                      {roles.map((o) => (
+                        <option key={o.role_id} value={o.role_id}>
+                          {o.role_id === e.role ? `${o.name}（本身）` : o.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </Panel>
+      </div>
+
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button variant="ghost" onClick={onBack}>
+          返回
+        </Button>
+        <Button onClick={() => onSave(toSave, unchanged)}>下一步</Button>
       </div>
     </>
   );

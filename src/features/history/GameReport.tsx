@@ -9,6 +9,7 @@ import { StarField } from '@/components/ui/StarField';
 import { ThemeScope } from '@/components/ui/ThemeScope';
 import { UserMenu } from '@/features/auth/UserMenu';
 import { logIndex } from '@/features/grimoire/logData';
+import { BluffPanel } from '@/features/roles/BluffStrip';
 import { LogSheet } from '@/features/grimoire/LogSheet';
 import { DEATH_CAUSE_LABEL, postPhase, timeOf, type DeathCause } from '@/features/live/model';
 import { roleGlyph } from '@/lib/game/composition';
@@ -25,7 +26,7 @@ export const DELETED_USER = '已删除用户';
  * their counts and the board (HIST-03).
  */
 export function GameReport({ record, eyebrow, full, footer }: { record: GameRecord; eyebrow: string; full: boolean; footer?: ReactNode }) {
-  const { game, seats, roles, library, deaths, logCells, logNotes, logRowMarks, nominations, dayResults, posts, names } = record;
+  const { game, seats, roles, library, deaths, logCells, logNotes, logRowMarks, nominations, dayResults, posts, bluffs, names } = record;
   const roleById = new Map(library.map((r) => [r.role_id, r]));
   const roleOf = new Map(roles.map((r) => [r.seat, r]));
   const nameOf = (seat: number | null) => {
@@ -97,6 +98,9 @@ export function GameReport({ record, eyebrow, full, footer }: { record: GameReco
               })}
             </ol>
           </Panel>
+
+          {/* SECRET-07: after the end, everyone sees the 不在场角色. */}
+          <BluffPanel bluffs={bluffs} roles={roleById} lunatic={roles.some((r) => r.actual_role_id === 'lunatic')} />
 
           {full ? (
             <Panel className="flex flex-col gap-3" aria-label="提名与投票">

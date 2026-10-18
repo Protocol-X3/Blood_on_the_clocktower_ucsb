@@ -2,14 +2,16 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { CARD_BACK, CardEmblem } from '@/components/ui/CardEmblem';
 import { cn } from '@/components/ui/cn';
+import { BluffStrip, type BluffRole } from './BluffStrip';
 import { RoleCard, type RoleInfo } from './RoleCard';
 
 /**
  * SECRET-05: the player's own role, face down until they tap it, so people nearby
  * can't read it. Tapping the card or 隐藏角色 turns it back over, and so does the
- * app going to the background.
+ * app going to the background. `bluffs`: the Demon's (or the Lunatic's) 不在场角色, shown
+ * with the card and hidden with it (SECRET-07).
  */
-export function HiddenRole({ role, caption }: { role: RoleInfo; caption: string }) {
+export function HiddenRole({ role, caption, bluffs = [] }: { role: RoleInfo; caption: string; bluffs?: BluffRole[] }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -31,6 +33,7 @@ export function HiddenRole({ role, caption }: { role: RoleInfo; caption: string 
         <div onClick={() => setOpen(false)} className="w-full cursor-pointer motion-safe:animate-flip-in">
           <RoleCard role={role} />
         </div>
+        {bluffs.length ? <BluffStrip title="不在场角色" roles={bluffs} testId="my-bluffs" className="mt-2" /> : null}
         <Button variant="ghost" onClick={() => setOpen(false)}>
           隐藏角色
         </Button>
