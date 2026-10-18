@@ -160,7 +160,27 @@ isOneToOne: false
                   Update: {
                     "game_id"?: string,"lunatic_role_id"?: string,"position"?: number,"role_id"?: string
                   }
-                  Relationships: []
+                  Relationships: [
+                    {
+      foreignKeyName: "game_bluffs_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "game_bluffs_game_id_lunatic_role_id_fkey"
+      columns: ["game_id","lunatic_role_id"]
+isOneToOne: false
+      referencedRelation: "game_roles"
+      referencedColumns: ["game_id","role_id"]
+    },{
+      foreignKeyName: "game_bluffs_game_id_role_id_fkey"
+      columns: ["game_id","role_id"]
+isOneToOne: true
+      referencedRelation: "game_roles"
+      referencedColumns: ["game_id","role_id"]
+    }
+                  ]
                 },"game_composition": {
                   Row: {
                     "game_id": string,"role_id": string,"shown_role_id": string
