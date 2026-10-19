@@ -20,7 +20,7 @@
 - **Stepping the phase back (PHASE-06) and undoing an execution (VOTE-15): built 2026-10-11** at the owner's request, PR #32 pending: the DM's 返回上一天/夜 button undoes an accidental advance, and 撤销处决 reopens a concluded day.
 - **Deleting scripts and 自制角色 (SCRIPT-09, SCRIPT-10): built 2026-10-16** at the owner's request, PR pending.
 - **Guest sign-in turned off (AUTH-02; AUTH-05 and STATS-07 retired): DONE 2026-10-18** (PR #34 merged green, migration applied). The one-time removal ran the same day: 16 guest accounts and the 1 abandoned unfinished game they sat in were deleted; 74 bots and 17 Google accounts untouched. Supabase's "Allow anonymous sign-ins" switch is the owner's to turn off.
-- **不在场角色 (SETUP-12, SETUP-13, SECRET-07): built 2026-10-18** at the owner's request, PR pending: bluffs for the Demon, and separate ones for a Lunatic, picked in 角色配置.
+- **不在场角色 (SETUP-12, SETUP-13, SECRET-07): DONE 2026-10-18** at the owner's request (PR #35 merged with every CI check green; migration `20261018000200_bluffs.sql` applied to the live database; types regenerated): bluffs for the Demon, and separate ones for a Lunatic, picked in 角色配置.
 - **Rules in force through: M5.** `npm run check:rules` reads this line: every rule of these phases must have a test. Each milestone's PR bumps it along with that milestone's tests.
 
 ## Phase gate
