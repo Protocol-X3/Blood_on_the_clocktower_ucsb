@@ -95,6 +95,10 @@ For each `≠`, decide whether the ability **means** the same thing:
   record it in the roadmap's decision log, and ship it as a PR. After merge + CI, apply it with
   `node tools/db.ts push` **from a `main` checkout on the owner's PC** (it needs
   `SUPABASE_DB_URL`, which cloud sessions don't have; a cloud session hands this step to the PC). (Example: 气球驾驶员（旧版）, id `balloonist_old`, text from the sheet.)
+  Offer the owner the quicker options too: the current library role, or a 自制角色 名字（改）
+  saved right away. (势焰交炽, 2026-10-24: the sheet printed older official versions of 引路人
+  and 杂技演员. The owner chose the current 引路人, since the only change is "除你以外的", and a
+  homebrew 杂技演员（改） for the original 外来者 version, since its team and ability differ.)
 - **Not official anywhere → a new 自制角色** (edition `homebrew`):
   - name as printed; if a library role already has that name, **ask**, suggesting the next free
     suffix: 名字（改）, then （改2）, （改3）… (戏子（改） is official, so a homebrew 戏子 would be 戏子（改2）);
